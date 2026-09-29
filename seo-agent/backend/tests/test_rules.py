@@ -288,6 +288,71 @@ def test_mixed_content_ignores_relative_and_protocol_relative():
 
 
 def test_soft404_fires_on_thin_page():
+    pass
+
+
+# --------------------------------------------------------------------------
+# 站名/品牌名不应被判为 title 过短
+# --------------------------------------------------------------------------
+# 实测 jvns.ca 的 title 就是「Julia Evans」（11 字符）。技术上短了，
+# 但站名本身就是完整品牌，报「过短」等于让用户去硬堆关键词，
+# 那样反而降低点击率。规则必须看语境，不能只看长度。
+_NAME_TITLES = [
+    "Julia Evans",   # 站点主人姓名
+    "Anthony Fu",
+    "Vue",           # 单一品牌词
+    "Learn Vue",     # 首字母大写、无功能词的短语
+]
+
+
+@pytest.mark.parametrize("title", _NAME_TITLES)
+def test_short_but_looks_like_name_is_not_reported(title):
+    codes, _ = audit_one(html(title=title, body="<p>" + "内容" * 200 + "</p>"))
+    assert "title.too_short" not in codes, f"{title!r} 被误判为 title 过短"
+
+
+@pytest.mark.parametrize(
+    "title",
+    ["Best SEO Tips", "SEO 优化指南", "Vue 快速上手"],
+)
+def test_genuinely_thin_titles_still_reported(title):
+    """别把规则改废：真正缺关键词的短标题仍要报。
+
+    ⚠️ 样本必须 <15 字符，否则根本进不了规则判定，会变成「假绿」。
+    """
+    assert len(title) < 15, "样本必须短于阈值，否则测不到规则"
+    codes, _ = audit_one(html(title=title, body="<p>" + "内容" * 200 + "</p>"))
+    assert "title.too_short" in codes, f"{title!r} 应被报出但没有"
+
+
+def test_h1_multiple_downgraded_to_info():
+    """Google 不惩罚多个 H1。降级后必须明确告知「别为此改版面」，
+    否则用户会为了消一条 INFO 去动正常的模板。"""
+    _, issues = audit_one(
+        html(title="示例页面 - 演示站", body="<h1>站名</h1><h1>文章标题</h1><p>x</p>")
+    )
+    hit = next(i for i in issues if i.code == "h1.multiple")
+    assert hit.severity is Severity.INFO
+    assert hit.evidence["verdict"] == "likely_intentional"
+    assert hit.evidence["duplicated"] is False
+
+
+def test_h1_multiple_flags_verbatim_duplicates():
+    """内容完全相同的 H1 多半是模板重复渲染，这才值得看一眼。"""
+    _, issues = audit_one(
+        html(title="示例页面 - 演示站", body="<h1>同一个标题</h1><h1>同一个标题</h1><p>x</p>")
+    )
+    hit = next(i for i in issues if i.code == "h1.multiple")
+    assert hit.evidence["duplicated"] is True
+    assert hit.evidence["verdict"] == "review_worthwhile"
+
+
+def test_h1_single_not_reported():
+    # 注意：html() 默认会插一个 h1，body 里再放一个就成了两个——这是测试自身的坑
+    codes, _ = audit_one(
+        html(title="示例页面 - 演示站", h1="唯一标题", body="<p>x</p>")
+    )
+    assert "h1.multiple" not in codes
     codes, _ = audit_one(html(body="<p>404</p>"))
     assert "soft404" in codes
 

@@ -52,14 +52,43 @@ class TitleTooShort(Rule):
     code = "title.too_short"
     severity = Severity.LOW
     title = "title 过短，浪费了黄金位置"
-    description = "过短的 title 通常意味着没覆盖到用户搜索的关键词，浪费了搜索结果里最显眼的位置。"
+    description = (
+        "过短的 title 通常意味着没覆盖到用户搜索的关键词，浪费搜索结果里最显眼的位置。\n"
+        "⚠️ 例外：站名/人名本身就是完整名称（如「Julia Evans」），或站点是单页应用时，"
+        "短 title 是正常选择，不要为了凑长度硬塞关键词。"
+    )
     fix_hint = "补充用户真实会用到的搜索词，保持自然可读。"
 
+    # 常见功能词：出现在 title 里说明它是描述句，不是站名/品牌名
+    _FUNCTION_WORDS = frozenset(
+        """a an the of for to in on and or with from at by is are be your our
+        my we it this that how what why guide best top free get""".split()
+    )
+
+    @classmethod
+    def _looks_like_proper_name(cls, title: str) -> bool:
+        """判断短 title 是否其实是站名/人名/品牌名。
+
+        判据：词数少（<=3）且每个词都是首字母大写的专有名词、不含功能词。
+        实测 jvns.ca 的 "Julia Evans" 属此类——报「过短」等于让用户去堆关键词，
+        而站名本身就是完整品牌，硬塞关键词反而降低点击率。
+        """
+        words = [w for w in title.split() if w]
+        if not words or len(words) > 3:
+            return False
+        if any(w.lower() in cls._FUNCTION_WORDS for w in words):
+            return False
+        # 每个词都要求首字母大写（容忍全大写缩写）
+        return all(w[:1].isupper() or w.isupper() for w in words if w[:1].isalpha())
+
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
-        if page.title and 0 < page.title_length < 15:
-            yield self._issue(
-                page, {"title": page.title, "length": page.title_length, "min": 15}
-            )
+        if not page.title or not (0 < page.title_length < 15):
+            return
+        if self._looks_like_proper_name(page.title.strip()):
+            return
+        yield self._issue(
+            page, {"title": page.title, "length": page.title_length, "min": 15}
+        )
 
 
 @reg.register
@@ -142,14 +171,38 @@ class H1Missing(Rule):
 @reg.register
 class H1Multiple(Rule):
     code = "h1.multiple"
-    severity = Severity.MEDIUM
-    title = "页面有多个 H1"
-    description = "多个 H1 会让主题信号分散。HTML5 允许多个 H1，但实践中一个主 H1 对 SEO 更稳妥。"
-    fix_hint = "保留一个主 H1，其余同级标题降为 H2。"
+    severity = Severity.INFO
+    title = "页面有多个 H1（Google 不惩罚，仅供参考）"
+    description = (
+        "HTML5 明确允许多个 H1，Google 也公开表示多个 H1 不影响索引或排名。"
+        "真正会分散主题信号的是「多个 H1 说的是同一件事」——比如站名和文章标题同时进 H1。\n"
+        "⚠️ 所以这条只是提示，不是问题。很多设计良好的站点就是这么做的，不要为了消掉这条去改版面。"
+    )
+    fix_hint = (
+        "仅当多个 H1 语义重复时才值得处理：保留最具体的一个，其余降为 H2 或改为普通文本。"
+        "如果站名 H1 是模板刻意为之，保持现状即可。"
+    )
 
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
-        if len(page.h1) > 1:
-            yield self._issue(page, {"h1_count": len(page.h1), "h1_list": page.h1[:5]})
+        if len(page.h1) <= 1:
+            return
+        normalized = {h.strip().lower() for h in page.h1 if h.strip()}
+        # 只有「语义重复」才值得提一句；站名 H1 + 文章标题是常见且合理的组合
+        duplicated = len(normalized) < len(page.h1)
+        yield self._issue(
+            page,
+            {
+                "h1_count": len(page.h1),
+                "h1_list": page.h1[:5],
+                "duplicated": duplicated,
+                "verdict": "likely_intentional" if not duplicated else "review_worthwhile",
+                "verdict_explain": (
+                    "Google 不惩罚多个 H1，仅供确认主题是否清晰"
+                    if not duplicated
+                    else "存在内容完全相同的 H1，可能是模板重复渲染"
+                ),
+            },
+        )
 
 
 @reg.register
