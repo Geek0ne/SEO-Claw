@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Iterable
 
 from ....models import Issue, Market, Page, Scope, Severity
-from ....util import normalize_url
+from ....util import normalize_url, same_url_ignoring_path_case
 from ...engine import Rule, RuleContext, default_registry
 
 reg = default_registry()
@@ -238,8 +238,9 @@ class CanonicalConflict(Rule):
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
         if not page.canonical or page.status_code != 200:
             return
+        current = page.final_url or page.url
         # 比较时忽略协议、www、末尾斜杠与 index.html 等价形式
-        if normalize_url(page.canonical) == normalize_url(page.final_url or page.url):
+        if normalize_url(page.canonical) == normalize_url(current):
             return
 
         # 回访 canonical 目标，用结果区分「真 bug」与「有意合并」
@@ -249,9 +250,21 @@ class CanonicalConflict(Rule):
 
         evidence: dict[str, object] = {
             "canonical": page.canonical,
-            "page_url": page.final_url or page.url,
+            "page_url": current,
             "canonical_target_status": target_status,
         }
+
+        # 仅 path 大小写不同：指向的还是自己（path 按 URL 规范区分大小写，
+        # 但站点往往两种都服务）。这是模板大小写不一致，不是权重转移，
+        # 按 MEDIUM 报会让人去改本来正确的东西——降到 INFO 并说清是什么。
+        if same_url_ignoring_path_case(page.canonical, current):
+            evidence["verdict"] = "case_only_difference"
+            evidence["verdict_explain"] = (
+                "canonical 与当前页仅路径大小写不同，指向的仍是本页；"
+                "若站点两种形式都返回 200，保持现状即可"
+            )
+            yield self._issue(page, evidence, severity=Severity.INFO)
+            return
 
         if target_status in (404, 410, None) and target_status is not None:
             # 目标页不存在 → 确定是 bug

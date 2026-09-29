@@ -20,6 +20,7 @@ import pytest
 from app.audit.engine import run_audit
 from app.extract import extract_page
 from app.models import Market, Severity
+from app.util import same_url_ignoring_path_case
 
 
 # --------------------------------------------------------------------------
@@ -141,6 +142,38 @@ def test_canonical_self_reference_is_not_conflict():
     ):
         codes, _ = audit_one(html(canonical=canon))
         assert "canonical.conflict" not in codes, f"canonical={canon} 误报"
+
+
+def test_canonical_case_only_difference_is_info_not_medium():
+    """仅 path 大小写不同：指向的仍是本页，不该按「权重转移」的中等问题报。
+
+    真实来源：jvns.ca 的 canonical 是 /juliasections/Uncategorized/，
+    当前页是 /juliasections/uncategorized/。按 URL 规范 path 区分大小写，
+    所以不能简单把 path 小写化（那会漏掉真冲突），但这两种情况要分开报。
+    """
+    page = extract_page(
+        "https://jvns.ca/juliasections/uncategorized/",
+        html(canonical="https://jvns.ca/juliasections/Uncategorized/"),
+    )
+    issues, _ = run_audit([page], "jvns.ca", [Market.BASE])
+    conflict = next(i for i in issues if i.code == "canonical.conflict")
+    assert conflict.severity is Severity.INFO
+    assert conflict.evidence["verdict"] == "case_only_difference"
+
+
+def test_canonical_genuinely_different_page_stays_medium():
+    """反向：确实指向别的页面时不能被大小写逻辑误降级。"""
+    codes, _ = audit_one(html(canonical="https://demo.test/Other-Page"))
+    assert "canonical.conflict" in codes
+
+
+def test_same_url_ignoring_path_case_helper():
+    """工具函数本身：仅大小写不同才算，含 query 差异不算。"""
+    assert same_url_ignoring_path_case("https://a.test/Foo", "https://a.test/foo")
+    assert same_url_ignoring_path_case("https://a.test/Foo/", "https://www.a.test/foo")
+    assert not same_url_ignoring_path_case("https://a.test/foo", "https://a.test/bar")
+    assert not same_url_ignoring_path_case("https://a.test/foo?x=1", "https://a.test/foo?x=2")
+    assert not same_url_ignoring_path_case("", "")
 
 
 def test_canonical_conflict_downgraded_when_target_exists():

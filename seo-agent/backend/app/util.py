@@ -45,6 +45,25 @@ def same_url(a: str, b: str) -> bool:
     return normalize_url(a) == normalize_url(b) and normalize_url(a) != ""
 
 
+def same_url_ignoring_path_case(a: str, b: str) -> bool:
+    """忽略 path 大小写后是否同一个 URL。
+
+    与 `same_url` 的区别：这里**不修改** normalize_url 的语义。
+    path 按 URL 规范是区分大小写的，`/Foo` 和 `/foo` 理论上是两个资源，
+    所以不能让 `normalize_url` 直接把 path 小写化——那会让真正指向
+    不同页面的 canonical 混过去，漏报真冲突。
+
+    本函数只用于「差异**仅**来自 path 大小写」这一种窄场景的识别，
+    让调用方把它降级成提示，而不是当成权重转移问题。
+    """
+    na, nb = normalize_url(a), normalize_url(b)
+    if not na or not nb:
+        return False
+    if na == nb:
+        return True
+    return na.lower() == nb.lower()
+
+
 def registrable_domain(host: str) -> str:
     """粗略取可注册域，判断站内/站外链接。
 
