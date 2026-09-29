@@ -131,6 +131,15 @@ def render_markdown(
     # ---- 健康分 ----
     if report.health_score is not None:
         lines.append(f"## 健康分：{report.health_score:.0f} / 100")
+        # ⚠️ 样本量警告：扣分系数是「受影响页面占比」，页数越少占比越粗。
+        # 5 页样本下占比只能取 0.2 的整数倍，一个问题就可能吃掉 30 分——
+        # 这时分数不能当精确值读。实测 23 站里 22 站只抓到 5 页。
+        if 0 < report.pages_crawled < 20:
+            lines.append("")
+            lines.append(
+                f"> ⚠️ 仅抽查了 {report.pages_crawled} 页，样本量偏小："
+                "上面的分数只反映这几页的情况，**不要当全站结论**，也不适合用来对比站点。"
+            )
         lines.append("")
         counts = " · ".join(
             f"{SEVERITY_ICON[s]} {SEVERITY_LABEL[s]} {len(by_sev[s])}"
