@@ -4,30 +4,30 @@
   "markets": [
     "base"
   ],
-  "started_at": "2026-09-29T12:27:34.028363Z",
-  "finished_at": "2026-09-29T12:27:51.339205Z",
+  "started_at": "2026-09-29T17:13:26.385765Z",
+  "finished_at": "2026-09-29T17:13:42.946108Z",
   "pages_crawled": 5,
   "pages_discovered": 7943,
-  "duration_seconds": 17.310849617002532,
-  "health_score": 95.0,
+  "duration_seconds": 16.56035129999509,
+  "health_score": 96.0,
   "score_breakdown": {
-    "total_deduction": 5.0,
+    "total_deduction": 4.0,
     "severity_counts": {
       "critical": 0,
       "high": 1,
-      "medium": 2,
+      "medium": 1,
       "low": 0,
       "info": 0
     },
     "dimension_scores": {
       "crawlability": 100.0,
-      "architecture": 99.0,
+      "architecture": 100.0,
       "content": 96.0,
       "performance": 100.0,
       "structured_data": 100.0,
       "trust": 100.0
     },
-    "issue_count": 8,
+    "issue_count": 7,
     "total_pages": 5,
     "per_code": {
       "title.duplicate": {
@@ -35,12 +35,6 @@
         "affected_pages": 1,
         "ratio": 0.2,
         "deduction": 3.0
-      },
-      "link.noanchor": {
-        "severity": "medium",
-        "affected_pages": 1,
-        "ratio": 0.2,
-        "deduction": 1.0
       },
       "meta.duplicate": {
         "severity": "medium",
@@ -68,27 +62,6 @@
         "sample_urls": [
           "https://stripe.com/legal/ssa",
           "https://stripe.com/ssa"
-        ]
-      }
-    },
-    {
-      "code": "link.noanchor",
-      "severity": "medium",
-      "market": "base",
-      "scope": "page",
-      "url": "https://stripe.com/",
-      "title": "内部链接锚文本为空",
-      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
-      "fix_hint": "给链接加上描述性锚文本。",
-      "fix_example": null,
-      "evidence": {
-        "empty_anchor_count": 24,
-        "sample_hrefs": [
-          "https://stripe.com/cn/newsroom/news/stripe-openai-instant-checkout",
-          "https://stripe.com/cn/customers/amazon",
-          "https://stripe.com/cn/newsroom/news/nvidia-collaboration-with-stripe",
-          "https://stripe.com/cn/newsroom/news/stripe-ford-agreement",
-          "https://stripe.com/cn/newsroom/news/google-and-stripe"
         ]
       }
     },

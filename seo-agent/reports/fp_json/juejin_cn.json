@@ -4,11 +4,11 @@
   "markets": [
     "base"
   ],
-  "started_at": "2026-09-29T12:29:58.645833Z",
-  "finished_at": "2026-09-29T12:30:05.942539Z",
+  "started_at": "2026-09-29T17:15:33.350826Z",
+  "finished_at": "2026-09-29T17:15:40.399931Z",
   "pages_crawled": 5,
-  "pages_discovered": 20186,
-  "duration_seconds": 7.296713518007891,
+  "pages_discovered": 20191,
+  "duration_seconds": 7.049112672000774,
   "health_score": 92.8,
   "score_breakdown": {
     "total_deduction": 7.2,
@@ -157,9 +157,9 @@
       "fix_example": null,
       "evidence": {
         "word_count": 100,
-        "text_preview": "先说一个事实：2026 年的技术面试，已经和两年前完全不一样了。两年前面试问的是：\"手写一个 Promise\"、\"说说 React Fiber 原理\"...现在面试官默认你会用 AI。他们真正想知道的",
+        "text_preview": "不是恰饭，也不是踩一捧一。只是记录一个 Codex 老用户切换到 WorkBuddy 的真实一周，以及过程中踩到的坑和省下的钱。 一、为什么换：被逼无奈的\"搬家\" 很早就听说腾讯出了智能体编程工具 W",
         "status_code": 200,
-        "internal_outbound_links": 132,
+        "internal_outbound_links": 137,
         "inbound_links": 8,
         "url_looks_like_index": false,
         "verdict": "likely_index_or_hub",

@@ -1,0 +1,108 @@
+{
+  "site_id": null,
+  "domain": "jvns.ca",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-29T12:19:11.663634Z",
+  "finished_at": "2026-09-29T12:19:17.777265Z",
+  "pages_crawled": 5,
+  "pages_discovered": 2122,
+  "duration_seconds": 6.113637958987965,
+  "health_score": 98.0,
+  "score_breakdown": {
+    "total_deduction": 2.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 99.0,
+      "architecture": 100.0,
+      "content": 99.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 3,
+    "total_pages": 5,
+    "per_code": {
+      "canonical.conflict": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      },
+      "img.alt.missing": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "canonical.conflict",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://jvns.ca/juliasections/Uncategorized/",
+      "title": "canonical 指向了其他页面（需确认是否有意为之）",
+      "description": "canonical 与当前页面不一致时，搜索引擎会把本页权重转移给目标页。这可能是有意为之（内容已合并、历史版本别名、分页主页面），也可能是模板复制时漏改。⚠️ 工具无法自动区分这两种情况，请逐条确认：目标页存在且内容相近 → 通常没问题；目标页 404 → 确定是 bug。",
+      "fix_hint": "逐条打开 canonical 目标页确认：如果是有意合并，保持现状即可；如果是模板漏改，改成指向本页自身。",
+      "fix_example": null,
+      "evidence": {
+        "canonical": "https://jvns.ca/juliasections/Uncategorized/",
+        "page_url": "https://jvns.ca/juliasections/uncategorized/",
+        "canonical_target_status": null,
+        "verdict": "possibly_intentional"
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://jvns.ca/blog/2026/09/27/replacing-the-old-battery-on-rechargeable-bike-lights/",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 4,
+        "total_images": 4,
+        "sample_srcs": [
+          "https://jvns.ca/images/pcb.png",
+          "https://jvns.ca/images/battery.png",
+          "https://jvns.ca/images/light-after-1.png",
+          "https://jvns.ca/images/light-after-2.png"
+        ]
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://jvns.ca/blog/2026/09/27/replacing-the-old-battery-on-rechargeable-bike-lights/",
+      "title": "页面有多个 H1（Google 不惩罚，仅供参考）",
+      "description": "HTML5 明确允许多个 H1，Google 也公开表示多个 H1 不影响索引或排名。真正会分散主题信号的是「多个 H1 说的是同一件事」——比如站名和文章标题同时进 H1。\n⚠️ 所以这条只是提示，不是问题。很多设计良好的站点就是这么做的，不要为了消掉这条去改版面。",
+      "fix_hint": "仅当多个 H1 语义重复时才值得处理：保留最具体的一个，其余降为 H2 或改为普通文本。如果站名 H1 是模板刻意为之，保持现状即可。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 2,
+        "h1_list": [
+          "Julia Evans",
+          "Replacing the old battery on rechargeable bike lights"
+        ],
+        "duplicated": false,
+        "verdict": "likely_intentional",
+        "verdict_explain": "Google 不惩罚多个 H1，仅供确认主题是否清晰"
+      }
+    }
+  ]
+}

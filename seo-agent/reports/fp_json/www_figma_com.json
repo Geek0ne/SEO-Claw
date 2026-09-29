@@ -4,112 +4,32 @@
   "markets": [
     "base"
   ],
-  "started_at": "2026-09-29T12:27:52.192361Z",
-  "finished_at": "2026-09-29T12:28:27.654306Z",
+  "started_at": "2026-09-29T17:13:43.818785Z",
+  "finished_at": "2026-09-29T17:14:02.411594Z",
   "pages_crawled": 5,
   "pages_discovered": 20674,
-  "duration_seconds": 35.46195425199403,
-  "health_score": 96.0,
+  "duration_seconds": 18.592817253011162,
+  "health_score": 100.0,
   "score_breakdown": {
-    "total_deduction": 4.0,
+    "total_deduction": 0.0,
     "severity_counts": {
       "critical": 0,
       "high": 0,
-      "medium": 1,
+      "medium": 0,
       "low": 0,
       "info": 0
     },
     "dimension_scores": {
       "crawlability": 100.0,
-      "architecture": 96.0,
+      "architecture": 100.0,
       "content": 100.0,
       "performance": 100.0,
       "structured_data": 100.0,
       "trust": 100.0
     },
-    "issue_count": 4,
+    "issue_count": 0,
     "total_pages": 5,
-    "per_code": {
-      "link.noanchor": {
-        "severity": "medium",
-        "affected_pages": 4,
-        "ratio": 0.8,
-        "deduction": 4.0
-      }
-    }
+    "per_code": {}
   },
-  "issues": [
-    {
-      "code": "link.noanchor",
-      "severity": "medium",
-      "market": "base",
-      "scope": "page",
-      "url": "https://www.figma.com/color-contrast-checker/",
-      "title": "内部链接锚文本为空",
-      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
-      "fix_hint": "给链接加上描述性锚文本。",
-      "fix_example": null,
-      "evidence": {
-        "empty_anchor_count": 2,
-        "sample_hrefs": [
-          "https://www.figma.com/",
-          "https://www.figma.com/"
-        ]
-      }
-    },
-    {
-      "code": "link.noanchor",
-      "severity": "medium",
-      "market": "base",
-      "scope": "page",
-      "url": "https://www.figma.com/color-palette-generator/",
-      "title": "内部链接锚文本为空",
-      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
-      "fix_hint": "给链接加上描述性锚文本。",
-      "fix_example": null,
-      "evidence": {
-        "empty_anchor_count": 2,
-        "sample_hrefs": [
-          "https://www.figma.com/",
-          "https://www.figma.com/"
-        ]
-      }
-    },
-    {
-      "code": "link.noanchor",
-      "severity": "medium",
-      "market": "base",
-      "scope": "page",
-      "url": "https://www.figma.com/pricing/",
-      "title": "内部链接锚文本为空",
-      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
-      "fix_hint": "给链接加上描述性锚文本。",
-      "fix_example": null,
-      "evidence": {
-        "empty_anchor_count": 2,
-        "sample_hrefs": [
-          "https://www.figma.com/",
-          "https://www.figma.com/"
-        ]
-      }
-    },
-    {
-      "code": "link.noanchor",
-      "severity": "medium",
-      "market": "base",
-      "scope": "page",
-      "url": "https://www.figma.com/release-notes/",
-      "title": "内部链接锚文本为空",
-      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
-      "fix_hint": "给链接加上描述性锚文本。",
-      "fix_example": null,
-      "evidence": {
-        "empty_anchor_count": 2,
-        "sample_hrefs": [
-          "https://www.figma.com/",
-          "https://www.figma.com/"
-        ]
-      }
-    }
-  ]
+  "issues": []
 }

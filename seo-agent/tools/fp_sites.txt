@@ -26,3 +26,8 @@ www.gov.uk
 w3.org
 svelte.dev
 astro.build
+vuejs.org
+react.dev
+docusaurus.io
+vitejs.dev
+nuxt.com
