@@ -1,0 +1,63 @@
+# ---------------------------------------------------------------------------
+# 依赖目录：绝对不能进版本库
+# ---------------------------------------------------------------------------
+# seo-agent/.deps 有 280MB 第三方包，是 pip --target 装进去的。
+# 没有这条，一次 `git add .` 就会把整个依赖树提交进仓库。
+seo-agent/.deps/
+.deps/
+node_modules/
+.venv/
+venv/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# 运行期产物
+*.log
+nohup.out
+
+# ---------------------------------------------------------------------------
+# 敏感与机器相关
+# ---------------------------------------------------------------------------
+# OpenClaw 运行期目录（可能含配置与凭据）
+.openclaw/
+.env
+.env.*
+*.pem
+*.key
+secrets/
+*.secret
+
+# 检查点/缓存等运行期状态
+seo-agent/checkpoints/
+*.visited
+.coverage.sqlite
+*.db
+*.sqlite3
+
+# 大二进制与媒体：体积大且与源码无关
+media/
+*.zip
+*.tar.gz
+*.mp4
+*.mov
+*.psd
+*.ai
+*.sketch
+
+# 编辑器 / 系统
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# 数据库本地实例
+postgres-data/
+pgdata/
