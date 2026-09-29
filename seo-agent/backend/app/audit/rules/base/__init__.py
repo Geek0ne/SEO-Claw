@@ -420,10 +420,20 @@ class MixedContent(Rule):
 @reg.register
 class SchemaMissing(Rule):
     code = "schema.missing"
-    severity = Severity.LOW
-    title = "页面没有结构化数据"
-    description = "结构化数据让搜索引擎理解页面实体（商品、文章、FAQ），是拿到富媒体搜索结果的前提。"
-    fix_hint = "按页面类型添加对应的 JSON-LD：商品页用 Product，文章页用 Article。"
+    severity = Severity.INFO
+    scope = Scope.SITE
+    title = "本站未使用结构化数据（可选增强）"
+    description = (
+        "结构化数据（JSON-LD）能让搜索引擎理解页面实体，是拿到富媒体搜索结果"
+        "（商品星级、FAQ 折叠、文章日期等）的前提。\n"
+        "⚠️ 但这是**可选增强，不是缺陷**：12 站实测里，它贡献了全部发现项的 38%，"
+        "而其中没有一条是用户「必须修」的问题。写与不写都不影响排名。\n"
+        "所以这里只做站点级一次性提示：加了是加分项，不加也完全正常。"
+    )
+    fix_hint = (
+        "仅在你想拿富媒体搜索结果时才需要。商品页用 Product、问答页用 FAQ、"
+        "文章页用 Article。多数内容站可以完全不做。"
+    )
     fix_example = (
         '<script type="application/ld+json">\n'
         '{"@context":"https://schema.org","@type":"Product",'
@@ -432,8 +442,35 @@ class SchemaMissing(Rule):
     )
 
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
-        if page.status_code == 200 and not page.jsonld and not page.microdata_types:
-            yield self._issue(page, {"jsonld_count": 0, "microdata_count": 0})
+        # 为什么改成 SITE 级：12 站实测里这条贡献了 38% 的发现项，
+        # 而没有一条是用户「必须修」的问题。「本站没写 JSON-LD」是一条建议，
+        # 按页报成 N 遍就是噪音。
+        #
+        # ⚠️ SITE 级规则的 page 参数是哨兵对象（_EMPTY_PAGE, status_code=0），
+        # **绝不能读 page 的字段**——读到的永远是空值，规则会静默失效。
+        # 必须走 ctx.all_pages。这个坑真的踩过：改完规则不报错，就是不触发。
+        if not ctx.has_enough_data():
+            return
+
+        observed = [
+            p for p in ctx.all_pages if p.status_code == 200 and p.is_html
+        ]
+        if not observed:
+            return
+        with_jsonld = [p for p in observed if p.jsonld or p.microdata_types]
+        if with_jsonld:
+            return  # 有的页面写了就不报
+
+        yield self._site_issue(
+            ctx,
+            {
+                "jsonld_count": 0,
+                "microdata_count": 0,
+                "pages_observed": len(observed),
+                "verdict": "optional_enhancement",
+                "verdict_explain": "可选增强：写与不写都不影响排名，仅影响是否能拿富媒体结果",
+            },
+        )
 
 
 @reg.register

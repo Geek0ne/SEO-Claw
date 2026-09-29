@@ -452,9 +452,29 @@ def test_link_noanchor_needs_at_least_two():
     assert [i for i in issues2 if i.code == "link.noanchor"]
 
 
-def test_schema_missing_fires():
+def test_schema_missing_needs_enough_data():
+    """schema.missing 已改为 SITE 级 + 覆盖门槛，**单页不能再报**。
+
+    「本站没写 JSON-LD」是一条建议，按页报成 N 条就是噪音。
+    同时它靠「没看到」下结论，所以必须先确信「大部分页面都看到了」。
+    """
     codes, _ = audit_one(html(jsonld=None))
-    assert "schema.missing" in codes
+    assert "schema.missing" not in codes, "单页样本不该触发站点级结论"
+
+
+def test_schema_missing_fires_site_level():
+    """页面数够时，站点级报一次即可（不是每页一次）。"""
+    pages = [
+        extract_page(f"https://demo.test/p{i}", html(jsonld=None))
+        for i in range(25)
+    ]
+    issues, _ = run_audit(pages, "demo.test", [Market.BASE])
+    hit = [i for i in issues if i.code == "schema.missing"]
+    assert hit, "页面数足够时未报出"
+    assert hit[0].severity is Severity.INFO
+    assert hit[0].evidence["verdict"] == "optional_enhancement"
+    # SITE 级规则只产出一条，不按页重复
+    assert len(hit) == 1, f"应只报 1 次，实际 {len(hit)} 次"
 
 
 def test_schema_present_no_issue():

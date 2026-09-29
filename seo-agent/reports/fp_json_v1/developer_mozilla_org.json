@@ -1,0 +1,212 @@
+{
+  "site_id": null,
+  "domain": "developer.mozilla.org",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-29T12:06:21.392240Z",
+  "finished_at": "2026-09-29T12:06:29.259127Z",
+  "pages_crawled": 5,
+  "pages_discovered": 20624,
+  "duration_seconds": 7.866894651000621,
+  "health_score": 89.0,
+  "score_breakdown": {
+    "total_deduction": 11.0,
+    "severity_counts": {
+      "critical": 1,
+      "high": 1,
+      "medium": 1,
+      "low": 1,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 94.0,
+      "architecture": 100.0,
+      "content": 96.0,
+      "performance": 100.0,
+      "structured_data": 99.0,
+      "trust": 100.0
+    },
+    "issue_count": 9,
+    "total_pages": 5,
+    "per_code": {
+      "noindex.present": {
+        "severity": "critical",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 6.0
+      },
+      "title.duplicate": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 3.0
+      },
+      "meta.duplicate": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      },
+      "schema.missing": {
+        "severity": "low",
+        "affected_pages": 5,
+        "ratio": 1.0,
+        "deduction": 1.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "noindex.present",
+      "severity": "critical",
+      "market": "base",
+      "scope": "page",
+      "url": "https://developer.mozilla.org/en-US/404",
+      "title": "页面被 noindex 屏蔽收录",
+      "description": "noindex 会让页面完全不出现在搜索结果里。这通常是开发环境忘记删，或者模板改版时误加。",
+      "fix_hint": "如果页面应该被收录，删掉 noindex；如果是故意屏蔽（如分页页），请在 sitemap 中也排除它。",
+      "fix_example": null,
+      "evidence": {
+        "robots_meta": "noindex, nofollow"
+      }
+    },
+    {
+      "code": "title.duplicate",
+      "severity": "high",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 title 完全相同",
+      "description": "重复的 title 会让搜索引擎无法区分这些页面，权重被分散，还可能触发重复内容判断。",
+      "fix_hint": "为每个页面写能体现其独特价值的 title，用页面主题词区分。",
+      "fix_example": null,
+      "evidence": {
+        "title": "MDN Web Docs",
+        "url_count": 2,
+        "duplicate_ratio": 0.4,
+        "sample_urls": [
+          "https://developer.mozilla.org/",
+          "https://developer.mozilla.org/en-US/"
+        ]
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "The MDN Web Docs site provides information about Open Web technologies including HTML, CSS, and APIs for both Web sites and progressive web apps.",
+        "url_count": 4,
+        "sample_urls": [
+          "https://developer.mozilla.org/en-US/",
+          "https://developer.mozilla.org/en-US/404",
+          "https://developer.mozilla.org/en-US/about",
+          "https://developer.mozilla.org/en-US/advertising"
+        ]
+      }
+    },
+    {
+      "code": "schema.missing",
+      "severity": "low",
+      "market": "base",
+      "scope": "page",
+      "url": "https://developer.mozilla.org/",
+      "title": "页面没有结构化数据",
+      "description": "结构化数据让搜索引擎理解页面实体（商品、文章、FAQ），是拿到富媒体搜索结果的前提。",
+      "fix_hint": "按页面类型添加对应的 JSON-LD：商品页用 Product，文章页用 Article。",
+      "fix_example": "<script type=\"application/ld+json\">\n{\"@context\":\"https://schema.org\",\"@type\":\"Product\",\"name\":\"防水登山鞋\",\"offers\":{\"@type\":\"Offer\",\"price\":\"299\"}}\n</script>",
+      "evidence": {
+        "jsonld_count": 0,
+        "microdata_count": 0
+      }
+    },
+    {
+      "code": "schema.missing",
+      "severity": "low",
+      "market": "base",
+      "scope": "page",
+      "url": "https://developer.mozilla.org/en-US/",
+      "title": "页面没有结构化数据",
+      "description": "结构化数据让搜索引擎理解页面实体（商品、文章、FAQ），是拿到富媒体搜索结果的前提。",
+      "fix_hint": "按页面类型添加对应的 JSON-LD：商品页用 Product，文章页用 Article。",
+      "fix_example": "<script type=\"application/ld+json\">\n{\"@context\":\"https://schema.org\",\"@type\":\"Product\",\"name\":\"防水登山鞋\",\"offers\":{\"@type\":\"Offer\",\"price\":\"299\"}}\n</script>",
+      "evidence": {
+        "jsonld_count": 0,
+        "microdata_count": 0
+      }
+    },
+    {
+      "code": "schema.missing",
+      "severity": "low",
+      "market": "base",
+      "scope": "page",
+      "url": "https://developer.mozilla.org/en-US/404",
+      "title": "页面没有结构化数据",
+      "description": "结构化数据让搜索引擎理解页面实体（商品、文章、FAQ），是拿到富媒体搜索结果的前提。",
+      "fix_hint": "按页面类型添加对应的 JSON-LD：商品页用 Product，文章页用 Article。",
+      "fix_example": "<script type=\"application/ld+json\">\n{\"@context\":\"https://schema.org\",\"@type\":\"Product\",\"name\":\"防水登山鞋\",\"offers\":{\"@type\":\"Offer\",\"price\":\"299\"}}\n</script>",
+      "evidence": {
+        "jsonld_count": 0,
+        "microdata_count": 0
+      }
+    },
+    {
+      "code": "schema.missing",
+      "severity": "low",
+      "market": "base",
+      "scope": "page",
+      "url": "https://developer.mozilla.org/en-US/about",
+      "title": "页面没有结构化数据",
+      "description": "结构化数据让搜索引擎理解页面实体（商品、文章、FAQ），是拿到富媒体搜索结果的前提。",
+      "fix_hint": "按页面类型添加对应的 JSON-LD：商品页用 Product，文章页用 Article。",
+      "fix_example": "<script type=\"application/ld+json\">\n{\"@context\":\"https://schema.org\",\"@type\":\"Product\",\"name\":\"防水登山鞋\",\"offers\":{\"@type\":\"Offer\",\"price\":\"299\"}}\n</script>",
+      "evidence": {
+        "jsonld_count": 0,
+        "microdata_count": 0
+      }
+    },
+    {
+      "code": "schema.missing",
+      "severity": "low",
+      "market": "base",
+      "scope": "page",
+      "url": "https://developer.mozilla.org/en-US/advertising",
+      "title": "页面没有结构化数据",
+      "description": "结构化数据让搜索引擎理解页面实体（商品、文章、FAQ），是拿到富媒体搜索结果的前提。",
+      "fix_hint": "按页面类型添加对应的 JSON-LD：商品页用 Product，文章页用 Article。",
+      "fix_example": "<script type=\"application/ld+json\">\n{\"@context\":\"https://schema.org\",\"@type\":\"Product\",\"name\":\"防水登山鞋\",\"offers\":{\"@type\":\"Offer\",\"price\":\"299\"}}\n</script>",
+      "evidence": {
+        "jsonld_count": 0,
+        "microdata_count": 0
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://developer.mozilla.org/en-US/404",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 96,
+        "text_preview": "Page not found | MDN Skip to main content Skip to search Page not found Go back to the home page",
+        "status_code": 200,
+        "internal_outbound_links": 110,
+        "inbound_links": 0,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    }
+  ]
+}

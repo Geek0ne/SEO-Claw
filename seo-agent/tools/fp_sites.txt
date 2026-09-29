@@ -1,0 +1,28 @@
+# M0 验收：真实站点误报回归样本集
+# 选样原则：多行业、多语言、多模板类型（静态/SSR/CSR）、多体量（个人站~大厂）
+# 刻意包含个人博客（站名类 title）、电商（多 H1 模板）、文档站（结构特殊），
+# 因为噪音规则最容易在这些类型上误判。
+antfu.me
+jvns.ca
+overreacted.io
+danluu.com
+brendangregg.com
+go.dev
+docs.python.org
+nodejs.org
+tailwindcss.com
+developer.mozilla.org
+news.ycombinator.com
+gymshark.com
+www.allbirds.com
+shopify.com
+stripe.com
+www.figma.com
+vercel.com
+juejin.cn
+zhuanlan.zhihu.com
+www.csdn.net
+www.gov.uk
+w3.org
+svelte.dev
+astro.build

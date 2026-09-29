@@ -1,0 +1,170 @@
+{
+  "site_id": null,
+  "domain": "juejin.cn",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-29T12:29:58.645833Z",
+  "finished_at": "2026-09-29T12:30:05.942539Z",
+  "pages_crawled": 5,
+  "pages_discovered": 20186,
+  "duration_seconds": 7.296713518007891,
+  "health_score": 92.8,
+  "score_breakdown": {
+    "total_deduction": 7.2,
+    "severity_counts": {
+      "critical": 0,
+      "high": 1,
+      "medium": 1,
+      "low": 1,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 92.8,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 7,
+    "total_pages": 5,
+    "per_code": {
+      "h1.missing": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 3.0
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 4,
+        "ratio": 0.8,
+        "deduction": 4.0
+      },
+      "title.too_short": {
+        "severity": "low",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 0.2
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "h1.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://juejin.cn/",
+      "title": "页面没有 H1 标题",
+      "description": "H1 是页面主题的最强信号。没有 H1 时，搜索引擎只能靠正文猜测这页在讲什么。",
+      "fix_hint": "加一个 H1 写清页面主标题，位置放在正文开头。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 0
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://juejin.cn/post/7690424960263389227",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "知识入库从 11 分钟到 3 秒：一次词库回填的批量化改造客服机器人的知识问答效果，一大半取决于知识库覆盖度。我们把客户 - 掘金",
+        "length": 65,
+        "limit": 30
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://juejin.cn/post/7690424960263454763",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "【唤醒实战笔记】2026-09-29 | 智能体提示词迭代史（v1 → v8）【唤醒实战笔记】2026-09-29 | - 掘金",
+        "length": 64,
+        "limit": 30
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://juejin.cn/post/7690435049427959850",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "做AI眼镜第197天，上次换耳朵，这次换大脑第197天研发记录：主对话模型切换、骑行导航和翻译返修、深色主题验收与3D模 - 掘金",
+        "length": 65,
+        "limit": 30
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://juejin.cn/post/7690456283196325888",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "归纳星-文件管家 使用教程归纳星-文件管家 使用教程 归纳星是一款运行在 Windows 和 macOS 上的本地文件整 - 掘金",
+        "length": 65,
+        "limit": 30
+      }
+    },
+    {
+      "code": "title.too_short",
+      "severity": "low",
+      "market": "base",
+      "scope": "page",
+      "url": "https://juejin.cn/",
+      "title": "title 过短，浪费了黄金位置",
+      "description": "过短的 title 通常意味着没覆盖到用户搜索的关键词，浪费搜索结果里最显眼的位置。\n⚠️ 例外：站名/人名本身就是完整名称（如「Julia Evans」），或站点是单页应用时，短 title 是正常选择，不要为了凑长度硬塞关键词。",
+      "fix_hint": "补充用户真实会用到的搜索词，保持自然可读。",
+      "fix_example": null,
+      "evidence": {
+        "title": "稀土掘金",
+        "length": 4,
+        "min": 15
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://juejin.cn/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 100,
+        "text_preview": "先说一个事实：2026 年的技术面试，已经和两年前完全不一样了。两年前面试问的是：\"手写一个 Promise\"、\"说说 React Fiber 原理\"...现在面试官默认你会用 AI。他们真正想知道的",
+        "status_code": 200,
+        "internal_outbound_links": 132,
+        "inbound_links": 8,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    }
+  ]
+}

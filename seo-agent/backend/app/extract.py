@@ -279,6 +279,24 @@ def _anchor_text(el: Any) -> str:
         if _has_meaningful_text(value):
             return value
 
+    # ⚠️ 2026-09-30 修：只看 <a> 自身的 aria-label 会漏掉**嵌套在子元素上的**。
+    # 实测 figma.com/pricing 的 logo 链接是：
+    #     <a href="..."><svg aria-label="Homepage">…</svg></a>
+    # 标签在 <svg> 上，<a> 本身没有，于是被判成「空锚」——19 站回归里 5 条误报
+    # 全部是这个形态。这是**提取层的缺陷**，不是规则的错。
+    for node in el.xpath(
+        ".//*[@aria-label or @data-title]"
+    ):
+        value = _clean(node.get("aria-label") or node.get("data-title") or "")
+        if _has_meaningful_text(value):
+            return value
+
+    # SVG 内部的 <title> 同样是常见命名方式
+    for t in el.xpath(".//svg/title"):
+        value = _clean(" ".join(t.itertext()))
+        if _has_meaningful_text(value):
+            return value
+
     # 常见的视觉隐藏文字 span/p（SEO 框架爱用）
     for hidden in el.xpath(
         ".//*[contains(@class,'visually-hidden') or contains(@class,'sr-only')"

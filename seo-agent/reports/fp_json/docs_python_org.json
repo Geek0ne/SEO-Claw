@@ -1,0 +1,171 @@
+{
+  "site_id": null,
+  "domain": "docs.python.org",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-29T12:21:19.540628Z",
+  "finished_at": "2026-09-29T12:21:28.695624Z",
+  "pages_crawled": 5,
+  "pages_discovered": 431,
+  "duration_seconds": 9.155003142004716,
+  "health_score": 89.0,
+  "score_breakdown": {
+    "total_deduction": 11.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 1,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 96.0,
+      "architecture": 100.0,
+      "content": 93.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 7,
+    "total_pages": 5,
+    "per_code": {
+      "meta.missing": {
+        "severity": "high",
+        "affected_pages": 2,
+        "ratio": 0.4,
+        "deduction": 6.0
+      },
+      "canonical.conflict": {
+        "severity": "medium",
+        "affected_pages": 4,
+        "ratio": 0.8,
+        "deduction": 4.0
+      },
+      "meta.duplicate": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://docs.python.org/3.10/",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://docs.python.org/3.11/",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "canonical.conflict",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://docs.python.org/3.10/",
+      "title": "canonical 指向了其他页面（需确认是否有意为之）",
+      "description": "canonical 与当前页面不一致时，搜索引擎会把本页权重转移给目标页。这可能是有意为之（内容已合并、历史版本别名、分页主页面），也可能是模板复制时漏改。⚠️ 工具无法自动区分这两种情况，请逐条确认：目标页存在且内容相近 → 通常没问题；目标页 404 → 确定是 bug。",
+      "fix_hint": "逐条打开 canonical 目标页确认：如果是有意合并，保持现状即可；如果是模板漏改，改成指向本页自身。",
+      "fix_example": null,
+      "evidence": {
+        "canonical": "https://docs.python.org/3/index.html",
+        "page_url": "https://docs.python.org/3.10/",
+        "canonical_target_status": null,
+        "verdict": "possibly_intentional"
+      }
+    },
+    {
+      "code": "canonical.conflict",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://docs.python.org/3.11/",
+      "title": "canonical 指向了其他页面（需确认是否有意为之）",
+      "description": "canonical 与当前页面不一致时，搜索引擎会把本页权重转移给目标页。这可能是有意为之（内容已合并、历史版本别名、分页主页面），也可能是模板复制时漏改。⚠️ 工具无法自动区分这两种情况，请逐条确认：目标页存在且内容相近 → 通常没问题；目标页 404 → 确定是 bug。",
+      "fix_hint": "逐条打开 canonical 目标页确认：如果是有意合并，保持现状即可；如果是模板漏改，改成指向本页自身。",
+      "fix_example": null,
+      "evidence": {
+        "canonical": "https://docs.python.org/3/index.html",
+        "page_url": "https://docs.python.org/3.11/",
+        "canonical_target_status": null,
+        "verdict": "possibly_intentional"
+      }
+    },
+    {
+      "code": "canonical.conflict",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://docs.python.org/3.12/",
+      "title": "canonical 指向了其他页面（需确认是否有意为之）",
+      "description": "canonical 与当前页面不一致时，搜索引擎会把本页权重转移给目标页。这可能是有意为之（内容已合并、历史版本别名、分页主页面），也可能是模板复制时漏改。⚠️ 工具无法自动区分这两种情况，请逐条确认：目标页存在且内容相近 → 通常没问题；目标页 404 → 确定是 bug。",
+      "fix_hint": "逐条打开 canonical 目标页确认：如果是有意合并，保持现状即可；如果是模板漏改，改成指向本页自身。",
+      "fix_example": null,
+      "evidence": {
+        "canonical": "https://docs.python.org/3/index.html",
+        "page_url": "https://docs.python.org/3.12/",
+        "canonical_target_status": null,
+        "verdict": "possibly_intentional"
+      }
+    },
+    {
+      "code": "canonical.conflict",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://docs.python.org/3.13/",
+      "title": "canonical 指向了其他页面（需确认是否有意为之）",
+      "description": "canonical 与当前页面不一致时，搜索引擎会把本页权重转移给目标页。这可能是有意为之（内容已合并、历史版本别名、分页主页面），也可能是模板复制时漏改。⚠️ 工具无法自动区分这两种情况，请逐条确认：目标页存在且内容相近 → 通常没问题；目标页 404 → 确定是 bug。",
+      "fix_hint": "逐条打开 canonical 目标页确认：如果是有意合并，保持现状即可；如果是模板漏改，改成指向本页自身。",
+      "fix_example": null,
+      "evidence": {
+        "canonical": "https://docs.python.org/3/index.html",
+        "page_url": "https://docs.python.org/3.13/",
+        "canonical_target_status": null,
+        "verdict": "possibly_intentional"
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "The official Python documentation.",
+        "url_count": 3,
+        "sample_urls": [
+          "https://docs.python.org/",
+          "https://docs.python.org/3.12/",
+          "https://docs.python.org/3.13/"
+        ]
+      }
+    }
+  ]
+}
