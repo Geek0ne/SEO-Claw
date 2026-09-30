@@ -293,6 +293,14 @@ class NoindexPresent(Rule):
     fix_hint = "如果页面应该被收录，删掉 noindex；如果是故意屏蔽（如分页页），请在 sitemap 中也排除它。"
 
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
+        # ⚠️ 错误页面的 noindex 是**正确做法**，不是 bug。
+        # 真实样本：developer.mozilla.org/en-US/404 返回 404 且带
+        # noindex, nofollow——这是标准配置。旧版不看状态码，把它判成
+        # CRITICAL「页面被屏蔽收录」，等于让用户把 404 页从屏蔽名单里
+        # 摘出来，好让搜索引擎收录一个 404。这是典型的「规则对了、
+        # 用户照做反而更糟」。
+        if page.status_code >= 400:
+            return
         robots = (page.robots_meta or "").lower()
         tokens = set(robots.replace(",", " ").split())
         if tokens & {"noindex", "none"}:

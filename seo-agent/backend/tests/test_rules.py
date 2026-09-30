@@ -101,6 +101,29 @@ def test_noindex_fires():
     assert "noindex.present" in codes
 
 
+def test_noindex_on_404_page_is_not_reported():
+    """404 页面的 noindex 是正确配置，不该报成 CRITICAL。
+
+    真实样本：developer.mozilla.org/en-US/404 返回 404 且带
+    noindex, nofollow。旧版不看状态码，报成 CRITICAL「页面被屏蔽收录」，
+    等于让用户把 404 页从屏蔽名单里摘出来，好让搜索引擎收录一个 404。
+    """
+    page = extract_page(
+        "https://demo.test/404", html(robots="noindex, nofollow"), status_code=404
+    )
+    issues, _ = run_audit([page], "demo.test", [Market.BASE])
+    assert not [i for i in issues if i.code == "noindex.present"]
+
+
+def test_noindex_on_500_still_not_reported():
+    """5xx 同理：服务器错误页不该被要求收录。"""
+    page = extract_page(
+        "https://demo.test/boom", html(robots="noindex"), status_code=500
+    )
+    issues, _ = run_audit([page], "demo.test", [Market.BASE])
+    assert not [i for i in issues if i.code == "noindex.present"]
+
+
 def test_h1_missing_fires():
     codes, _ = audit_one(html(h1=None))
     assert "h1.missing" in codes
