@@ -1,0 +1,140 @@
+{
+  "site_id": null,
+  "domain": "www.purdue.edu",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:45:23.213747Z",
+  "finished_at": "2026-09-30T17:46:11.414644Z",
+  "pages_crawled": 5,
+  "pages_discovered": 20306,
+  "duration_seconds": 48.2009058840049,
+  "health_score": 96.0,
+  "score_breakdown": {
+    "total_deduction": 4.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 1,
+      "medium": 1,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 99.0,
+      "architecture": 100.0,
+      "content": 97.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 3,
+    "total_pages": 5,
+    "per_code": {
+      "meta.missing": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 3.0
+      },
+      "canonical.conflict": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.purdue.edu/accessibilityresources/",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "title.duplicate",
+      "severity": "high",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 title 完全相同",
+      "description": "重复的 title 会让搜索引擎无法区分这些页面，权重被分散，还可能触发重复内容判断。",
+      "fix_hint": "为每个页面写能体现其独特价值的 title，用页面主题词区分。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Purdue University",
+        "url_count": 2,
+        "duplicate_ratio": 0.4,
+        "sample_urls": [
+          "https://www.purdue.edu/",
+          "https://www.purdue.edu/home/"
+        ]
+      }
+    },
+    {
+      "code": "canonical.conflict",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.purdue.edu/",
+      "title": "canonical 指向了其他页面（需确认是否有意为之）",
+      "description": "canonical 与当前页面不一致时，搜索引擎会把本页权重转移给目标页。这可能是有意为之（内容已合并、历史版本别名、分页主页面），也可能是模板复制时漏改。⚠️ 工具无法自动区分这两种情况，请逐条确认：目标页存在且内容相近 → 通常没问题；目标页 404 → 确定是 bug。",
+      "fix_hint": "逐条打开 canonical 目标页确认：如果是有意合并，保持现状即可；如果是模板漏改，改成指向本页自身。",
+      "fix_example": null,
+      "evidence": {
+        "canonical": "https://www.purdue.edu/home/",
+        "page_url": "https://www.purdue.edu/",
+        "canonical_target_status": null,
+        "verdict": "possibly_intentional"
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "Purdue University is a world-renowned, public research university that advances discoveries in science, technology, engineering and math.",
+        "url_count": 2,
+        "sample_urls": [
+          "https://www.purdue.edu/",
+          "https://www.purdue.edu/home/"
+        ]
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.purdue.edu/accessibilityresources/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 124,
+        "text_preview": "Accessibility Resources | Office for Civil Rights Skip to content Find Info For Human Resources Careers Directory Campus",
+        "status_code": 200,
+        "internal_outbound_links": 58,
+        "inbound_links": 3,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "site_id": null,
+  "domain": "www.lazada.sg",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:35:16.898593Z",
+  "finished_at": "2026-09-30T17:35:32.422072Z",
+  "pages_crawled": 5,
+  "pages_discovered": 20262,
+  "duration_seconds": 15.523487347993068,
+  "health_score": 98.0,
+  "score_breakdown": {
+    "total_deduction": 2.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 99.0,
+      "content": 99.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 3,
+    "total_pages": 5,
+    "per_code": {
+      "link.noanchor": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.lazada.sg/",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 17,
+        "sample_hrefs": [
+          "https://cart.lazada.sg/cart?scm=1003.4.icms-zebra-5001270-2589730.OTHER_5196110127_2265486",
+          "https://pages.lazada.sg/wow/gcp/route/lazada/sg/upr_1000345_lazada/channel/sg/upr-router/sg?hybrid=1&data_prefetch=true&prefetch_replace=1&at_iframe=1&wh_pid=/lazada/superseries/sg/SG_RSBD_2026_NestleGroup/ZTAsCzeM3w",
+          "https://pages.lazada.sg/wow/gcp/route/lazada/sg/upr_1000345_lazada/channel/sg/upr-router/sg?hybrid=1&data_prefetch=true&prefetch_replace=1&at_iframe=1&wh_pid=/lazada/channel/sg/redmart-now-cp/rmnow-new&useRMContainer=h5&showLoading=false&showTabBar=false&useTabViewStack=true&showUserJourneyWidget=true&tab=home&showRMFrame=true",
+          "https://pages.lazada.sg/wow/gcp/route/lazada/sg/upr_1000345_lazada/channel/sg/upr-router/sg?wx_navbar_transparent=true&hybrid=1&data_prefetch=true&at_iframe=1&lzd_navbar_hidden=true&prefetch_replace=1&wh_pid=/lazada/megascenario/sg/d1026cd/ebd",
+          "https://pages.lazada.sg/wow/gcp/route/lazada/sg/upr_1000345_lazada/channel/sg/upr-router/sg?hybrid=1&data_prefetch=true&prefetch_replace=1&at_iframe=1&wh_pid=/lazada/channel/sg/redmart-campaign/f1racingdeals2026&useRMContainer=h5&showLoading=false&showTabBar=true&showSearchBar=true&useTabViewStack=true&showUserJourneyWidget=true&tab=home&showRMFrame=true"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.lazada.sg/products/magnolia-wafer-ice-cream-sandwich-raspberry-ripple-durian-yam-chocolate-blueberry-ripple-i2470744437.html",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Magnolia Wafer Ice Cream Sandwich - Raspberry Ripple, Durian, Yam, Chocolate, Blueberry Ripple | Lazada Singapore",
+        "length": 113,
+        "limit": 60
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.lazada.sg/products/magnolia-wafer-ice-cream-sandwich-raspberry-ripple-durian-yam-chocolate-blueberry-ripple-i2470744437.html",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 94,
+        "text_preview": "Magnolia Wafer Ice Cream Sandwich - Raspberry Ripple, Durian, Yam, Chocolate, Blueberry Ripple",
+        "status_code": 200,
+        "internal_outbound_links": 42,
+        "inbound_links": 0,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    }
+  ]
+}

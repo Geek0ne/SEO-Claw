@@ -1,0 +1,190 @@
+{
+  "site_id": null,
+  "domain": "www.rancher.com",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:46:12.312705Z",
+  "finished_at": "2026-09-30T17:46:32.595167Z",
+  "pages_crawled": 5,
+  "pages_discovered": 1604,
+  "duration_seconds": 20.282468702003825,
+  "health_score": 95.0,
+  "score_breakdown": {
+    "total_deduction": 5.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 95.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 5,
+    "total_pages": 5,
+    "per_code": {
+      "img.alt.missing": {
+        "severity": "medium",
+        "affected_pages": 4,
+        "ratio": 0.8,
+        "deduction": 4.0
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "title.duplicate",
+      "severity": "high",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 title 完全相同",
+      "description": "重复的 title 会让搜索引擎无法区分这些页面，权重被分散，还可能触发重复内容判断。",
+      "fix_hint": "为每个页面写能体现其独特价值的 title，用页面主题词区分。",
+      "fix_example": null,
+      "evidence": {
+        "title": "The Rancher Difference | Rancher",
+        "url_count": 2,
+        "duplicate_ratio": 0.4,
+        "sample_urls": [
+          "https://rancher.com/kubernetes",
+          "https://rancher.com/why-rancher/rancher-difference"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://rancher.com/kubernetes",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 5,
+        "total_images": 37,
+        "sample_srcs": [
+          "https://www.rancher.com/assets/img/why-rancher/ContainerManagement_HighPerformer_Small-Business_HighPerformer (1).png",
+          "https://www.rancher.com/assets/img/why-rancher/ContainerManagement_EasiestAdmin_Mid-Market_EaseOfAdmin (2).png",
+          "https://www.rancher.com/assets/img/why-rancher/use-cases/get-touch.jpg",
+          "https://www.rancher.com/assets/img/why-rancher/use-cases/doc.jpg",
+          "https://www.rancher.com/assets/img/why-rancher/use-cases/guide.jpg"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://rancher.com/why-rancher",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 19,
+        "total_images": 55,
+        "sample_srcs": [
+          "https://www.rancher.com/assets/img/icons/icon-hands.svg",
+          "https://www.rancher.com/assets/img/icons/icon-experiment.svg",
+          "https://www.rancher.com/assets/img/icons/icon-arrow-doc.svg",
+          "https://www.rancher.com/assets/img/icons/icon-rocket.svg",
+          "https://www.rancher.com/assets/img/icons/icon-clock.svg"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://rancher.com/why-rancher/rancher-difference",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 5,
+        "total_images": 37,
+        "sample_srcs": [
+          "https://www.rancher.com/assets/img/why-rancher/ContainerManagement_HighPerformer_Small-Business_HighPerformer (1).png",
+          "https://www.rancher.com/assets/img/why-rancher/ContainerManagement_EasiestAdmin_Mid-Market_EaseOfAdmin (2).png",
+          "https://www.rancher.com/assets/img/why-rancher/use-cases/get-touch.jpg",
+          "https://www.rancher.com/assets/img/why-rancher/use-cases/doc.jpg",
+          "https://www.rancher.com/assets/img/why-rancher/use-cases/guide.jpg"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://rancher.com/why-rancher/rancher-strengthens-kubernetes",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 3,
+        "total_images": 49,
+        "sample_srcs": [
+          "https://www.rancher.com/assets/img/why-rancher/use-cases/get-touch.jpg",
+          "https://www.rancher.com/assets/img/why-rancher/use-cases/doc.jpg",
+          "https://www.rancher.com/assets/img/why-rancher/use-cases/guide.jpg"
+        ]
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "The Rancher Difference",
+        "url_count": 2,
+        "sample_urls": [
+          "https://rancher.com/kubernetes",
+          "https://rancher.com/why-rancher/rancher-difference"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.rancher.com/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Enterprise Kubernetes Management Platform & Software | Rancher",
+        "length": 62,
+        "limit": 60
+      }
+    }
+  ]
+}

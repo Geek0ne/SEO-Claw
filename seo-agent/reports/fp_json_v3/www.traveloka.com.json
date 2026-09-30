@@ -1,0 +1,235 @@
+{
+  "site_id": null,
+  "domain": "www.traveloka.com",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:53:03.499141Z",
+  "finished_at": "2026-09-30T17:53:53.083880Z",
+  "pages_crawled": 5,
+  "pages_discovered": 20364,
+  "duration_seconds": 49.58474831600324,
+  "health_score": 94.0,
+  "score_breakdown": {
+    "total_deduction": 6.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 1,
+      "medium": 2,
+      "low": 2,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 97.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 97.0
+    },
+    "issue_count": 9,
+    "total_pages": 5,
+    "per_code": {
+      "http.mixed_content": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 3.0
+      },
+      "img.alt.missing": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      },
+      "img.alt.generic": {
+        "severity": "low",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 0.2
+      },
+      "title.too_short": {
+        "severity": "low",
+        "affected_pages": 4,
+        "ratio": 0.8,
+        "deduction": 0.8
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "http.mixed_content",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.traveloka.com/",
+      "title": "HTTPS 页面存在混合内容",
+      "description": "HTTPS 页面里加载 http:// 资源时，浏览器会拦截或降级，Chrome 会直接标记页面为「不安全」，影响排名与用户信任。",
+      "fix_hint": "把所有 http:// 资源改成 https://，或用协议相对路径。",
+      "fix_example": "把 <img src=\"http://cdn.x.com/a.jpg\"> 改为 <img src=\"https://cdn.x.com/a.jpg\">",
+      "evidence": {
+        "page_url": "https://www.traveloka.com/en-en",
+        "offending_resources": [
+          "<img src=http://img.cnt.traveloka.com/tvlk/image/imageResource/2023/06/15/1686795553890-a>",
+          "<img src=http://img.cnt.traveloka.com/tvlk/image/imageResource/2023/06/15/1686795553890-a>",
+          "<img src=http://img.cnt.traveloka.com/tvlk/image/imageResource/2023/06/15/1686795636803-f>",
+          "<img src=http://img.cnt.traveloka.com/tvlk/image/imageResource/2023/06/15/1686795636803-f>",
+          "<img src=http://img.cnt.traveloka.com/tvlk/image/imageResource/2023/06/15/1686795654615-4>",
+          "<img src=http://img.cnt.traveloka.com/tvlk/image/imageResource/2023/06/15/1686795654615-4>",
+          "<img src=http://img.cnt.traveloka.com/tvlk/image/imageResource/2023/06/15/1686795670510-7>",
+          "<img src=http://img.cnt.traveloka.com/tvlk/image/imageResource/2023/06/15/1686795670510-7>",
+          "<img src=http://img.cnt.traveloka.com/tvlk/image/imageResource/2023/06/15/1686795687340-3>",
+          "<img src=http://img.cnt.traveloka.com/tvlk/image/imageResource/2023/06/15/1686795687340-3>"
+        ],
+        "note": "只统计 img/script/link/iframe 等子资源，不含 <a href> 超链接"
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.traveloka.com/",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 13,
+        "total_images": 46,
+        "sample_srcs": [
+          "https://img.cnt.traveloka.com/tvlk/image/imageResource/2024/10/13/1728842433632-ac9d7312913263f7f64ac5d028ae0f0d.png?tr=h-20,q-75,w-20",
+          "https://img.cnt.traveloka.com/tvlk/image/imageResource/2026/09/29/1790678412521-f4d1b98970194da3a5afa1c3ec71145f.jpeg?tr=q-75",
+          "https://img.cnt.traveloka.com/tvlk/image/imageResource/2026/09/29/1790678412521-f4d1b98970194da3a5afa1c3ec71145f.jpeg?tr=q-75,w-200",
+          "https://img.cnt.traveloka.com/tvlk/image/imageResource/2023/11/17/1700215562769-2f362de4d3cf5253829ed5a07c10c17b.png?tr=q-75",
+          "https://img.cnt.traveloka.com/tvlk/image/imageResource/2026/01/13/1768294901159-430b497b2d11338c2dd2aef2f0c1ba7a.png?tr=h-48,q-75,w-48"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.traveloka.com/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Cheap Flights, Hotels, Activities & Travel Deals Worldwide | Traveloka",
+        "length": 70,
+        "limit": 60
+      }
+    },
+    {
+      "code": "img.alt.generic",
+      "severity": "low",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.traveloka.com/",
+      "title": "图片 alt 是无意义占位文本",
+      "description": "alt 写成 \"image\"、\"图片\"、\"1.jpg\" 这类等于没写，图片搜索拿不到任何语义信息。",
+      "fix_hint": "改成描述图片实际内容的文字。",
+      "fix_example": null,
+      "evidence": {
+        "generic_count": 2,
+        "sample_srcs": [
+          "https://img.cnt.traveloka.com/tvlk/image/imageResource/2025/11/05/1762339966127-13c175229ccaf62c113e0cd9219240d3.png?tr=h-24,q-75",
+          "https://img.cnt.traveloka.com/tvlk/image/imageResource/2025/11/05/1762339981824-e9780c58be9d432e947854f02db9ddef.png?tr=h-24,q-75"
+        ]
+      }
+    },
+    {
+      "code": "title.too_short",
+      "severity": "low",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.traveloka.com/id-id/accommodation/find/oyo-bandung",
+      "title": "title 过短，浪费了黄金位置",
+      "description": "过短的 title 通常意味着没覆盖到用户搜索的关键词，浪费搜索结果里最显眼的位置。\n⚠️ 例外：站名/人名本身就是完整名称（如「Julia Evans」），或站点是单页应用时，短 title 是正常选择，不要为了凑长度硬塞关键词。",
+      "fix_hint": "补充用户真实会用到的搜索词，保持自然可读。",
+      "fix_example": null,
+      "evidence": {
+        "title": "traveloka.com",
+        "length": 13,
+        "min": 15
+      }
+    },
+    {
+      "code": "title.too_short",
+      "severity": "low",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.traveloka.com/id-id/accommodation/find/oyo-kebon-jeruk",
+      "title": "title 过短，浪费了黄金位置",
+      "description": "过短的 title 通常意味着没覆盖到用户搜索的关键词，浪费搜索结果里最显眼的位置。\n⚠️ 例外：站名/人名本身就是完整名称（如「Julia Evans」），或站点是单页应用时，短 title 是正常选择，不要为了凑长度硬塞关键词。",
+      "fix_hint": "补充用户真实会用到的搜索词，保持自然可读。",
+      "fix_example": null,
+      "evidence": {
+        "title": "traveloka.com",
+        "length": 13,
+        "min": 15
+      }
+    },
+    {
+      "code": "title.too_short",
+      "severity": "low",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.traveloka.com/id-id/accommodation/find/oyo-medan",
+      "title": "title 过短，浪费了黄金位置",
+      "description": "过短的 title 通常意味着没覆盖到用户搜索的关键词，浪费搜索结果里最显眼的位置。\n⚠️ 例外：站名/人名本身就是完整名称（如「Julia Evans」），或站点是单页应用时，短 title 是正常选择，不要为了凑长度硬塞关键词。",
+      "fix_hint": "补充用户真实会用到的搜索词，保持自然可读。",
+      "fix_example": null,
+      "evidence": {
+        "title": "traveloka.com",
+        "length": 13,
+        "min": 15
+      }
+    },
+    {
+      "code": "title.too_short",
+      "severity": "low",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.traveloka.com/id-id/accommodation/find/oyo-south-jakarta",
+      "title": "title 过短，浪费了黄金位置",
+      "description": "过短的 title 通常意味着没覆盖到用户搜索的关键词，浪费搜索结果里最显眼的位置。\n⚠️ 例外：站名/人名本身就是完整名称（如「Julia Evans」），或站点是单页应用时，短 title 是正常选择，不要为了凑长度硬塞关键词。",
+      "fix_hint": "补充用户真实会用到的搜索词，保持自然可读。",
+      "fix_example": null,
+      "evidence": {
+        "title": "traveloka.com",
+        "length": 13,
+        "min": 15
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.traveloka.com/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 85,
+        "text_preview": "Always in the know about travel tips, recommendations, and Traveloka’s latest promos.",
+        "status_code": 200,
+        "internal_outbound_links": 363,
+        "inbound_links": 0,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    }
+  ]
+}

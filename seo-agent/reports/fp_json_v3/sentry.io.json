@@ -1,0 +1,110 @@
+{
+  "site_id": null,
+  "domain": "sentry.io",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T16:59:34.662862Z",
+  "finished_at": "2026-09-30T16:59:57.257355Z",
+  "pages_crawled": 5,
+  "pages_discovered": 3376,
+  "duration_seconds": 22.59449913701974,
+  "health_score": 97.0,
+  "score_breakdown": {
+    "total_deduction": 3.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 97.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 3,
+    "total_pages": 5,
+    "per_code": {
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 3,
+        "ratio": 0.6,
+        "deduction": 3.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "Find current press releases, logos, photos, and screenshots.",
+        "url_count": 2,
+        "sample_urls": [
+          "https://sentry.io/about/press-releases/new-unified-sdk-for-android/",
+          "https://sentry.io/about/press-releases/sentry-acquires-analytics-firm-specto-to-add-continuous-profiling-to-mobile-application-monitoring/"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://sentry.io/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Application Performance Monitoring & Error Tracking Software | Sentry",
+        "length": 69,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://sentry.io/about/press-releases/new-unified-sdk-for-android/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Sentry Unveils New Unified SDK And NDK For Application Error Monitoring On Android | Sentry",
+        "length": 91,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://sentry.io/about/press-releases/sentry-acquires-analytics-firm-specto-to-add-continuous-profiling-to-mobile-application-monitoring/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Sentry Acquires Analytics Firm Specto to Add Continuous Profiling to Mobile Application Monitoring | Sentry",
+        "length": 107,
+        "limit": 60
+      }
+    }
+  ]
+}

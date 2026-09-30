@@ -1,0 +1,120 @@
+{
+  "site_id": null,
+  "domain": "www.gov.sg",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:24:27.793686Z",
+  "finished_at": "2026-09-30T17:24:47.192010Z",
+  "pages_crawled": 5,
+  "pages_discovered": 356,
+  "duration_seconds": 19.39833090698812,
+  "health_score": 92.8,
+  "score_breakdown": {
+    "total_deduction": 7.2,
+    "severity_counts": {
+      "critical": 1,
+      "high": 0,
+      "medium": 1,
+      "low": 1,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 94.0,
+      "architecture": 100.0,
+      "content": 98.8,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 3,
+    "total_pages": 5,
+    "per_code": {
+      "noindex.present": {
+        "severity": "critical",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 6.0
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      },
+      "title.too_short": {
+        "severity": "low",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 0.2
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "noindex.present",
+      "severity": "critical",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.sg/explainers/",
+      "title": "页面被 noindex 屏蔽收录",
+      "description": "noindex 会让页面完全不出现在搜索结果里。这通常是开发环境忘记删，或者模板改版时误加。",
+      "fix_hint": "如果页面应该被收录，删掉 noindex；如果是故意屏蔽（如分页页），请在 sitemap 中也排除它。",
+      "fix_example": null,
+      "evidence": {
+        "robots_meta": "noindex"
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "gov.sg is the official communication platform of the Singapore Government, providing Singaporeans with credible and accessible information.",
+        "url_count": 2,
+        "sample_urls": [
+          "https://www.gov.sg/",
+          "https://www.gov.sg/about-us/"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.sg/explainers/summary-ministerial-statement-review-of-parti-liyani-public-prosecutor-case/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "[Summary] Ministerial Statement on the Review of the Case of Parti Liyani v Public Prosecutor (2020) | gov.sg",
+        "length": 109,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_short",
+      "severity": "low",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.sg/",
+      "title": "title 过短，浪费了黄金位置",
+      "description": "过短的 title 通常意味着没覆盖到用户搜索的关键词，浪费搜索结果里最显眼的位置。\n⚠️ 例外：站名/人名本身就是完整名称（如「Julia Evans」），或站点是单页应用时，短 title 是正常选择，不要为了凑长度硬塞关键词。",
+      "fix_hint": "补充用户真实会用到的搜索词，保持自然可读。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Home | gov.sg",
+        "length": 13,
+        "min": 15
+      }
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "site_id": null,
+  "domain": "www.unicef.org",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:55:08.463653Z",
+  "finished_at": "2026-09-30T17:55:37.300965Z",
+  "pages_crawled": 5,
+  "pages_discovered": 20432,
+  "duration_seconds": 28.837320486985845,
+  "health_score": 97.0,
+  "score_breakdown": {
+    "total_deduction": 3.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 97.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 3,
+    "total_pages": 5,
+    "per_code": {
+      "img.alt.missing": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 2,
+        "ratio": 0.4,
+        "deduction": 2.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.unicef.org/fr/recits/au-sud-darfour-pour-les-personnes-d%C3%A9plac%C3%A9es-internes-trouver-de-leau-est-un-nouvel-enjeu",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 1,
+        "total_images": 8,
+        "sample_srcs": [
+          "https://www.unicef.org/sites/default/files/styles/hero_desktop/public/Sudan%20WASH.jpg.webp?itok=7yWVCqpv"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.unicef.org/fr/recits/au-sud-darfour-pour-les-personnes-d%C3%A9plac%C3%A9es-internes-trouver-de-leau-est-un-nouvel-enjeu",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Au Sud-Darfour, pour les personnes déplacées internes, trouver de l’eau est un nouvel enjeu | UNICEF",
+        "length": 100,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.unicef.org/stories/internally-displaced-south-darfur-finding-water-new-challenge",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "For internally displaced in South Darfur, finding water is a new challenge | UNICEF",
+        "length": 83,
+        "limit": 60
+      }
+    }
+  ]
+}

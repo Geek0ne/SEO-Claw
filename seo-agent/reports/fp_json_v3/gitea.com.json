@@ -1,0 +1,152 @@
+{
+  "site_id": null,
+  "domain": "gitea.com",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T16:47:34.145238Z",
+  "finished_at": "2026-09-30T16:47:45.623368Z",
+  "pages_crawled": 5,
+  "pages_discovered": 203,
+  "duration_seconds": 11.478137491008965,
+  "health_score": 100.0,
+  "score_breakdown": {
+    "total_deduction": 0.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 100.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 0,
+    "total_pages": 1,
+    "per_code": {}
+  },
+  "issues": [
+    {
+      "code": "sitemap.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "站点没有可用的 sitemap",
+      "description": "没有 sitemap 时，搜索引擎只能靠内链发现页面，新页面和深埋页面的收录速度会明显变慢，抓取预算也用得更浪费。",
+      "fix_hint": "生成 XML sitemap，在 robots.txt 里声明它，并提交到 Google Search Console 和百度搜索资源平台。",
+      "fix_example": "User-agent: *\nAllow: /\nSitemap: https://example.com/sitemap.xml",
+      "evidence": {
+        "tried_paths": [],
+        "error": null
+      }
+    },
+    {
+      "code": "title.duplicate",
+      "severity": "high",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 title 完全相同",
+      "description": "重复的 title 会让搜索引擎无法区分这些页面，权重被分散，还可能触发重复内容判断。",
+      "fix_hint": "为每个页面写能体现其独特价值的 title，用页面主题词区分。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Gitea Official Website",
+        "url_count": 5,
+        "duplicate_ratio": 1.0,
+        "sample_urls": [
+          "https://gitea.com/",
+          "https://about.gitea.com/products/cloud",
+          "https://about.gitea.com/products/gitea-enterprise/",
+          "https://about.gitea.com/products/gitea/",
+          "https://about.gitea.com/products/runner/"
+        ]
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://about.gitea.com/products/cloud",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://about.gitea.com/products/gitea-enterprise/",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://about.gitea.com/products/gitea/",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://about.gitea.com/products/runner/",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "Gitea - Git with a cup of tea! Painless self-hosted all-in-one software development service, including Git hosting, code review, team collaboration, package registry and CI/CD",
+        "url_count": 5,
+        "sample_urls": [
+          "https://gitea.com/",
+          "https://about.gitea.com/products/cloud",
+          "https://about.gitea.com/products/gitea-enterprise/",
+          "https://about.gitea.com/products/gitea/",
+          "https://about.gitea.com/products/runner/"
+        ]
+      }
+    }
+  ]
+}

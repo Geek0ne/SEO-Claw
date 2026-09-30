@@ -1,0 +1,189 @@
+{
+  "site_id": null,
+  "domain": "www.techcrunch.com",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:48:33.747087Z",
+  "finished_at": "2026-09-30T17:49:59.190568Z",
+  "pages_crawled": 5,
+  "pages_discovered": 20637,
+  "duration_seconds": 85.44348830700619,
+  "health_score": 81.0,
+  "score_breakdown": {
+    "total_deduction": 19.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 2,
+      "medium": 1,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 81.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 9,
+    "total_pages": 5,
+    "per_code": {
+      "h1.missing": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 3.0
+      },
+      "meta.missing": {
+        "severity": "high",
+        "affected_pages": 4,
+        "ratio": 0.8,
+        "deduction": 12.0
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 4,
+        "ratio": 0.8,
+        "deduction": 4.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "h1.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.techcrunch.com/",
+      "title": "页面没有 H1 标题",
+      "description": "H1 是页面主题的最强信号。没有 H1 时，搜索引擎只能靠正文猜测这页在讲什么。",
+      "fix_hint": "加一个 H1 写清页面主标题，位置放在正文开头。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 0
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://techcrunch.com/contributor-content/how-ai-hospitality-group-is-bringing-ai-native-services-to-hotel-operations/",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://techcrunch.com/contributor-content/mindstir-media-is-betting-on-professional-self-publishing-in-the-age-of-ai/",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://techcrunch.com/contributor-content/re-engineering-the-workweek-redefining-employment-through-technology/",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://techcrunch.com/contributor-content/the-new-american-dream-how-weight-loss-drugs-and-ai-are-reshaping-the-american-diet/",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://techcrunch.com/contributor-content/how-ai-hospitality-group-is-bringing-ai-native-services-to-hotel-operations/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "How AI Hospitality Group is bringing AI-native services to hotel operations | TechCrunch",
+        "length": 88,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://techcrunch.com/contributor-content/mindstir-media-is-betting-on-professional-self-publishing-in-the-age-of-ai/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "MindStir Media is betting on professional self-publishing in the age of AI | TechCrunch",
+        "length": 87,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://techcrunch.com/contributor-content/re-engineering-the-workweek-redefining-employment-through-technology/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Re-engineering the workweek: Redefining employment through technology | TechCrunch",
+        "length": 82,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://techcrunch.com/contributor-content/the-new-american-dream-how-weight-loss-drugs-and-ai-are-reshaping-the-american-diet/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "The new American dream: How weight loss drugs and AI are reshaping the American diet | TechCrunch",
+        "length": 97,
+        "limit": 60
+      }
+    }
+  ]
+}

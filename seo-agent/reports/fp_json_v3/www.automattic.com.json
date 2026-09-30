@@ -1,0 +1,123 @@
+{
+  "site_id": null,
+  "domain": "www.automattic.com",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:06:20.558257Z",
+  "finished_at": "2026-09-30T17:06:39.590399Z",
+  "pages_crawled": 5,
+  "pages_discovered": 431,
+  "duration_seconds": 19.032148861006135,
+  "health_score": 96.0,
+  "score_breakdown": {
+    "total_deduction": 4.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 1,
+      "medium": 1,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 99.0,
+      "content": 97.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 2,
+    "total_pages": 5,
+    "per_code": {
+      "h1.missing": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 3.0
+      },
+      "link.noanchor": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "h1.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://automattic.com/press/",
+      "title": "页面没有 H1 标题",
+      "description": "H1 是页面主题的最强信号。没有 H1 时，搜索引擎只能靠正文猜测这页在讲什么。",
+      "fix_hint": "加一个 H1 写清页面主标题，位置放在正文开头。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 0
+      }
+    },
+    {
+      "code": "title.duplicate",
+      "severity": "high",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 title 完全相同",
+      "description": "重复的 title 会让搜索引擎无法区分这些页面，权重被分散，还可能触发重复内容判断。",
+      "fix_hint": "为每个页面写能体现其独特价值的 title，用页面主题词区分。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Automattic – Making the web a better place",
+        "url_count": 2,
+        "duplicate_ratio": 0.4,
+        "sample_urls": [
+          "https://www.automattic.com/",
+          "https://automattic.com/services/"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://automattic.com/press/",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 11,
+        "sample_hrefs": [
+          "https://automattic.com/2024/10/31/legal-response-to-wp-engine/",
+          "https://automattic.com/2024/10/31/legal-response-to-wp-engine/",
+          "https://automattic.com/2024/10/31/legal-response-to-wp-engine/",
+          "https://automattic.com/2024/10/31/legal-response-to-wp-engine/",
+          "https://automattic.com/2024/10/31/legal-response-to-wp-engine/"
+        ]
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "We are passionate about making the web a better place. 20 years: explore the Automattic timeline or take a literary jaunt with Year Without Pants. WordPress.com Your blog or websitehas a (free!) home ",
+        "url_count": 2,
+        "sample_urls": [
+          "https://www.automattic.com/",
+          "https://automattic.com/services/"
+        ]
+      }
+    }
+  ]
+}

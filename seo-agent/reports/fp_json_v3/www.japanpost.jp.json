@@ -1,0 +1,205 @@
+{
+  "site_id": null,
+  "domain": "www.japanpost.jp",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:29:30.184405Z",
+  "finished_at": "2026-09-30T17:29:50.325365Z",
+  "pages_crawled": 5,
+  "pages_discovered": 4737,
+  "duration_seconds": 20.140968634019373,
+  "health_score": 90.6,
+  "score_breakdown": {
+    "total_deduction": 9.4,
+    "severity_counts": {
+      "critical": 0,
+      "high": 1,
+      "medium": 0,
+      "low": 1,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 90.6,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 8,
+    "total_pages": 5,
+    "per_code": {
+      "h1.missing": {
+        "severity": "high",
+        "affected_pages": 3,
+        "ratio": 0.6,
+        "deduction": 9.0
+      },
+      "title.too_short": {
+        "severity": "low",
+        "affected_pages": 2,
+        "ratio": 0.4,
+        "deduction": 0.4
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "h1.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.japanpost.jp/",
+      "title": "页面没有 H1 标题",
+      "description": "H1 是页面主题的最强信号。没有 H1 时，搜索引擎只能靠正文猜测这页在讲什么。",
+      "fix_hint": "加一个 H1 写清页面主标题，位置放在正文开头。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 0
+      }
+    },
+    {
+      "code": "h1.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.japanpost.jp/athlete/",
+      "title": "页面没有 H1 标题",
+      "description": "H1 是页面主题的最强信号。没有 H1 时，搜索引擎只能靠正文猜测这页在讲什么。",
+      "fix_hint": "加一个 H1 写清页面主标题，位置放在正文开头。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 0
+      }
+    },
+    {
+      "code": "h1.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.japanpost.jp/athlete/about/",
+      "title": "页面没有 H1 标题",
+      "description": "H1 是页面主题的最强信号。没有 H1 时，搜索引擎只能靠正文猜测这页在讲什么。",
+      "fix_hint": "加一个 H1 写清页面主标题，位置放在正文开头。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 0
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "日本郵政株式会社のWebアクセシビリティ方針についてご説明します。",
+        "url_count": 2,
+        "sample_urls": [
+          "https://www.japanpost.jp/accessibility/",
+          "https://www.japanpost.jp/accessibility/index02/"
+        ]
+      }
+    },
+    {
+      "code": "title.too_short",
+      "severity": "low",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.japanpost.jp/",
+      "title": "title 过短，浪费了黄金位置",
+      "description": "过短的 title 通常意味着没覆盖到用户搜索的关键词，浪费搜索结果里最显眼的位置。\n⚠️ 例外：站名/人名本身就是完整名称（如「Julia Evans」），或站点是单页应用时，短 title 是正常选择，不要为了凑长度硬塞关键词。",
+      "fix_hint": "补充用户真实会用到的搜索词，保持自然可读。",
+      "fix_example": null,
+      "evidence": {
+        "title": "日本郵政",
+        "length": 4,
+        "min": 15
+      }
+    },
+    {
+      "code": "title.too_short",
+      "severity": "low",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.japanpost.jp/accessibility/index02/",
+      "title": "title 过短，浪费了黄金位置",
+      "description": "过短的 title 通常意味着没覆盖到用户搜索的关键词，浪费搜索结果里最显眼的位置。\n⚠️ 例外：站名/人名本身就是完整名称（如「Julia Evans」），或站点是单页应用时，短 title 是正常选择，不要为了凑长度硬塞关键词。",
+      "fix_hint": "补充用户真实会用到的搜索词，保持自然可读。",
+      "fix_example": null,
+      "evidence": {
+        "title": "達成基準一覧表 - 日本郵政",
+        "length": 14,
+        "min": 15
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.japanpost.jp/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 74,
+        "text_preview": "日本郵政 グループ情報 株主・投資家情報 ニュース サステナビリティ 採用情報 調達情報 よくあるご質問・お問い合わせ サイトマップ English",
+        "status_code": 200,
+        "internal_outbound_links": 213,
+        "inbound_links": 34,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.japanpost.jp/athlete/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 220,
+        "text_preview": "日本郵政グループ女子陸上部 - 日本郵政 グループ情報 株主・投資家情報 ニュース サステナビリティ 採用情報 調達情報 よくあるご質問・お問い合わせ サイトマップ English グループ情報 すべて グループ情報 会社情報 コンプライア",
+        "status_code": 200,
+        "internal_outbound_links": 225,
+        "inbound_links": 0,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.japanpost.jp/athlete/about/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 118,
+        "text_preview": "女子陸上部について - 日本郵政 グループ情報 株主・投資家情報 ニュース サステナビリティ 採用情報 調達情報 よくあるご質問・お問い合わせ サイトマップ English 日本郵政ホーム 日本郵政グループ女子陸上部 女子陸上部について",
+        "status_code": 200,
+        "internal_outbound_links": 222,
+        "inbound_links": 0,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    }
+  ]
+}

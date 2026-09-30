@@ -1,0 +1,186 @@
+{
+  "site_id": null,
+  "domain": "www.statuspage.io",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:48:26.711216Z",
+  "finished_at": "2026-09-30T17:48:32.847271Z",
+  "pages_crawled": 5,
+  "pages_discovered": 395,
+  "duration_seconds": 6.136062375997426,
+  "health_score": 90.0,
+  "score_breakdown": {
+    "total_deduction": 10.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 95.0,
+      "content": 95.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 2,
+    "total_pages": 1,
+    "per_code": {
+      "link.noanchor": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 1.0,
+        "deduction": 5.0
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 1.0,
+        "deduction": 5.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "sitemap.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "站点没有可用的 sitemap",
+      "description": "没有 sitemap 时，搜索引擎只能靠内链发现页面，新页面和深埋页面的收录速度会明显变慢，抓取预算也用得更浪费。",
+      "fix_hint": "生成 XML sitemap，在 robots.txt 里声明它，并提交到 Google Search Console 和百度搜索资源平台。",
+      "fix_example": "User-agent: *\nAllow: /\nSitemap: https://example.com/sitemap.xml",
+      "evidence": {
+        "tried_paths": [],
+        "error": null
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.atlassian.com/de/software/statuspage",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 2,
+        "sample_hrefs": [
+          "https://www.atlassian.com/de/",
+          "https://www.atlassian.com/de/"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.atlassian.com/es/software/statuspage",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 2,
+        "sample_hrefs": [
+          "https://www.atlassian.com/es/",
+          "https://www.atlassian.com/es/"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.atlassian.com/fr/software/statuspage",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 2,
+        "sample_hrefs": [
+          "https://www.atlassian.com/fr/",
+          "https://www.atlassian.com/fr/"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.atlassian.com/zh/software/statuspage",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 2,
+        "sample_hrefs": [
+          "https://www.atlassian.com/zh/",
+          "https://www.atlassian.com/zh/"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.statuspage.io/",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 2,
+        "sample_hrefs": [
+          "https://www.atlassian.com/",
+          "https://www.atlassian.com/"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.atlassian.com/zh/software/statuspage",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "借助 Statuspage 提高透明度 | Atlassian",
+        "length": 31,
+        "limit": 30
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.statuspage.io/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Real-Time Incident Communication with Statuspage | Atlassian | Atlassian",
+        "length": 72,
+        "limit": 60
+      }
+    }
+  ]
+}

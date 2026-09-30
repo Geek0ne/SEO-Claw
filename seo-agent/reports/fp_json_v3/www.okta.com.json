@@ -1,0 +1,222 @@
+{
+  "site_id": null,
+  "domain": "www.okta.com",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:40:39.939972Z",
+  "finished_at": "2026-09-30T17:40:54.591078Z",
+  "pages_crawled": 5,
+  "pages_discovered": 21314,
+  "duration_seconds": 14.651114635023987,
+  "health_score": 86.0,
+  "score_breakdown": {
+    "total_deduction": 14.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 1,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 86.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 9,
+    "total_pages": 5,
+    "per_code": {
+      "meta.missing": {
+        "severity": "high",
+        "affected_pages": 3,
+        "ratio": 0.6,
+        "deduction": 9.0
+      },
+      "img.alt.missing": {
+        "severity": "medium",
+        "affected_pages": 4,
+        "ratio": 0.8,
+        "deduction": 4.0
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.okta.com/resources/webinar-okta-workflows-for-multi-tenant-management-using-azure-ad-guest-accounts/",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.okta.com/resources/webinar-your-iam-strategy-in-a-post-pandemic-world/",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.okta.com/resources/whitepaper-identity-as-a-service-for-dummies/",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.okta.com/",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 56,
+        "total_images": 62,
+        "sample_srcs": [
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/free-trial.svg",
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/pricing.svg",
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/release-overview.svg",
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/product-training.svg",
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/free-trial.svg"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.okta.com/resources/webinar-okta-workflows-for-multi-tenant-management-using-azure-ad-guest-accounts/",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 56,
+        "total_images": 56,
+        "sample_srcs": [
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/free-trial.svg",
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/pricing.svg",
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/release-overview.svg",
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/product-training.svg",
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/free-trial.svg"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.okta.com/resources/webinar-your-iam-strategy-in-a-post-pandemic-world/",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 56,
+        "total_images": 56,
+        "sample_srcs": [
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/free-trial.svg",
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/pricing.svg",
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/release-overview.svg",
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/product-training.svg",
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/free-trial.svg"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.okta.com/resources/whitepaper-identity-as-a-service-for-dummies/",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 56,
+        "total_images": 57,
+        "sample_srcs": [
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/free-trial.svg",
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/pricing.svg",
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/release-overview.svg",
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/product-training.svg",
+          "https://www.okta.com/content/dam/okta---digital/en_us/images/header/icons/free-trial.svg"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.okta.com/resources/webinar-okta-workflows-for-multi-tenant-management-using-azure-ad-guest-accounts/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Okta Workflows for Multi Tenant Management using Azure AD Guest Accounts | Okta",
+        "length": 79,
+        "limit": 60
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.okta.com/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 110,
+        "text_preview": "Products Our platforms secure all types of identity from AI agents to your customers, employees, and partners.",
+        "status_code": 200,
+        "internal_outbound_links": 317,
+        "inbound_links": 22,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    }
+  ]
+}

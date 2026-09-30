@@ -1,0 +1,155 @@
+{
+  "site_id": null,
+  "domain": "meta.discourse.org",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T16:54:49.089941Z",
+  "finished_at": "2026-09-30T16:55:04.050045Z",
+  "pages_crawled": 5,
+  "pages_discovered": 20312,
+  "duration_seconds": 14.960114337998675,
+  "health_score": 92.0,
+  "score_breakdown": {
+    "total_deduction": 8.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 1,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 92.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 6,
+    "total_pages": 5,
+    "per_code": {
+      "h1.missing": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 3.0
+      },
+      "img.alt.missing": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 4,
+        "ratio": 0.8,
+        "deduction": 4.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "h1.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://meta.discourse.org/",
+      "title": "页面没有 H1 标题",
+      "description": "H1 是页面主题的最强信号。没有 H1 时，搜索引擎只能靠正文猜测这页在讲什么。",
+      "fix_hint": "加一个 H1 写清页面主标题，位置放在正文开头。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 0
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://meta.discourse.org/",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 76,
+        "total_images": 76,
+        "sample_srcs": [
+          "https://meta.discourse.org/user_avatar/meta.discourse.org/discourse/25/148734_2.png",
+          "https://meta.discourse.org/user_avatar/meta.discourse.org/awesomerobot/25/142900_2.png",
+          "https://meta.discourse.org/user_avatar/meta.discourse.org/natedhaliwal/25/313494_2.png",
+          "https://meta.discourse.org/user_avatar/meta.discourse.org/luna_mora/25/527917_2.png",
+          "https://meta.discourse.org/user_avatar/meta.discourse.org/satonotdead/25/447830_2.png"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://meta.discourse.org/t/could-usernames-be-included-in-user-badge-webhook-payload/413448",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "能否在 user_badge webhook 的负载中包含用户名？ - 支持 - Discourse Meta",
+        "length": 55,
+        "limit": 30
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://meta.discourse.org/t/easier-account-signup-using-email-codes/407068?page=3",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "使用邮箱验证码更轻松地注册账户 - 第 3 页 - 公告 - Discourse Meta",
+        "length": 45,
+        "limit": 30
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://meta.discourse.org/t/experimental-user-sidebar-navigation/413150",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "实验性用户侧边栏导航 - 公告 - Discourse Meta",
+        "length": 32,
+        "limit": 30
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://meta.discourse.org/t/topic-or-post-deleted-filter-in-mod-queue-filters/413650",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "审核队列筛选器中的「主题或帖子已删除」选项 - 支持 - Discourse Meta",
+        "length": 43,
+        "limit": 30
+      }
+    }
+  ]
+}

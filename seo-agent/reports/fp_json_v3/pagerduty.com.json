@@ -1,0 +1,159 @@
+{
+  "site_id": null,
+  "domain": "pagerduty.com",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T16:57:41.744358Z",
+  "finished_at": "2026-09-30T16:58:27.279202Z",
+  "pages_crawled": 5,
+  "pages_discovered": 2871,
+  "duration_seconds": 45.534851305012126,
+  "health_score": 96.0,
+  "score_breakdown": {
+    "total_deduction": 4.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 99.0,
+      "architecture": 97.0,
+      "content": 100.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 4,
+    "total_pages": 5,
+    "per_code": {
+      "canonical.conflict": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      },
+      "link.noanchor": {
+        "severity": "medium",
+        "affected_pages": 3,
+        "ratio": 0.6,
+        "deduction": 3.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "title.duplicate",
+      "severity": "high",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 title 完全相同",
+      "description": "重复的 title 会让搜索引擎无法区分这些页面，权重被分散，还可能触发重复内容判断。",
+      "fix_hint": "为每个页面写能体现其独特价值的 title，用页面主题词区分。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Search",
+        "url_count": 2,
+        "duplicate_ratio": 0.4,
+        "sample_urls": [
+          "https://pagerduty.com/",
+          "https://www.pagerduty.com/?page_id=36859"
+        ]
+      }
+    },
+    {
+      "code": "canonical.conflict",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.pagerduty.com/?page_id=36859",
+      "title": "canonical 指向了其他页面（需确认是否有意为之）",
+      "description": "canonical 与当前页面不一致时，搜索引擎会把本页权重转移给目标页。这可能是有意为之（内容已合并、历史版本别名、分页主页面），也可能是模板复制时漏改。⚠️ 工具无法自动区分这两种情况，请逐条确认：目标页存在且内容相近 → 通常没问题；目标页 404 → 确定是 bug。",
+      "fix_hint": "逐条打开 canonical 目标页确认：如果是有意合并，保持现状即可；如果是模板漏改，改成指向本页自身。",
+      "fix_example": null,
+      "evidence": {
+        "canonical": "https://www.pagerduty.com/",
+        "page_url": "https://www.pagerduty.com/?page_id=36859",
+        "canonical_target_status": null,
+        "verdict": "possibly_intentional"
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.pagerduty.com/blog/announcements/pingdom-integration/",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 2,
+        "sample_hrefs": [
+          "https://www.pagerduty.com/blog/announcements/see-it-approve-it-revoke-it-scoped-oauth-for-public-apps/",
+          "https://www.pagerduty.com/blog/automation/rundeck-rba-6-0-modernizing-the-foundation-your-automation-runs-on/"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.pagerduty.com/blog/announcements/team-building-movember/",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 2,
+        "sample_hrefs": [
+          "https://www.pagerduty.com/blog/announcements/see-it-approve-it-revoke-it-scoped-oauth-for-public-apps/",
+          "https://www.pagerduty.com/blog/automation/rundeck-rba-6-0-modernizing-the-foundation-your-automation-runs-on/"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.pagerduty.com/blog/announcements/with-a-little-inline-help-from-my-friends/",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 2,
+        "sample_hrefs": [
+          "https://www.pagerduty.com/blog/announcements/see-it-approve-it-revoke-it-scoped-oauth-for-public-apps/",
+          "https://www.pagerduty.com/blog/automation/rundeck-rba-6-0-modernizing-the-foundation-your-automation-runs-on/"
+        ]
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "Turn incidents into intelligence. PagerDuty's AI-first Operations Platform helps you automate, resolve, and prevent critical issues — from detection to resolution.",
+        "url_count": 2,
+        "sample_urls": [
+          "https://pagerduty.com/",
+          "https://www.pagerduty.com/?page_id=36859"
+        ]
+      }
+    }
+  ]
+}

@@ -49,8 +49,46 @@ def fetch(url: str, timeout: int = 20) -> str | None:
             out = r.stdout
     except Exception:
         out = None
+    if out is not None and _looks_bot_blocked(out):
+        # 反爬页不是「站点没做 SEO」，是「我们没拿到页面」。
+        # cityofchicago.org 实测：机器人 UA 返回 375 字节 Access Denied，
+        # 换浏览器 UA 返回 72584 字节、h1 数 0——同一个 URL 每次内容都不同。
+        # 这种情况判误报是自己骗自己，判 true_positive 同样是凭空下结论。
+        out = None
     _cache[url] = out
     return out
+
+
+def _looks_bot_blocked(h: str) -> bool:
+    """是不是反爬/风控页，而不是真实内容页。
+
+    命中即视为「取不到页面」→ unknown，不进分母。这类样本在第三批里
+    造成 5 条假误报（cityofchicago 的 h1.missing / h1.multiple）。
+    """
+    body = h.lower()
+    # 只认「服务器明确拒绝我们」的时刻留下的痕迹。
+    #
+    # ⚠️ 踩过的坑，保留在此防止有人再犯：这里原来有 8 个 marker，其中
+    # "captcha" 是裸子串。审计第三批时它命中 71 个 URL，可其中 **60 个
+    # 正文超过 1500 字的正常页面**全被踢出分母——sentry.io（正文 16607 字，
+    # 在发 SDK 发布稿）、intercom.com（7327 字）、techcrunch 的三篇 contributor
+    # content。原因只是这些页面挂了 reCAPTCHA 脚本、或者文章里提到「验证码」。
+    # 那一轮准确率从 95.2% 涨到 96.0%，涨的那部分是我自己拿样本换的。
+    block_markers = (
+        "access denied", "just a moment", "checking your browser",
+        "enable javascript and cookies", "cf-browser-verification",
+        "attention required", "request unsuccessful",
+        "verify you are human", "are you a robot",
+    )
+    # captcha 只有在「风控语境」里才算数：标题/提示语出现，而不是页面正文提及。
+    captcha_ctx = re.search(
+        r"(verify|verification|checking|confirm|human|robot|sorry|unusual)"
+        r"[^<]{0,40}captcha|captcha[^<]{0,40}(required|needed|verify|verification)",
+        body,
+    )
+    # 为什么「薄」不能当证据：页面内容少 ≠ 我们没拿到页面。真的抓到了就
+    # 观察到了，观察到了就能判；判 unknown 是逃避判断。
+    return any(m in body for m in block_markers) or bool(captcha_ctx)
 
 
 def _tags(h: str, pat: str) -> list[str]:
@@ -129,7 +167,17 @@ def verify(code: str, url: str, h: str | None, ev: dict[str, Any]) -> Verdict:
         return Verdict("unknown", "取不到页面")
 
     if code == "title.missing":
-        return Verdict("true_positive", "无 <title>") if _title(h) is None else Verdict("false_positive", "有 title")
+        if _title(h) is not None:
+            return Verdict("false_positive", "有 title")
+        # ⚠️ 不能直接判「无 title」→ 误报。agoda.com 实测：1.1MB 的静态 HTML
+        # 里 grep -ci '<title' 结果为 0，**规则判对了**（静态 HTML 确实没有
+        # title），但我第一版核对器在这里直接判 false_positive，理由写的是
+        # 「有 title」——而实测两个 UA 都是 0 个 title，核对器自己判反了。
+        # 正确做法是跟 too_long 分支一样：静态 HTML 里找不到某个元素时，
+        # 证据强度不足，只能判 unknown。找不到 ≠ 不存在。
+        if _looks_js_rendered(h):
+            return Verdict("unknown", "静态 HTML 无 title，页面疑似 JS 渲染，与抓取时不一致")
+        return Verdict("true_positive", "无 <title>")
 
     if code in ("title.too_short", "title.too_long"):
         t = _title(h)
@@ -145,8 +193,14 @@ def verify(code: str, url: str, h: str | None, ev: dict[str, Any]) -> Verdict:
         # ⚠️ 中文标题阈值不同（30 vs 60），必须自己判断，不能硬编码 60。
         # 我第一版核对器写死 60，把 csdn.net 的中文长标题误判成「规则误报」，
         # 其实规则判对了——是我的测量工具错了。
-        cjk = sum(1 for c in t if ord(c) > 0x2E80)
-        is_cjk = cjk > 0 and cjk / max(len(t), 1) >= 0.3
+        # ⚠️ CJK 判定必须和规则**逐字一致**，否则「规则误报」是自己造的。
+        # 规则侧 app/audit/rules/base/_is_cjk 是「含任意 CJK 字符即算中文」，
+        # 我第一版核对器写成「CJK 占比 ≥30% 才算」，于是 statuspage.io 的
+        # 「借助 Statuspage 提高透明度 | Atlassian」（7/31 = 0.23）被判成英文
+        # 标题、按 60 字符放行，而规则按 30 判已触发——同一份标题两个标准，
+        # 判出来 2 条「误报」。规则没错，是尺子错了。
+        # 口径已定：含任意 CJK 字符就算中文标题。
+        is_cjk = any("一" <= c <= "鿿" for c in t)
         lo, hi = ev.get("min", 15), ev.get("max", 30 if is_cjk else 60)
         hit = n < lo if code == "title.too_short" else n > hi
         if not hit:

@@ -1,0 +1,167 @@
+{
+  "site_id": null,
+  "domain": "www.msf.org",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:35:53.055091Z",
+  "finished_at": "2026-09-30T17:36:13.288657Z",
+  "pages_crawled": 5,
+  "pages_discovered": 12780,
+  "duration_seconds": 20.23357461899286,
+  "health_score": 74.0,
+  "score_breakdown": {
+    "total_deduction": 26.0,
+    "severity_counts": {
+      "critical": 1,
+      "high": 0,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 76.0,
+      "architecture": 99.0,
+      "content": 99.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 6,
+    "total_pages": 5,
+    "per_code": {
+      "noindex.present": {
+        "severity": "critical",
+        "affected_pages": 4,
+        "ratio": 0.8,
+        "deduction": 24.0
+      },
+      "link.noanchor": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "noindex.present",
+      "severity": "critical",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.msf.org/ar/rewards/%D9%85%D9%83%D8%A7%D9%81%D8%A2%D8%AA-%D8%B7%D9%88%D8%A7%D9%82%D9%85-%D8%A3%D8%B7%D8%A8%D8%A7%D8%A1-%D8%A8%D9%84%D8%A7-%D8%AD%D8%AF%D9%88%D8%AF",
+      "title": "页面被 noindex 屏蔽收录",
+      "description": "noindex 会让页面完全不出现在搜索结果里。这通常是开发环境忘记删，或者模板改版时误加。",
+      "fix_hint": "如果页面应该被收录，删掉 noindex；如果是故意屏蔽（如分页页），请在 sitemap 中也排除它。",
+      "fix_example": null,
+      "evidence": {
+        "robots_meta": "noindex"
+      }
+    },
+    {
+      "code": "noindex.present",
+      "severity": "critical",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.msf.org/es/rewards/remuneraci%C3%B3n-del-personal-msf",
+      "title": "页面被 noindex 屏蔽收录",
+      "description": "noindex 会让页面完全不出现在搜索结果里。这通常是开发环境忘记删，或者模板改版时误加。",
+      "fix_hint": "如果页面应该被收录，删掉 noindex；如果是故意屏蔽（如分页页），请在 sitemap 中也排除它。",
+      "fix_example": null,
+      "evidence": {
+        "robots_meta": "noindex"
+      }
+    },
+    {
+      "code": "noindex.present",
+      "severity": "critical",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.msf.org/fr/rewards/r%C3%A9mun%C3%A9ration-du-personnel-msf",
+      "title": "页面被 noindex 屏蔽收录",
+      "description": "noindex 会让页面完全不出现在搜索结果里。这通常是开发环境忘记删，或者模板改版时误加。",
+      "fix_hint": "如果页面应该被收录，删掉 noindex；如果是故意屏蔽（如分页页），请在 sitemap 中也排除它。",
+      "fix_example": null,
+      "evidence": {
+        "robots_meta": "noindex"
+      }
+    },
+    {
+      "code": "noindex.present",
+      "severity": "critical",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.msf.org/rewards/msf-staff-rewards",
+      "title": "页面被 noindex 屏蔽收录",
+      "description": "noindex 会让页面完全不出现在搜索结果里。这通常是开发环境忘记删，或者模板改版时误加。",
+      "fix_hint": "如果页面应该被收录，删掉 noindex；如果是故意屏蔽（如分页页），请在 sitemap 中也排除它。",
+      "fix_example": null,
+      "evidence": {
+        "robots_meta": "noindex"
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.msf.org/",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 10,
+        "sample_hrefs": [
+          "https://www.msf.org/what-will-it-take-end-ebola-disease-outbreak-drc",
+          "https://www.msf.org/msf-teams-scale-medical-response-fighting-resumes-ethiopia",
+          "https://www.msf.org/somalia-people-must-be-protected-amid-escalating-violence-baidoa",
+          "https://www.msf.org/msf-expands-response-ebola-disease-new-treatment-centres",
+          "https://www.msf.org/delivering-cancer-care-women-humanitarian-crises-possible"
+        ]
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "MSF Staff Rewards- homepage",
+        "url_count": 2,
+        "sample_urls": [
+          "https://www.msf.org/rewards/msf-staff-rewards",
+          "https://www.msf.org/fr/rewards/r%C3%A9mun%C3%A9ration-du-personnel-msf"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.msf.org/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "MSF - Médecins Sans Frontières | Medical humanitarian organisation",
+        "length": 66,
+        "limit": 60
+      }
+    }
+  ]
+}

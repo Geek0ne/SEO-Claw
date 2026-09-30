@@ -57,6 +57,119 @@ META_MAX_CHARS_EN = 160
 # 软 404 判定：正文低于此字数且返回 200
 THIN_CONTENT_WORDS = 300
 
+# 客户端渲染失败壳：服务端返回 200，但页面正文其实是「JS 没跑起来」的
+# 报错页。这种页面量它没有 h1/description/canonical 是**我们没拿到页面**，
+# 不是**站点没做 SEO**——同一个坑我已经在核对器里栽过一次。
+#
+# 实测：pypi.org/project/256-encrypt/ 等 3 个 URL 抓取时返回 200，正文是
+# "A required part of this site couldn't load. This may be due to a browser
+# extension, network issues, or browser settings."（209 词），于是
+# h1.missing / meta.missing / canonical.missing / soft404 四条规则齐刷刷开火。
+# 复测时同一批 URL 又全部正常——说明是当时前端加载失败，不是我们解析错。
+#
+# ⚠️ 为什么这里可以用「文案」而核对器里的「页面薄」被我删掉了：
+# 判据必须是**正面证据**。页面薄只说明内容少，thin page 依然是真页面；
+# 而「服务器自己承认 JS 加载失败了」是确凿的失败信号。两者性质不同。
+#
+# 命中后写入 page.error —— 审计引擎会跳过所有页面级规则
+# （engine.py: `if not page.is_html or page.error: continue`），
+# 也就不会被算成站点问题。跟 4xx 页面的处理路径一致。
+_CLIENT_RENDER_FAILURE = (
+    "a required part of this site couldn't load",
+    "a required part of this site could not load",
+    "a required part of the site couldn't load",
+    "this site can't be reached",
+    "application error: a client-side exception has occurred",
+    "chunk load error",
+    "loading chunk",
+)
+# ⚠️ 引号必须归一化。真实 pypi 页面写的是 U+2019 弯引号「couldn’t」，
+# 我第一版规则表里写的是直引号「couldn't」——同一句话两个字符，匹配不上。
+# 而单元测试全绿，因为我照着自己写的样本写的：又是自己给自己判卷。
+# 这个坑的代价很贵：真实扫描里 8 条误报一条没少，测试却 216 全过。
+_APOSTROPHES = str.maketrans({"‘": "'", "’": "'", "ʼ": "'", "`": "'", "´": "'"})
+
+
+def _norm_quotes(text: str) -> str:
+    return (text or "").translate(_APOSTROPHES).lower()
+
+
+_CLIENT_ERROR_RE = re.compile("|".join(re.escape(s) for s in _CLIENT_RENDER_FAILURE), re.I)
+
+# 人机挑战 / 风控拦截页：服务器不让我们看正文。
+#
+# ⚠️ 这跟「客户端渲染失败」是两回事，不能混：
+#   客户端渲染失败 = 框架存在，但 chunk 没加载起来（需要框架证据）
+#   人机挑战       = 服务器直接拿挑战页代替正文（**不需要**框架证据）
+# 我第一版把两者合在一起、且要求「页面有框架标记」才判失败，结果 pypi
+# 的挑战页两条都不满足 → 8 条误报原样留着。挑战页里恰恰没有框架标记，
+# 因为真页面压根没被送到我们手上。
+_BOT_CHALLENGE = (
+    "client challenge",
+    "enable javascript to proceed",
+    "checking your browser",
+    "just a moment",
+    "verify you are human",
+    "cf-browser-verification",
+    "ddos protection by",
+    "enable javascript and cookies to continue",
+)
+_BOT_CHALLENGE_RE = re.compile("|".join(re.escape(s) for s in _BOT_CHALLENGE), re.I)
+
+_JS_ROOT_RE = re.compile(
+    r'<div[^>]+id\s*=\s*["\'](root|app|__next|__nuxt|__gatsby)["\']', re.I
+)
+_FW_RE = re.compile(r"(react|vue|angular|next|nuxt|svelte|webpack)", re.I)
+
+# 报错壳的正文都很短。放宽到 600 字符而不是 200：宁可漏判也别误伤
+# 真正内容短但有效的页面。
+_CLIENT_SHELL_MAX_CHARS = 600
+
+
+def _looks_client_render_failure(raw_html: str, page: Page) -> bool:
+    """是不是「HTTP 200 但正文不是真页面」的两种情况。
+
+    路径 A —— 人机挑战 / 风控页：**不需要**框架证据。
+      服务器拿挑战页代替了正文（pypi 实测："Client Challenge JavaScript
+      is disabled in your browser. Please enable JavaScript to proceed."）。
+      这时候页面里根本不会有框架标记——真页面压根没送到我们手上，
+      拿「有框架标记」当条件会永远漏掉它。我第一版就是这么错的。
+
+    路径 B —— 客户端渲染失败：**需要**框架证据。
+      框架在、挂载点在，但 chunk 没加载起来（"A required part of this
+      site couldn't load"）。这条要框架证据，是为了不把技术博客里
+      讨论 "chunk load error" 的文章误判成坏页。
+
+    两条路径都要求正文很短：真页面不会同时是报错文案 + 极短正文。
+
+    ⚠️ 判据必须是**正面证据**。「页面薄」不能当证据——thin page 依然是
+    真页面，我们观察到了就该拿规则去量它。判「没拿到」必须有服务器或
+    浏览器明确留下的失败痕迹。
+    """
+    if not page.text:
+        return False
+    # ⚠️ 判据必须看**原始 HTML 的可见文本**，不能看 page.text。
+    # page.text 来自 trafilatura，是另一个有损步骤——它会把报错壳里的
+    # <h1> 当导航标题丢掉，只留下 <p>。我第一版用 page.text 判，
+    # 四个用例全挂：page.text = 'This may be due to a browser extension...'
+    # 而真正标记「加载失败」的那句在 <h1> 里，已经被 trafilatura 吃掉了。
+    # 判定「页面根本没加载出来」这件事，不该依赖正文抽取器恰好保留哪句话。
+    visible = re.sub(
+        r"<(script|style)\b[^>]*>.*?</\1>", " ", raw_html, flags=re.I | re.S
+    )
+    visible = re.sub(r"<[^>]+>", " ", visible)
+    visible = _WS_RE.sub(" ", visible).strip()
+    if not visible or len(visible) > _CLIENT_SHELL_MAX_CHARS:
+        return False
+
+    low = _norm_quotes(visible)
+    if _BOT_CHALLENGE_RE.search(low):
+        return True
+    return bool(
+        _CLIENT_ERROR_RE.search(low)
+        and (_JS_ROOT_RE.search(raw_html) or _FW_RE.search(raw_html))
+    )
+
 _WS_RE = re.compile(r"\s+")
 
 
@@ -117,6 +230,11 @@ def extract_page(
     _extract_structured_data(doc, page)
     _extract_text(raw_html, base_url, page)
     _derive(page, raw_html, domain)
+
+    # HTTP 200 但正文是 JS 报错壳：标记 error，让审计引擎跳过所有页面级规则。
+    # 放在最后：必须先抽完正文/框架特征才能判断，否则拿到的是半成品。
+    if _looks_client_render_failure(raw_html, page):
+        page.error = "client_render_failed"
 
     return page
 

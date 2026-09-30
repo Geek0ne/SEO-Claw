@@ -1,0 +1,135 @@
+{
+  "site_id": null,
+  "domain": "www.wired.com",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:56:23.657742Z",
+  "finished_at": "2026-09-30T17:57:04.134851Z",
+  "pages_crawled": 5,
+  "pages_discovered": 20556,
+  "duration_seconds": 40.477114771987544,
+  "health_score": 95.0,
+  "score_breakdown": {
+    "total_deduction": 5.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 95.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 5,
+    "total_pages": 5,
+    "per_code": {
+      "img.alt.missing": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 4,
+        "ratio": 0.8,
+        "deduction": 4.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.wired.com/",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 32,
+        "total_images": 42,
+        "sample_srcs": [
+          "https://media.wired.com/photos/6abbf437aaebf176f00cbd89/1:1/w_1024%2Cc_limit/GettyImages-1249548135.jpg",
+          "https://media.wired.com/photos/6abbb935c1a080d8e4e23844/4:3/w_1024%2Cc_limit/GettyImages-2265991617.jpg",
+          "https://media.wired.com/photos/6abbb935c1a080d8e4e23844/4:3/w_1024%2Cc_limit/GettyImages-2265991617.jpg",
+          "https://media.wired.com/photos/6abbcee9422fade848ea964d/4:5/w_1024%2Cc_limit/Dots%2520Hero%2520Image.png",
+          "https://media.wired.com/photos/6abbcee9422fade848ea964d/4:5/w_1024%2Cc_limit/Dots%2520Hero%2520Image.png"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.wired.com/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "WIRED - The Latest in Technology, Science, Culture and Business | WIRED",
+        "length": 71,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.wired.com/story/best-gaming-routers/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "The Best Gaming Routers (2026): Tested By a Family of Gamers | WIRED",
+        "length": 68,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.wired.com/story/biotech-founder-cathy-tie-moral-case-gene-editing-human-embryos/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "A Biotech Founder Makes the Moral Case for Gene-Editing Human Embryos | WIRED",
+        "length": 77,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.wired.com/story/gifts-for-book-lovers/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "The Best Gifts for Book Lovers (2026): E-Readers, Handy Accessories, Book Sets | WIRED",
+        "length": 86,
+        "limit": 60
+      }
+    }
+  ]
+}

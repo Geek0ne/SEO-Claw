@@ -1,0 +1,87 @@
+{
+  "site_id": null,
+  "domain": "www.twilio.com",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:53:53.992689Z",
+  "finished_at": "2026-09-30T17:54:11.986096Z",
+  "pages_crawled": 5,
+  "pages_discovered": 21718,
+  "duration_seconds": 17.993415188975632,
+  "health_score": 98.0,
+  "score_breakdown": {
+    "total_deduction": 2.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 98.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 2,
+    "total_pages": 5,
+    "per_code": {
+      "img.alt.missing": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.twilio.com/de-de",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 11,
+        "total_images": 51,
+        "sample_srcs": [
+          "https://www.twilio.com/content/dam/twilio-com/emea/de/homepage/hp-signal/platform-section/mobile/homepage_platform-service_twilio.png/_jcr_content/renditions/compressed-original.webp",
+          "https://www.twilio.com/content/dam/twilio-com/emea/de/homepage/hp-signal/platform-section/mobile/homepage_platform-handoff_twilio.png/_jcr_content/renditions/compressed-original.webp",
+          "https://www.twilio.com/content/dam/twilio-com/emea/de/homepage/hp-signal/platform-section/mobile/homepage_platform-continuity_twilio.png/_jcr_content/renditions/compressed-original.webp",
+          "https://www.twilio.com/content/dam/twilio-com/emea/de/homepage/hp-signal/platform-section/mobile/homepage_platform-memory_twilio.png/_jcr_content/renditions/compressed-original.webp",
+          "https://www.twilio.com/content/dam/twilio-com/emea/de/homepage/hp-signal/platform-section/mobile/homepage_platform-final_twilio.png/_jcr_content/renditions/compressed-original.webp"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.twilio.com/de-de",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Dialogorientierte KI und APIs für SMS, E-Mail und Sprachdienste | Twilio",
+        "length": 72,
+        "limit": 60
+      }
+    }
+  ]
+}

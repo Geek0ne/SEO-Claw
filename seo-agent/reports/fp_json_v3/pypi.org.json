@@ -1,0 +1,60 @@
+{
+  "site_id": null,
+  "domain": "pypi.org",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T19:00:54.876306Z",
+  "finished_at": "2026-09-30T19:01:03.367484Z",
+  "pages_crawled": 8,
+  "pages_discovered": 20052,
+  "duration_seconds": 8.491184947022703,
+  "health_score": 100.0,
+  "score_breakdown": {
+    "total_deduction": 0.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 100.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 0,
+    "total_pages": 8,
+    "per_code": {}
+  },
+  "issues": [
+    {
+      "code": "title.duplicate",
+      "severity": "high",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 title 完全相同",
+      "description": "重复的 title 会让搜索引擎无法区分这些页面，权重被分散，还可能触发重复内容判断。",
+      "fix_hint": "为每个页面写能体现其独特价值的 title，用页面主题词区分。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Client Challenge",
+        "url_count": 6,
+        "duplicate_ratio": 0.75,
+        "sample_urls": [
+          "https://pypi.org/project/102203594-topsis/",
+          "https://pypi.org/project/1neuron-pypi-overlordiam/",
+          "https://pypi.org/project/256-encrypt/",
+          "https://pypi.org/project/a2a-mermaid-tracer/",
+          "https://pypi.org/project/a2rpc/",
+          "https://pypi.org/project/aa-eveprices/"
+        ]
+      }
+    }
+  ]
+}

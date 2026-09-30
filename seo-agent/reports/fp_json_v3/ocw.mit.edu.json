@@ -1,0 +1,155 @@
+{
+  "site_id": null,
+  "domain": "ocw.mit.edu",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T16:55:54.932127Z",
+  "finished_at": "2026-09-30T16:57:40.844469Z",
+  "pages_crawled": 5,
+  "pages_discovered": 20868,
+  "duration_seconds": 105.91235062500346,
+  "health_score": 95.0,
+  "score_breakdown": {
+    "total_deduction": 5.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 1,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 97.0,
+      "architecture": 99.0,
+      "content": 99.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 3,
+    "total_pages": 5,
+    "per_code": {
+      "soft404": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 3.0
+      },
+      "link.noanchor": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "soft404",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://ocw.mit.edu/external-resources/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 258,
+        "text_preview": "Please be advised that external sites may have terms and conditions, including license rights, that differ from ours. MI",
+        "status_code": 200,
+        "internal_outbound_links": 0,
+        "inbound_links": 0,
+        "url_looks_like_index": false,
+        "verdict": "likely_true_soft404",
+        "verdict_explain": "既无出链也几乎无入链且内容极少，大概率是空页面"
+      }
+    },
+    {
+      "code": "title.duplicate",
+      "severity": "high",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 title 完全相同",
+      "description": "重复的 title 会让搜索引擎无法区分这些页面，权重被分散，还可能触发重复内容判断。",
+      "fix_hint": "为每个页面写能体现其独特价值的 title，用页面主题词区分。",
+      "fix_example": null,
+      "evidence": {
+        "title": "MIT OpenCourseWare | Free Online Course Materials",
+        "url_count": 2,
+        "duplicate_ratio": 0.4,
+        "sample_urls": [
+          "https://ocw.mit.edu/",
+          "https://ocw.mit.edu/external-resources/"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://ocw.mit.edu/",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 96,
+        "sample_hrefs": [
+          "https://ocw.mit.edu/courses/res-16-002-how-to-cad-almost-anything-january-iap-2024/",
+          "https://ocw.mit.edu/courses/8-01sc-classical-mechanics-fall-2016/",
+          "https://ocw.mit.edu/courses/7-01sc-fundamentals-of-biology-fall-2011/",
+          "https://ocw.mit.edu/courses/18-01sc-single-variable-calculus-fall-2010/",
+          "https://ocw.mit.edu/courses/3-091-introduction-to-solid-state-chemistry-fall-2018/"
+        ]
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "MIT OpenCourseWare is a web based publication of virtually all MIT course content. OCW is open and available to the world and is a permanent MIT activity",
+        "url_count": 5,
+        "sample_urls": [
+          "https://ocw.mit.edu/",
+          "https://ocw.mit.edu/newsletter/",
+          "https://ocw.mit.edu/about/",
+          "https://ocw.mit.edu/educator/",
+          "https://ocw.mit.edu/external-resources/"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://ocw.mit.edu/newsletter/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Newsletter | MIT OpenCourseWare | Free Online Course Materials",
+        "length": 62,
+        "limit": 60
+      }
+    }
+  ]
+}

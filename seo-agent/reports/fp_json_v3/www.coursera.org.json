@@ -1,0 +1,57 @@
+{
+  "site_id": null,
+  "domain": "www.coursera.org",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:08:12.828200Z",
+  "finished_at": "2026-09-30T17:08:28.589524Z",
+  "pages_crawled": 5,
+  "pages_discovered": 20260,
+  "duration_seconds": 15.761331696005072,
+  "health_score": 100.0,
+  "score_breakdown": {
+    "total_deduction": 0.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 100.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 1,
+    "total_pages": 5,
+    "per_code": {}
+  },
+  "issues": [
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.coursera.org/about/contact",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 29,
+        "text_preview": "联系我们 有问题？联系我们的最快方式是使用下面的联系方式。",
+        "status_code": 200,
+        "internal_outbound_links": 37,
+        "inbound_links": 8,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    }
+  ]
+}

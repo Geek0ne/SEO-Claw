@@ -1,0 +1,60 @@
+{
+  "site_id": null,
+  "domain": "www.hetzner.com",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:25:36.175948Z",
+  "finished_at": "2026-09-30T17:25:52.765334Z",
+  "pages_crawled": 5,
+  "pages_discovered": 945,
+  "duration_seconds": 16.589393622009084,
+  "health_score": 99.0,
+  "score_breakdown": {
+    "total_deduction": 1.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 99.0,
+      "architecture": 100.0,
+      "content": 100.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 1,
+    "total_pages": 5,
+    "per_code": {
+      "canonical.conflict": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "canonical.conflict",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.hetzner.com/de/cloud/general-purpose/",
+      "title": "canonical 指向了其他页面（需确认是否有意为之）",
+      "description": "canonical 与当前页面不一致时，搜索引擎会把本页权重转移给目标页。这可能是有意为之（内容已合并、历史版本别名、分页主页面），也可能是模板复制时漏改。⚠️ 工具无法自动区分这两种情况，请逐条确认：目标页存在且内容相近 → 通常没问题；目标页 404 → 确定是 bug。",
+      "fix_hint": "逐条打开 canonical 目标页确认：如果是有意合并，保持现状即可；如果是模板漏改，改成指向本页自身。",
+      "fix_example": null,
+      "evidence": {
+        "canonical": "https://www.hetzner.com/cloud/general-purpose/",
+        "page_url": "https://www.hetzner.com/de/cloud/general-purpose/",
+        "canonical_target_status": null,
+        "verdict": "possibly_intentional"
+      }
+    }
+  ]
+}

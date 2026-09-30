@@ -1,0 +1,119 @@
+{
+  "site_id": null,
+  "domain": "mixpanel.com",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T16:55:05.020221Z",
+  "finished_at": "2026-09-30T16:55:42.250754Z",
+  "pages_crawled": 5,
+  "pages_discovered": 2487,
+  "duration_seconds": 37.23054041000432,
+  "health_score": 96.0,
+  "score_breakdown": {
+    "total_deduction": 4.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 96.0,
+      "architecture": 100.0,
+      "content": 100.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 4,
+    "total_pages": 5,
+    "per_code": {
+      "canonical.missing": {
+        "severity": "medium",
+        "affected_pages": 4,
+        "ratio": 0.8,
+        "deduction": 4.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://mixpanel.com/about/",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://mixpanel.com/best-product-analytics/",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://mixpanel.com/customers/",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://mixpanel.com/customers/all/",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "Helping the world learn from its data with product analytics everyone can use. Let’s build.",
+        "url_count": 3,
+        "sample_urls": [
+          "https://mixpanel.com/best-product-analytics/",
+          "https://mixpanel.com/customers/",
+          "https://mixpanel.com/customers/all/"
+        ]
+      }
+    }
+  ]
+}

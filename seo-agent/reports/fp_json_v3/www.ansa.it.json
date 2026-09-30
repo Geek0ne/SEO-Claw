@@ -1,0 +1,234 @@
+{
+  "site_id": null,
+  "domain": "www.ansa.it",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T17:03:22.158937Z",
+  "finished_at": "2026-09-30T17:04:26.823949Z",
+  "pages_crawled": 5,
+  "pages_discovered": 5211,
+  "duration_seconds": 64.66501803000574,
+  "health_score": 90.0,
+  "score_breakdown": {
+    "total_deduction": 10.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 95.0,
+      "content": 95.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 10,
+    "total_pages": 5,
+    "per_code": {
+      "link.noanchor": {
+        "severity": "medium",
+        "affected_pages": 5,
+        "ratio": 1.0,
+        "deduction": 5.0
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 5,
+        "ratio": 1.0,
+        "deduction": 5.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.ansa.it/",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 84,
+        "sample_hrefs": [
+          "https://www.ansa.it/sito/videogallery/mondo/2026/09/30/la-rotta-del-volo-flydubai-dalla-picchiata-alla-ripresa-verso-tabuk_20d084bd-1bc5-423d-bfb6-a8ac6fd3ed3c.html",
+          "https://www.ansa.it/sito/notizie/mondo/2026/09/30/ft-colloqui-tra-trump-e-consiglieri-per-valutare-uno-stop-allexport-di-gasolio_db3cf0fd-77f8-481c-a150-4ee7ceb12961.html",
+          "https://www.ansa.it/english/news/politics/2026/09/30/meloni-writes-to-von-der-leyen-asks-more-flexibility-due-to-inflation_e95e7db5-c1d2-4cfa-9f9c-e0b81022ca8b.html",
+          "https://www.ansa.it/sito/videogallery/mondo/2026/09/30/lite-tra-pilota-e-copilota-atterraggio-demergenza-per-un-volo-flydubai_f4a00134-e548-46ee-81db-d3aba35b9198.html",
+          "https://www.ansa.it/ansacom/notizie/cultura/commissario-straordinario-ricostruzione-sisma-2016/2026/09/30/rigenerazione-cratere-per-candidare-civitas-appenninica-capitale-europea-cultura-2033_8b862f4a-9077-41b9-bd65-1123adecdfc9.html"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.ansa.it/abruzzo/notizie/2026/09/30/addio-al-titolare-della-bresciana-celebre-per-il-maritozzo-con-la-panna_d6f36b7f-9bca-4769-9e24-e8139fd689ab.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 10,
+        "sample_hrefs": [
+          "https://www.ansa.it/",
+          "https://www.ansa.it/sito/videogallery/mondo/2026/09/30/laereo-scendeva-molto-rapidamente-il-racconto-di-chi-era-sul-volo-flydubai_f86ac296-3070-435a-9c3a-984c2746f220.html",
+          "https://www.ansa.it/sito/videogallery/mondo/2026/09/30/volo-flydubai-le-immagini-dei-passeggeri-allaeroporto-di-tabuk-in-arabia-saudita_3f5a0332-a852-4aca-ab11-d52c73c2e4a0.html",
+          "https://www.ansa.it/sito/videogallery/mondo/2026/09/30/netanyahu-omaggio-agli-eroi-del-volo-flydubai-pronti-per-ulteriori_ddb136e1-8003-4b9d-96bf-78c08b9181ee.html",
+          "https://www.ansa.it/sito/videogallery/italia/2026/09/30/nascosto-nel-doppiofondo-dellarmadio-preso-uno-dei-capi-del-clan_3986ca8b-99bb-42bb-b6fe-f81c9bb71639.html"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.ansa.it/abruzzo/notizie/2026/09/30/tottea-accoglie-la-salma-delloperaio-morto-al-colosseo-borgo-in-lutto_c820b440-d04f-4082-a713-9def027737fe.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 10,
+        "sample_hrefs": [
+          "https://www.ansa.it/",
+          "https://www.ansa.it/sito/videogallery/mondo/2026/09/30/laereo-scendeva-molto-rapidamente-il-racconto-di-chi-era-sul-volo-flydubai_f86ac296-3070-435a-9c3a-984c2746f220.html",
+          "https://www.ansa.it/sito/videogallery/mondo/2026/09/30/volo-flydubai-le-immagini-dei-passeggeri-allaeroporto-di-tabuk-in-arabia-saudita_3f5a0332-a852-4aca-ab11-d52c73c2e4a0.html",
+          "https://www.ansa.it/sito/videogallery/mondo/2026/09/30/netanyahu-omaggio-agli-eroi-del-volo-flydubai-pronti-per-ulteriori_ddb136e1-8003-4b9d-96bf-78c08b9181ee.html",
+          "https://www.ansa.it/sito/videogallery/italia/2026/09/30/nascosto-nel-doppiofondo-dellarmadio-preso-uno-dei-capi-del-clan_3986ca8b-99bb-42bb-b6fe-f81c9bb71639.html"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.ansa.it/abruzzo/notizie/2026/09/30/uccise-la-moglie-a-colpi-di-pistola-disposta-la-perizia-psichiatrica_f0a23da4-689d-4e56-90d0-8d07f6df2b6b.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 10,
+        "sample_hrefs": [
+          "https://www.ansa.it/",
+          "https://www.ansa.it/sito/videogallery/mondo/2026/09/30/laereo-scendeva-molto-rapidamente-il-racconto-di-chi-era-sul-volo-flydubai_f86ac296-3070-435a-9c3a-984c2746f220.html",
+          "https://www.ansa.it/sito/videogallery/mondo/2026/09/30/volo-flydubai-le-immagini-dei-passeggeri-allaeroporto-di-tabuk-in-arabia-saudita_3f5a0332-a852-4aca-ab11-d52c73c2e4a0.html",
+          "https://www.ansa.it/sito/videogallery/mondo/2026/09/30/netanyahu-omaggio-agli-eroi-del-volo-flydubai-pronti-per-ulteriori_ddb136e1-8003-4b9d-96bf-78c08b9181ee.html",
+          "https://www.ansa.it/sito/videogallery/italia/2026/09/30/nascosto-nel-doppiofondo-dellarmadio-preso-uno-dei-capi-del-clan_3986ca8b-99bb-42bb-b6fe-f81c9bb71639.html"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.ansa.it/abruzzo/notizie/2026/09/30/vespa-simbolo-dellingegno-abruzzese-proposta-di-legge-per-corradino-dascanio_b5442f4b-4b86-4001-b94e-83aa93938691.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 10,
+        "sample_hrefs": [
+          "https://www.ansa.it/",
+          "https://www.ansa.it/sito/videogallery/mondo/2026/09/30/laereo-scendeva-molto-rapidamente-il-racconto-di-chi-era-sul-volo-flydubai_f86ac296-3070-435a-9c3a-984c2746f220.html",
+          "https://www.ansa.it/sito/videogallery/mondo/2026/09/30/volo-flydubai-le-immagini-dei-passeggeri-allaeroporto-di-tabuk-in-arabia-saudita_3f5a0332-a852-4aca-ab11-d52c73c2e4a0.html",
+          "https://www.ansa.it/sito/videogallery/mondo/2026/09/30/netanyahu-omaggio-agli-eroi-del-volo-flydubai-pronti-per-ulteriori_ddb136e1-8003-4b9d-96bf-78c08b9181ee.html",
+          "https://www.ansa.it/sito/videogallery/italia/2026/09/30/nascosto-nel-doppiofondo-dellarmadio-preso-uno-dei-capi-del-clan_3986ca8b-99bb-42bb-b6fe-f81c9bb71639.html"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.ansa.it/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+        "length": 64,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.ansa.it/abruzzo/notizie/2026/09/30/addio-al-titolare-della-bresciana-celebre-per-il-maritozzo-con-la-panna_d6f36b7f-9bca-4769-9e24-e8139fd689ab.html",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Addio al titolare della Bresciana, celebre per il 'maritozzo con la panna' - Notizie - Ansa.it",
+        "length": 94,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.ansa.it/abruzzo/notizie/2026/09/30/tottea-accoglie-la-salma-delloperaio-morto-al-colosseo-borgo-in-lutto_c820b440-d04f-4082-a713-9def027737fe.html",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Tottea accoglie la salma dell'operaio morto al Colosseo, 'borgo in lutto' - Notizie - Ansa.it",
+        "length": 93,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.ansa.it/abruzzo/notizie/2026/09/30/uccise-la-moglie-a-colpi-di-pistola-disposta-la-perizia-psichiatrica_f0a23da4-689d-4e56-90d0-8d07f6df2b6b.html",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Uccise la moglie a colpi di pistola, disposta la perizia psichiatrica - Notizie - Ansa.it",
+        "length": 89,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.ansa.it/abruzzo/notizie/2026/09/30/vespa-simbolo-dellingegno-abruzzese-proposta-di-legge-per-corradino-dascanio_b5442f4b-4b86-4001-b94e-83aa93938691.html",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "'Vespa simbolo dell'ingegno abruzzese', proposta di legge per Corradino D'Ascanio - Notizie - Ansa.it",
+        "length": 101,
+        "limit": 60
+      }
+    }
+  ]
+}
