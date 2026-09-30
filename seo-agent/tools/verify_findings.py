@@ -88,6 +88,35 @@ def _visible_text(h: str) -> str:
     return _strip(re.sub(r"<(script|style|nav|footer)[^>]*>.*?</\1>", " ", h, flags=re.I | re.S))
 
 
+def _canon_key(url: str) -> str:
+    """canonical 比较用：仅忽略 path 大小写，其余照常。"""
+    from urllib.parse import urlparse
+    try:
+        p = urlparse(url)
+    except ValueError:
+        return url.strip().rstrip("/").lower()
+    host = (p.netloc or "").lower()
+    if host.startswith("www."):
+        host = host[4:]
+    path = (p.path or "/").rstrip("/") or "/"
+    return f"{host}{path}".lower()
+
+
+def _looks_js_rendered(h: str) -> bool:
+    """粗略判断页面是否依赖 JS 渲染。
+
+    只用于「静态 HTML 里找不到某元素」时决定要不要判 unknown，
+    不能用来证明页面确实没有该元素。
+    """
+    body = h.lower()
+    if re.search(r'<div[^>]+id\s*=\s*["\'](root|app|__next|__nuxt)["\']', body):
+        return True
+    # 可疑信号：几乎没有 <a>/<img>，却有框架脚本
+    few_tags = len(_tags(h, r"<a\b")) + len(_tags(h, r"<img\b"))
+    has_fw = bool(re.search(r"(react|vue|angular|next|nuxt|svelte)", body))
+    return few_tags < 5 and has_fw
+
+
 @dataclass
 class Verdict:
     state: str
@@ -105,6 +134,12 @@ def verify(code: str, url: str, h: str | None, ev: dict[str, Any]) -> Verdict:
     if code in ("title.too_short", "title.too_long"):
         t = _title(h)
         if t is None:
+            # ⚠️ 不能直接判「无 title」→ 误报。SPA 页面（juejin.cn 就是）
+            # 的 title 是客户端注入的，静态 HTML 里根本没有，而报告里那条
+            # title 明明存在。核对器 curl 到的东西和抓取器拿到的不是同一份，
+            # 这时判误报是自己骗自己。真实样本：juejin.cn 4 条里 3 条被这样误判。
+            if _looks_js_rendered(h):
+                return Verdict("unknown", "静态 HTML 无 title，页面疑似 JS 渲染，与抓取时不一致")
             return Verdict("false_positive", "无 title")
         n = len(t)
         # ⚠️ 中文标题阈值不同（30 vs 60），必须自己判断，不能硬编码 60。
@@ -147,12 +182,32 @@ def verify(code: str, url: str, h: str | None, ev: dict[str, Any]) -> Verdict:
         if not m:
             return Verdict("false_positive", "无 canonical")
         href = (_attr(m.group(0), "href") or "").rstrip("/")
-        same = href.lower() in (url.rstrip("/").lower(), "")
-        return Verdict("false_positive", f"canonical 与自身一致: {href[:50]}") if same \
-            else Verdict("unknown", f"canonical={href[:50]}，是否冲突取决于是否同内容")
+        # ⚠️ 顺序有讲究：必须先判「仅大小写不同」。
+        # `same` 用的是小写化比较，会把 /Foo 和 /foo 也算成一致，
+        # 若放在前面就永远抢在下面这条之前命中——我自己第一版就写反了，
+        # 导致新增的 _canon_key 分支是死代码，jvns.ca 那条一直算误报。
+        if _canon_key(href) == _canon_key(url):
+            # 规则侧对这种情况降级为 INFO 并标 case_only_difference
+            # （backend/app/audit/rules/base，same_url_ignoring_path_case）。
+            # 指向的仍是本页，不该让用户去改 → 算噪音，不算误报。
+            return Verdict("noisy", f"canonical 仅 path 大小写不同: {href[:50]}")
+        if href.lower() in (url.rstrip("/").lower(), ""):
+            return Verdict("false_positive", f"canonical 与自身一致: {href[:50]}")
+
+        return Verdict("unknown", f"canonical={href[:50]}，是否冲突取决于是否同内容")
 
     if code == "h1.missing":
-        return Verdict("true_positive", "无 h1") if not _tags(h, r"<h1[\s>]") else Verdict("false_positive", "有 h1")
+        tags = _tags(h, r"<h1[^>]*>(.*?)</h1>")
+        if not tags:
+            return Verdict("true_positive", "无 h1")
+        # ⚠️ 空 h1：<h1> </h1>。标签在，但没有任何文本内容。
+        # 规则判的是「无有效标题」，所以这仍是属实——真实样本
+        # w3.org/ja/ 就是 <h1> </h1>。早期版本只数标签存在与否，
+        # 会把这种情况错判成误报。
+        nonempty = [t for t in tags if _strip(t)]
+        if not nonempty:
+            return Verdict("true_positive", f"{len(tags)} 个 h1 但内容全为空（如 <h1> </h1>）")
+        return Verdict("false_positive", f"有 {len(nonempty)} 个非空 h1")
 
     if code == "h1.multiple":
         texts = [_strip(x) for x in _tags(h, r"<h1[^>]*>(.*?)</h1>")]
@@ -229,7 +284,14 @@ def verify(code: str, url: str, h: str | None, ev: dict[str, Any]) -> Verdict:
 
     if code == "link.noanchor":
         bad = [t for t in _tags(h, r"<a\b[^>]*>.*?</a>") if not _strip(t) and "aria-label" not in t and "title=" not in t]
-        return Verdict("true_positive", f"{len(bad)} 个空链接") if bad else Verdict("false_positive", "无空链接")
+        if not bad:
+            # 没有空链接，但也不能直接判误报：页是 JS 渲染时，静态 HTML
+            # 根本看不到客户端插入的链接。真实样本 www.csdn.net 就是这种。
+            # 判 unknown（不计入分母）比判误报诚实。
+            if _looks_js_rendered(h):
+                return Verdict("unknown", "静态 HTML 无空链接，但页面疑似 JS 渲染，结论不可靠")
+            return Verdict("false_positive", "无空链接")
+        return Verdict("true_positive", f"{len(bad)} 个空链接")
 
     if code.startswith("hreflang."):
         has = re.search(r'rel\s*=\s*["\'][^"\']*alternate', h, re.I) and "hreflang" in h.lower()
