@@ -1,0 +1,109 @@
+{
+  "site_id": null,
+  "domain": "vitejs.dev",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-29T18:43:32.822928Z",
+  "finished_at": "2026-09-29T18:43:40.882579Z",
+  "pages_crawled": 5,
+  "pages_discovered": 210,
+  "duration_seconds": 8.059659708000254,
+  "health_score": 96.0,
+  "score_breakdown": {
+    "total_deduction": 4.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 1,
+      "medium": 1,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 96.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 3,
+    "total_pages": 5,
+    "per_code": {
+      "sitemap.missing": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 3.0
+      },
+      "meta.duplicate": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "sitemap.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "站点没有可用的 sitemap",
+      "description": "没有 sitemap 时，搜索引擎只能靠内链发现页面，新页面和深埋页面的收录速度会明显变慢，抓取预算也用得更浪费。",
+      "fix_hint": "生成 XML sitemap，在 robots.txt 里声明它，并提交到 Google Search Console 和百度搜索资源平台。",
+      "fix_example": "User-agent: *\nAllow: /\nSitemap: https://example.com/sitemap.xml",
+      "evidence": {
+        "tried_paths": [],
+        "error": null
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "Next Generation Frontend Tooling",
+        "url_count": 4,
+        "sample_urls": [
+          "https://vitejs.dev/",
+          "https://vite.dev/guide/",
+          "https://vite.dev/config/",
+          "https://vite.dev/plugins/"
+        ]
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://vite.dev/team",
+      "title": "页面有多个 H1（Google 不惩罚，仅供参考）",
+      "description": "HTML5 明确允许多个 H1，Google 也公开表示多个 H1 不影响索引或排名。真正会分散主题信号的是「多个 H1 说的是同一件事」——比如站名和文章标题同时进 H1。\n⚠️ 所以这条只是提示，不是问题。很多设计良好的站点就是这么做的，不要为了消掉这条去改版面。",
+      "fix_hint": "仅当多个 H1 语义重复时才值得处理：保留最具体的一个，其余降为 H2 或改为普通文本。如果站名 H1 是模板刻意为之，保持现状即可。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 23,
+        "h1_list": [
+          "Meet the Team",
+          "Evan You",
+          "sapphi-red",
+          "Patak",
+          "Anthony Fu"
+        ],
+        "duplicated": false,
+        "verdict": "likely_intentional",
+        "verdict_explain": "Google 不惩罚多个 H1，仅供确认主题是否清晰"
+      }
+    }
+  ]
+}

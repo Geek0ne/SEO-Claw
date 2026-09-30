@@ -4,11 +4,11 @@
   "markets": [
     "base"
   ],
-  "started_at": "2026-09-29T12:30:09.204977Z",
-  "finished_at": "2026-09-29T12:30:13.867434Z",
+  "started_at": "2026-09-29T18:41:12.877398Z",
+  "finished_at": "2026-09-29T18:41:17.387365Z",
   "pages_crawled": 5,
-  "pages_discovered": 595,
-  "duration_seconds": 4.662476698009414,
+  "pages_discovered": 605,
+  "duration_seconds": 4.509973230000469,
   "health_score": 77.0,
   "score_breakdown": {
     "total_deduction": 23.0,
@@ -180,9 +180,9 @@
         "missing_count": 3,
         "total_images": 3,
         "sample_srcs": [
-          "https://kunyu.csdn.net/1.png?p=988&adBlockFlag=0&adId=1111879&a=1111879&c=4581446&k=&spm=3001.10471&articleId=0&d=1&t=3&u=cb81e646dd38405fbcbc229daab2fea1",
-          "https://kunyu.csdn.net/1.png?p=211&adId=1100044&adBlockFlag=0&a=1100044&c=0&k=&spm=3001.4737&articleId=0&d=1&t=3&u=677a0a987f0e4c0c86912dc06b144af3",
-          "https://kunyu.csdn.net/1.png?p=213&adId=1100046&adBlockFlag=0&a=1100046&c=0&k=&spm=3001.4743&articleId=0&d=1&t=3&u=84dfbf92dab74b7cab6a6a598e9432ab"
+          "https://kunyu.csdn.net/1.png?p=988&adBlockFlag=0&adId=1111879&a=1111879&c=4581446&k=&spm=3001.10471&articleId=0&d=1&t=3&u=ec2b07de479f49569fd8dca44790de1b",
+          "https://kunyu.csdn.net/1.png?p=211&adId=1100044&adBlockFlag=0&a=1100044&c=0&k=&spm=3001.4737&articleId=0&d=1&t=3&u=d1fbca99ba964edf97ea714dc4d1628c",
+          "https://kunyu.csdn.net/1.png?p=213&adId=1100046&adBlockFlag=0&a=1100046&c=0&k=&spm=3001.4743&articleId=0&d=1&t=3&u=653fb9e2408b44d5bfd89ac796fe86bd"
         ]
       }
     },
@@ -218,8 +218,8 @@
         "missing_count": 2,
         "total_images": 2,
         "sample_srcs": [
-          "https://kunyu.csdn.net/1.png?p=986&adBlockFlag=0&adId=1110646&a=1110646&c=4514432&k=&spm=3001.10469&articleId=0&d=1&t=3&u=62d3dea06e354c79ad699679931fb863",
-          "https://kunyu.csdn.net/1.png?p=987&adBlockFlag=0&adId=1110486&a=1110486&c=4498033&k=&spm=3001.10470&articleId=0&d=1&t=3&u=2acf1f48c82c45ce9978186b2ea12575"
+          "https://kunyu.csdn.net/1.png?p=986&adBlockFlag=0&adId=1110646&a=1110646&c=4514432&k=&spm=3001.10469&articleId=0&d=1&t=3&u=71c9a4f4cdf8496fb41e8689e73b7c78",
+          "https://kunyu.csdn.net/1.png?p=987&adBlockFlag=0&adId=1110486&a=1110486&c=4498033&k=&spm=3001.10470&articleId=0&d=1&t=3&u=4c5c402bcee14bb39462bfaef6d601e1"
         ]
       }
     },
@@ -234,13 +234,13 @@
       "fix_hint": "给链接加上描述性锚文本。",
       "fix_example": null,
       "evidence": {
-        "empty_anchor_count": 27,
+        "empty_anchor_count": 30,
         "sample_hrefs": [
           "https://www.csdn.net/",
-          "https://blog.csdn.net/Frag0ut/article/details/166689775",
-          "https://blog.csdn.net/nazisami/article/details/166737897",
-          "https://blog.csdn.net/weixin_69760830/article/details/166782126",
-          "https://blog.csdn.net/Clz_1997/article/details/166844177"
+          "https://blog.csdn.net/ANSILIC/article/details/166368410",
+          "https://blog.csdn.net/pbymw8iwm/article/details/165879815",
+          "https://blog.csdn.net/m0_72599287/article/details/166599914",
+          "https://blog.csdn.net/2601_96680243/article/details/166855385"
         ]
       }
     },
@@ -276,11 +276,13 @@
       "fix_hint": "给链接加上描述性锚文本。",
       "fix_example": null,
       "evidence": {
-        "empty_anchor_count": 3,
+        "empty_anchor_count": 6,
         "sample_hrefs": [
-          "https://blog.csdn.net/csdnnews/article/details/166589719",
-          "https://blog.csdn.net/snowoftheworld/article/details/166832915",
-          "https://blog.csdn.net/2503_94545876/article/details/164739838"
+          "https://blog.csdn.net/2601_96680243/article/details/166855385",
+          "https://blog.csdn.net/aidoudoulong/article/details/166634539",
+          "https://blog.csdn.net/nskksms/article/details/166849162",
+          "https://blog.csdn.net/kenshin1980/article/details/164188137",
+          "https://blog.csdn.net/csdnnews/article/details/166589719"
         ]
       }
     },
@@ -377,7 +379,7 @@
         "word_count": 31,
         "text_preview": "Java之路 张中强 共 4.0 节 · 268.2万 人学习",
         "status_code": 200,
-        "internal_outbound_links": 159,
+        "internal_outbound_links": 162,
         "inbound_links": 2,
         "url_looks_like_index": false,
         "verdict": "likely_index_or_hub",
