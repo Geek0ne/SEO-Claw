@@ -25,6 +25,7 @@ from .crawler import CrawlConfig, Crawler
 from .models import Market, SiteReport
 from .report import render_markdown, summarize_console
 from .scoring import score
+from .util import same_site_scope
 
 
 def cmd_scan(args: argparse.Namespace) -> int:
@@ -84,7 +85,12 @@ def cmd_scan(args: argparse.Namespace) -> int:
         print(f"→ robots.txt：HTTP {site_facts['robots_status']}", file=sys.stderr)
 
     issues, _ctx = run_audit(pages, urlparse(args.url).netloc, markets, site_facts)
-    health, breakdown = score(issues, len(pages))
+    netloc = urlparse(args.url).netloc
+    # 分母只算本站页面。抓取器会把兄弟子域也当站内（is_internal 按可注册域
+    # 判断，对内链权重传递是对的），但计分不该跨子域——gymshark 25 页里
+    # 24 页是 us.checkout.gymshark.com，用 25 做分母会把主站的扣分稀释 24 倍。
+    in_scope_pages = sum(1 for p in pages if same_site_scope(p.url, netloc))
+    health, breakdown = score(issues, in_scope_pages or len(pages), netloc)
 
     report = SiteReport(
         domain=urlparse(args.url).netloc,

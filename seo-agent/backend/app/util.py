@@ -90,3 +90,33 @@ def is_internal(href: str, base_domain: str) -> bool:
     base = registrable_domain(base_domain)
     target = registrable_domain(host)
     return bool(base) and target == base
+
+
+def _strip_www(host: str) -> str:
+    return host[4:] if host.startswith("www.") else host
+
+
+def same_site_scope(url: str | None, base_domain: str) -> bool:
+    """该 URL 是否属于「本次扫描的主站」——**不含兄弟子域**。
+
+    为什么不能直接用 is_internal()：它按可注册域判断，
+    us.checkout.gymshark.com 和 gymshark.com 同属 gymshark.com，算站内。
+    对内链权重传递这是对的，对「给这个站打健康分」就错了。
+
+    实测代价：gymshark.com 扫描 25 页里 24 页是 us.checkout.gymshark.com，
+    124 条问题有 119 条来自子域，于是主站被判 0.0 分。结账页带 noindex
+    是**正确配置**，却被报成 CRITICAL「页面被屏蔽收录」——规则判得对、
+    用户照做反而更糟。vitejs.dev 同理：24 条问题全在 ja/v2/registry 子域，
+    剔掉后 94.2 → 100.0。
+
+    所以口径必须是：host 完全相同，或仅差 www 前缀。
+    """
+    if not url:
+        return False
+    # 用 hostname 而非 netloc：netloc 带端口（gymshark.com:443），
+    # 剥离 www 之后仍与 gymshark.com 不相等，会把本站误判成站外。
+    host = (urlparse(url).hostname or "").lower().strip(".")
+    base = (base_domain or "").split(":")[0].lower().strip(".")
+    if not host or not base:
+        return False
+    return _strip_www(host) == _strip_www(base)

@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 from .models import Issue, Page, Severity
+from .util import same_site_scope
 
 # 严重度 → 基础权重（按「影响面」折算后的最终扣分）
 SEVERITY_WEIGHT: dict[Severity, float] = {
@@ -58,7 +59,11 @@ def dimension_for(code: str) -> str:
     return "content"
 
 
-def score(issues: list[Issue], total_pages: int) -> tuple[float, dict[str, object]]:
+def score(
+    issues: list[Issue],
+    total_pages: int,
+    domain: str | None = None,
+) -> tuple[float, dict[str, object]]:
     """计算 0~100 健康分。
 
     按 code 聚合，用「**该问题影响到的页面占比**」作为扣分系数，
@@ -67,12 +72,29 @@ def score(issues: list[Issue], total_pages: int) -> tuple[float, dict[str, objec
     后者会导致分数不随站点规模可比：站点越大，同类问题分母越大、扣分越少，
     一个 10 万页的烂站点可能比 50 页的烂站点分还高。
     聚合后，「20% 的页面缺 canonical」在 50 页和 10 万页站点上扣分相同。
+
+    传入 `domain` 时只给「本站」扣分，兄弟子域的问题单独列出（见下）。
     """
     pages = max(total_pages, 1)
 
+    # 兄弟子域的问题不进主站健康分。
+    #
+    # 实测：gymshark.com 抓 25 页，其中 24 页是 us.checkout.gymshark.com，
+    # 124 条问题 119 条来自子域，主站被判 0.0 分。结账页带 noindex 是
+    # **正确配置**，却被报成 CRITICAL「页面被屏蔽收录」——规则判得对、
+    # 用户照做反而更糟（照做的后果是让搜索引擎收录一个结账页）。
+    # vitejs.dev 同理：24 条问题全在 ja/v2/registry 子域，剔掉后 94.2 → 100.0。
+    in_scope: list[Issue] = []
+    out_of_scope: list[Issue] = []
+    if domain:
+        for it in issues:
+            (in_scope if same_site_scope(it.url, domain) else out_of_scope).append(it)
+    else:
+        in_scope = list(issues)
+
     # code -> (severity, scope, 受影响 URL 集合)
     grouped: dict[str, tuple[Severity, str, set[str | None]]] = {}
-    for issue in issues:
+    for issue in in_scope:
         weight = SEVERITY_WEIGHT[issue.severity]
         if weight == 0.0:
             continue
@@ -120,7 +142,7 @@ def score(issues: list[Issue], total_pages: int) -> tuple[float, dict[str, objec
         "total_deduction": round(total_deduction, 2),
         "severity_counts": severity_counts,
         "dimension_scores": {k: round(v, 1) for k, v in dimension_scores.items()},
-        "issue_count": len(issues),
+        "issue_count": len(in_scope),
         "total_pages": total_pages,
         "per_code": code_breakdown,
     }
