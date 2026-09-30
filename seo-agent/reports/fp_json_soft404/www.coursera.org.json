@@ -1,0 +1,35 @@
+{
+  "site_id": null,
+  "domain": "www.coursera.org",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T19:24:20.416770Z",
+  "finished_at": "2026-09-30T19:24:32.008231Z",
+  "pages_crawled": 5,
+  "pages_discovered": 20262,
+  "duration_seconds": 11.591468815022381,
+  "health_score": 100.0,
+  "score_breakdown": {
+    "total_deduction": 0.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 100.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 0,
+    "total_pages": 5,
+    "per_code": {}
+  },
+  "issues": []
+}

@@ -1,0 +1,227 @@
+{
+  "site_id": null,
+  "domain": "www.asahi.com",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T19:22:59.616152Z",
+  "finished_at": "2026-09-30T19:23:11.278305Z",
+  "pages_crawled": 5,
+  "pages_discovered": 2823,
+  "duration_seconds": 11.662159222003538,
+  "health_score": 88.0,
+  "score_breakdown": {
+    "total_deduction": 12.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 1,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 95.0,
+      "content": 93.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 10,
+    "total_pages": 5,
+    "per_code": {
+      "h1.missing": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 3.0
+      },
+      "link.noanchor": {
+        "severity": "medium",
+        "affected_pages": 5,
+        "ratio": 1.0,
+        "deduction": 5.0
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 4,
+        "ratio": 0.8,
+        "deduction": 4.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "h1.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.asahi.com/",
+      "title": "页面没有 H1 标题",
+      "description": "H1 是页面主题的最强信号。没有 H1 时，搜索引擎只能靠正文猜测这页在讲什么。",
+      "fix_hint": "加一个 H1 写清页面主标题，位置放在正文开头。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 0
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.asahi.com/",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 6,
+        "sample_hrefs": [
+          "https://digital.asahi.com/info/information/articles/SDI202607300003.html?iref=comtop_Campaign",
+          "https://digital.asahi.com/info/information/articles/SDI202607300003.html?iref=comtop_Campaign",
+          "https://digital.asahi.com/info/information/articles/SDI202607300003.html?iref=comtop_Campaign",
+          "https://digital.asahi.com/info/information/articles/SDI202607300003.html?iref=comtop_Campaign",
+          "https://digital.asahi.com/info/information/articles/SDI202607300003.html?iref=comtop_Campaign"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.asahi.com/articles/ASV997TG8V99UTIL01JM.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 3,
+        "sample_hrefs": [
+          "https://www.asahi.com/reporter-bio/6b82259dea6b6a15561668adbdc5f2474cefd6519a385cb86d0d0375b52b13e4?iref=article_reporter_profile",
+          "https://www.asahi.com/articles/ASV9Z3R1CV9ZUEFT00NM.html?iref=com_rnavi_rensai_1",
+          "https://www.asahi.com/articles/ASV9Y131FV9YUCVL05CM.html?iref=com_rnavi_rensai_2"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.asahi.com/articles/ASV9X3CX9V9XUTIL028M.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 2,
+        "sample_hrefs": [
+          "https://www.asahi.com/articles/ASV9Z3R1CV9ZUEFT00NM.html?iref=com_rnavi_rensai_1",
+          "https://www.asahi.com/articles/ASV9Y131FV9YUCVL05CM.html?iref=com_rnavi_rensai_2"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.asahi.com/articles/ASV9Z3TNPV9ZPIHB011M.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 2,
+        "sample_hrefs": [
+          "https://www.asahi.com/articles/ASV9Z3R1CV9ZUEFT00NM.html?iref=com_rnavi_rensai_1",
+          "https://www.asahi.com/articles/ASV9Y131FV9YUCVL05CM.html?iref=com_rnavi_rensai_2"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.asahi.com/articles/ASV9Z3TSGV9ZTIPE014M.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 2,
+        "sample_hrefs": [
+          "https://www.asahi.com/articles/ASV9Z3R1CV9ZUEFT00NM.html?iref=com_rnavi_rensai_1",
+          "https://www.asahi.com/articles/ASV9Y131FV9YUCVL05CM.html?iref=com_rnavi_rensai_2"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.asahi.com/articles/ASV997TG8V99UTIL01JM.html",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "警察庁の前サイバー課長を懲戒免職 捜査費170万円を私的流用か：朝日新聞",
+        "length": 36,
+        "limit": 30
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.asahi.com/articles/ASV9X3CX9V9XUTIL028M.html",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "在留審査の手数料値上げスタート 永住許可の厳格化ガイドラインも [外国人]：朝日新聞",
+        "length": 42,
+        "limit": 30
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.asahi.com/articles/ASV9Z3TNPV9ZPIHB011M.html",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "神戸・王子動物園のアジアゾウ「マック」死ぬ 阪神大震災直後に来園 [兵庫県]：朝日新聞",
+        "length": 43,
+        "limit": 30
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.asahi.com/articles/ASV9Z3TSGV9ZTIPE014M.html",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "診療中の患者に舌出させ、わいせつ行為の疑い 福岡の歯科医師を逮捕 [福岡県]：朝日新聞",
+        "length": 43,
+        "limit": 30
+      }
+    }
+  ]
+}

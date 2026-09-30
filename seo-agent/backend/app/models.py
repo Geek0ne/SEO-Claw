@@ -130,6 +130,14 @@ class Page(BaseModel):
     headings: list[tuple[int, str]] = Field(default_factory=list)  # [(level, text)]
     text: str = ""  # 正文（trafilatura 抽取）
     word_count: int = 0
+    # 全量可见文本字数（只去掉 script/style，导航与页脚都算在内）。
+    #
+    # 为什么需要它：text 来自 trafilatura，而 trafilatura **会主动剥掉
+    # nav/footer/header**。于是「导航重」的页面 word_count 必然被压低——
+    # japanpost.jp 首页剥后 74 词、含导航 1433 字符，那不是空页面。
+    # 拿 word_count 判「这页是不是空的」是在用一把有偏的尺子量。
+    # soft404 规则需要这个反向字段才能区分「真空」与「尺子量错了」。
+    full_text_length: int = 0
 
     # --- 资源与链接 ---
     images: list[ImageRef] = Field(default_factory=list)
@@ -151,6 +159,14 @@ class Page(BaseModel):
     render_status: Optional[str] = None
     content_is_thin: bool = False
     internal_link_count: int = 0
+    # 正文是否靠 JS 客户端渲染（静态 HTML 里看不到真内容）。
+    #
+    # ⚠️ 没有这个标记，soft404 规则会把「没渲染出来」当成「页面是空的」：
+    # agoda.com 一个 733KB 的页面，静态可见文本 0 字，判成
+    # likely_true_soft404 + HIGH，用户收到「高危：你这页是空页面」——
+    # 去改一个内容饱满的电商首页。规则层光看 word_count=0 分不出来
+    # 「这页没内容」和「这页内容我看不见」，必须提取层把事实给它。
+    likely_js_rendered: bool = False
     external_link_count: int = 0
 
 

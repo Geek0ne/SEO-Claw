@@ -521,6 +521,37 @@ class Soft404(Rule):
         if page.status_code != 200 or not page.content_is_thin:
             return
 
+        # ── 尺子校准：先排掉「量错了」，再看是不是真软 404 ──
+        #
+        # ⚠️ 这里的 content_is_thin 来自 trafilatura 抽的 page.text，而
+        # trafilatura **会主动剥掉 nav/footer/header**。导航重的页面 word_count
+        # 必然被压到 300 词以下，于是规则对着一个内容充足的页面报「疑似软 404」。
+        # 实测第三批 72 条 soft404 里有 55 条是这么来的：japanpost.jp 首页
+        # 剥后 74 字符、含导航 1433 字符、223 条站内出链，那不是空页面。
+        #
+        # 所以先用第二个尺子 full_text_length（含导航页脚）复核。只有连它也
+        # 说这页没东西，才算「可能是空页面」。这样用户才不会被引导去改
+        # 一个根本没坏的家页。
+        if page.full_text_length >= 800:
+            return
+
+        # ── 「没渲染出来」不等于「页面是空的」 ──
+        #
+        # ⚠️ 这条不排，后面会报出 **HIGH** 级「高危：你这页是空页面」。
+        # 实测 www.agoda.com 一个 733KB 的页面，全量可见文本 **0 字**，
+        # content_is_thin=True，内链 3 条——上面那道 full_text_length
+        # 也拦不住它（0 < 800）。可它不是空页面，它是个 JS 渲染的电商站，
+        # 内容全在客户端跑完之后才有。用户在报告里看到这条会去改一个
+        # 内容饱满的首页。
+        #
+        # 规则层光看 word_count / full_text_length 分不出两件事：
+        #   这页没内容      vs      这页内容我看不见
+        # 必须由提取层把 likely_js_rendered 递过来——它是在
+        # extract._looks_js_rendered_shell 里实测 HTML 体积、挂载点、
+        # 出链数得出的，不是猜的。
+        if page.likely_js_rendered:
+            return
+
         path = (page.url or "").lower()
         # 入链数在 ctx 上（build_context 算的），不是 site_facts
         inbound = ctx.inbound_links.get(page.url, 0) + ctx.inbound_links.get(

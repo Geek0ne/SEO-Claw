@@ -129,6 +129,7 @@ def _visible_text(h: str) -> str:
 def _canon_key(url: str) -> str:
     """canonical 比较用：仅忽略 path 大小写，其余照常。"""
     from urllib.parse import urlparse
+
     try:
         p = urlparse(url)
     except ValueError:
@@ -138,6 +139,41 @@ def _canon_key(url: str) -> str:
         host = host[4:]
     path = (p.path or "/").rstrip("/") or "/"
     return f"{host}{path}".lower()
+
+
+def _abs_url(base: str, href: str) -> str:
+    from urllib.parse import urljoin
+
+    return urljoin(base, href)
+
+
+def _content_same(a: str, b: str) -> bool:
+    """两个页面的实质内容是否相同（只看正文，不看模板/导航）。
+
+    ⚠️ 必须用**字符 n-gram**，不能用「按空格切词」。
+    我第一版写的正则 ``[a-z0-9一-鿿]{2,}`` 有个致命缺陷：西语、中文、
+    以及任何没空格排版的正文里，一整串连续字符会被切成一个巨型 token。
+    实测 fotocasa 的「alertasPublicarMisAlertasPublicarAnuncioGratis」被切成
+    一个词 'alertaspublicar'，naaptol 切出 4816 个巨型词——两页的
+    token 集合几乎必然重合，Jaccard 直接冲到 1.000。
+    后果是 canonical.conflict 一口气多出 8 条假误报，其中 purdue.edu
+    首页被「判」成和 purdue.edu/home 内容相同。
+
+    字符 n-gram 不依赖空格分隔，跨语种都稳。取 5-gram 集合的 Jaccard。
+    """
+    ta = _shingles(_visible_text(a))
+    tb = _shingles(_visible_text(b))
+    if not ta or not tb:
+        return False
+    return len(ta & tb) / len(ta | tb) >= 0.7
+
+
+def _shingles(text: str, n: int = 5) -> set[str]:
+    """字符 n-gram 集合；文字太短就退化为整串。"""
+    t = re.sub(r"\s+", "", (text or "").lower())
+    if len(t) < n:
+        return {t} if t else set()
+    return {t[i:i + n] for i in range(len(t) - n + 1)}
 
 
 def _looks_js_rendered(h: str) -> bool:
@@ -248,7 +284,17 @@ def verify(code: str, url: str, h: str | None, ev: dict[str, Any]) -> Verdict:
         if href.lower() in (url.rstrip("/").lower(), ""):
             return Verdict("false_positive", f"canonical 与自身一致: {href[:50]}")
 
-        return Verdict("unknown", f"canonical={href[:50]}，是否冲突取决于是否同内容")
+        # 到这里 canonical 指向了另一个 URL：是真冲突，还是合法的重复内容归一？
+        # 判据：**两个 URL 的内容是否实质相同**。相同 → 归一是对的，不该让用户改；
+        # 不同 → canonical 指错了页，是真问题。这可以自己取证：把 canonical
+        # 目标也取回来比正文。不比就是在猜。
+        target = href if href.startswith("http") else _abs_url(url, href)
+        th = fetch(target) if target else None
+        if th is None:
+            return Verdict("unknown", f"canonical={href[:50]}，目标页取不到，无法比内容")
+        same = _content_same(h, th)
+        return Verdict("false_positive", f"canonical 指向 {href[:40]}，两页内容相同（合法归一）") \
+            if same else Verdict("true_positive", f"canonical 指向 {href[:40]}，但两页内容不同")
 
     if code == "h1.missing":
         tags = _tags(h, r"<h1[^>]*>(.*?)</h1>")
@@ -290,7 +336,34 @@ def verify(code: str, url: str, h: str | None, ev: dict[str, Any]) -> Verdict:
             else Verdict("false_positive", f"robots={r!r}")
 
     if code == "soft404":
-        return Verdict("unknown", f"正文 {len(_visible_text(h))} 字，需人工看内容")
+        # ⚠️ 这里的 unknown 是我留给自己的坑，也是我今晚最大的一个发现。
+        #
+        # 规则判 soft404 的依据是 `content_is_thin`，而 content_is_thin 来自
+        # trafilatura 抽出的 page.text——**trafilatura 会主动剥掉 nav/footer**
+        # （extract.py 的降级路径明确 remove //nav|//footer|//header）。
+        # 于是「导航重的页面」正文数必然被压到 300 词阈值以下：
+        # japanpost.jp 首页有 223 条站内链接，静态可见文本只有 74 字符——
+        # 那不是空页面，是我们自己把导航剥掉后数不出东西。
+        # 72 条 soft404 里有 56 条内链 >= 20。
+        #
+        # 所以判别式不能是「正文少」（那是尺子的缺陷），
+        # 得是**页面自身有没有站内结构**——这个可以从 HTML 直接数，是独立证据。
+        #
+        # ⚠️ 关键：不能用 evidence 里的 internal_outbound_links / verdict。
+        # 那是规则自己算的，拿它「验证」规则等于自己给自己判卷。必须自己数 <a>。
+        outlinks = len(_tags(h, r"<a\b[^>]*href\s*="))
+        words = len(_visible_text(h).split())
+        if outlinks >= 10:
+            # 有结构、有大量站内出链 → 不可能是空页面。规则自己也把它降级成
+            # INFO + likely_index_or_hub，所以这条**属实但不该让用户管**。
+            return Verdict("noisy", f"正文 {words} 词但有 {outlinks} 条站内出链，"
+                                     f"是被剥掉导航的枢纽/列表页，不是空页面")
+        if outlinks == 0 and _looks_js_rendered(h):
+            return Verdict("unknown", f"正文 {words} 词、无出链，但页面疑似 JS 渲染，"
+                                      f"静态 HTML 不足以判断是否空页面")
+        if outlinks == 0:
+            return Verdict("true_positive", f"正文 {words} 词且无任何站内出链，符合软 404 特征")
+        return Verdict("unknown", f"正文 {words} 词、出链 {outlinks} 条，信号不明确")
 
     if code == "schema.missing":
         return Verdict("noisy", "无 JSON-LD（可选增强）") if "ld+json" not in h.lower() \

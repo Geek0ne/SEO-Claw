@@ -1,0 +1,152 @@
+{
+  "site_id": null,
+  "domain": "ghost.org",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T23:44:15.054076Z",
+  "finished_at": "2026-09-30T23:44:23.397961Z",
+  "pages_crawled": 5,
+  "pages_discovered": 1871,
+  "duration_seconds": 8.343890163989272,
+  "health_score": 89.0,
+  "score_breakdown": {
+    "total_deduction": 11.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 3,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 96.0,
+      "architecture": 100.0,
+      "content": 93.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 5,
+    "total_pages": 5,
+    "per_code": {
+      "h1.missing": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 3.0
+      },
+      "meta.missing": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 3.0
+      },
+      "soft404": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 3.0
+      },
+      "canonical.missing": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      },
+      "img.alt.missing": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.2,
+        "deduction": 1.0
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "h1.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://ghost.org/about/",
+      "title": "页面没有 H1 标题",
+      "description": "H1 是页面主题的最强信号。没有 H1 时，搜索引擎只能靠正文猜测这页在讲什么。",
+      "fix_hint": "加一个 H1 写清页面主标题，位置放在正文开头。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 0
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://ghost.org/domain-error/",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://ghost.org/domain-error/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 152,
+        "text_preview": "Domain Error | Ghost - The Professional Publishing Platform You're nearly there! Check the custom domain guide & make su",
+        "status_code": 200,
+        "internal_outbound_links": 2,
+        "inbound_links": 0,
+        "url_looks_like_index": false,
+        "verdict": "likely_true_soft404",
+        "verdict_explain": "既无出链也几乎无入链且内容极少，大概率是空页面"
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://ghost.org/domain-error/",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://ghost.org/6/",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 37,
+        "total_images": 81,
+        "sample_srcs": [
+          "https://ghost.org/images/6/x-tall-03_huc0d6db33edf424a4c91772d6ff555de6_4259177_2328x0_resize_q100_h2_box_3.webp",
+          "https://ghost.org/images/6/x-wide-01_huc90a9b3602d8dbe88c99d57a4e1ce838_1629121_4096x0_resize_q100_h2_box_3.webp",
+          "https://ghost.org/images/6/x-small-01_hu168dc7d411ac94f44c27becabf2476dd_561446_2330x0_resize_q100_h2_box_3.webp",
+          "https://ghost.org/images/6/x-small-02_hu71423023c8af8195fc799cc4e9e87a0b_2345206_2332x0_resize_q100_h2_box_3.webp",
+          "https://ghost.org/images/6/x-small-03_hu2fe3ec5ff0c1821cd53940ab1bcd9c8e_2190738_2326x0_resize_q100_h2_box_3.webp"
+        ]
+      }
+    }
+  ]
+}

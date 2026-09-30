@@ -57,6 +57,31 @@ META_MAX_CHARS_EN = 160
 # 软 404 判定：正文低于此字数且返回 200
 THIN_CONTENT_WORDS = 300
 
+# 「内容靠 JS 渲染」的启发式阈值。四个数都写在代码里而不是散在规则里，
+# 因为它们是同一个判据的几条腿，改一条就要能同时看到另外几条。
+# 数值来自 diag_js.py 的分组量测（候选 11 条 vs 已知饱满的 JS 站 4 个），
+# 详见 _looks_js_rendered_shell 的 docstring。
+_JS_RENDERED_MAX_TEXT = 300      # 静态可见文本上限（字符）
+_JS_RENDERED_MIN_BYTES = 50000   # HTML 体积下限：远高于错误页的 2-20KB
+_JS_RENDERED_MAX_LINKS = 10      # 站内出链上限
+_JS_MOUNT_RE = re.compile(
+    r'id\s*=\s*["\'](root|app|__next|__nuxt|__gatsby)["\']', re.I
+)
+# ⚠️ 光有上面那个不够。我第一版只认 root/app/__next/__nuxt/__gatsby 四个
+# 标准挂载点，结果 www.agoda.com 的 5 条一条没抓住——它用的是
+# ``<div id="agoda-spa">``，挂载点既不叫 root 也不叫 app。
+# 真实站点里挂载点叫什么是自由的（agoda-spa、main、my-app……），
+# 把「框架」等同于「标准挂载点」是错的。
+# 改用框架指令特征：Vue 的 v-xxx、React 的 data-reactroot、Angular 的 ng-app
+# —— 这些是渲染后必然存在于 DOM 上的痕迹，比挂载点名稳定得多。
+_JS_FRAMEWORK_RE = re.compile(
+    r"(<[a-z][^>]*\sv-[a-z][\w-]*\s*=)"   # Vue 指令：v-if / v-for / v-model
+    r"|(data-reactroot)"
+    r"|(ng-app|ng-version)"
+    r"|(__NUXT__|__NEXT_DATA__|window\.___gatsby)",
+    re.I,
+)
+
 # 客户端渲染失败壳：服务端返回 200，但页面正文其实是「JS 没跑起来」的
 # 报错页。这种页面量它没有 h1/description/canonical 是**我们没拿到页面**，
 # 不是**站点没做 SEO**——同一个坑我已经在核对器里栽过一次。
@@ -488,6 +513,17 @@ def _extract_structured_data(doc: Any, page: Page) -> None:
             page.microdata_types.append(itemtype.split("/")[-1].rstrip("/"))
 
 
+def _full_visible_text(raw_html: str) -> str:
+    """全量可见文本：只去掉 script/style，导航与页脚都保留。
+
+    与 page.text 的区别就在这里——page.text 是 trafilatura 抽的「主体正文」，
+    导航/页脚/页眉都被它剥掉了；这个函数保留它们，所以能回答
+    「这个页面上到底有没有东西」而不只是「主体段落写了多少」。
+    """
+    t = re.sub(r"<(script|style)\b[^>]*>.*?</\1>", " ", raw_html, flags=re.I | re.S)
+    return _WS_RE.sub(" ", re.sub(r"<[^>]+>", " ", t)).strip()
+
+
 def _extract_text(raw_html: str, base_url: str, page: Page) -> None:
     """正文抽取用 trafilatura（去导航/页脚/广告效果最好）。"""
     try:
@@ -519,6 +555,19 @@ def _extract_text(raw_html: str, base_url: str, page: Page) -> None:
     )
     page.content_is_thin = page.word_count < THIN_CONTENT_WORDS
 
+    # ⚠️ 第二个尺子：全量可见文本（只去 script/style，导航页脚都算）。
+    #
+    # 为什么必须要有它：page.text 来自 trafilatura，而 trafilatura **会主动
+    # 剥掉 nav/footer/header**。于是导航重的页面 word_count 必然被压低——
+    # japanpost.jp 首页剥后 74 字符、含导航 1433 字符、223 条站内出链。
+    # soft404 规则拿 word_count 判「这页是不是空的」，是在用一把有偏的尺子量，
+    # 结果给 55 个正常页面报了「疑似软 404」。
+    #
+    # 两个尺子各有用途，别互相替代：
+    #   word_count        → 看主体内容质量（该字段存在的原因）
+    #   full_text_length  → 看页面到底有没有东西（反「尺子量错了」）
+    page.full_text_length = len(_full_visible_text(raw_html))
+
 
 # 浏览器会自动发起子资源请求的 <link rel> 值。
 # 不在这个白名单里的（alternate/hreflang、canonical、me、license、author、
@@ -545,8 +594,52 @@ def _is_fetched_link(el: Any) -> bool:
     return any(r in _FETCHED_LINK_RELS for r in rel)
 
 
+def _looks_js_rendered_shell(page: Page, raw_html: str) -> bool:
+    """正文是不是靠 JS 客户端渲染，静态 HTML 里看不到。
+
+    ⚠️ 这个标记存在的原因：没有它，soft404 规则会把「没渲染出来」当成
+    「页面是空的」。实测 www.agoda.com 一个 733KB 的页面，全量可见文本
+    **0 字**，被判成 likely_true_soft404 + HIGH——用户会收到
+    「高危：你这页是空页面」，然后去改一个内容饱满的电商首页。
+
+    规则层光看 word_count=0 分不出两件事：
+        这页没内容        vs        这页内容我看不见
+    必须提取层把事实递给它。
+
+    ⚠️ 判据是靠**量测**定下来的，不是拍的。diag_js.py 拿 11 条候选对比
+    4 个已知饱满的 JS 站页面：
+      - 单独用「HTML 体积」当判别式 **不成立**：>=100KB 时候选命中 6/11、
+        对照全中（shopify 662KB / airbnb 651KB / stripe 625KB）。
+        正常页面比 JS 空壳还大。
+      - 成立的是**组合信号**：大体积本身无意义，但「大到不像错误页」
+        与「静态里一个字都没有」同时成立，就只能是内容在 JS 里。
+          agoda      733KB  文本 0    出链 0-3   → 命中
+          intercom   318KB  文本 32   出链 0     → 命中
+          shopify    662KB  文本 6859 出链 186   → 不命中（它有真内容）
+          ghost.org 2618B  文本 174  出链 3     → 不命中（那才是真空页）
+    50KB 的下限来自错误页的实际体量：带样板导航的错误页通常 2-20KB，
+    50KB 远在其上；同时对照组全部有正文，不存在误伤。
+
+    第 3 个条件（出链少）不能省：内容在 JS 里时，静态 HTML 里通常也没
+    几条 <a>。少了它，shopify 那种「有内容但链接也少」的页可能被误标。
+    """
+    if page.full_text_length >= _JS_RENDERED_MAX_TEXT:
+        return False
+    if page.internal_link_count >= _JS_RENDERED_MAX_LINKS:
+        return False
+    # 体积够大：说明这不是一个「老实」的错误页，而是一堆 JS 包
+    if len(raw_html) >= _JS_RENDERED_MIN_BYTES:
+        return True
+    # 体积不大时，只认明确的框架痕迹（Vue 指令 / reactroot / ng-app /
+    # __NUXT__ 等）。⚠️ 不能只认标准挂载点 id=root|app|__next|__nuxt：
+    # agoda 用的是 <div id="agoda-spa">，挂载点叫什么在真实站点里是自由的。
+    return bool(_JS_MOUNT_RE.search(raw_html) or _JS_FRAMEWORK_RE.search(raw_html))
+
+
 def _derive(page: Page, raw_html: str, domain: str) -> None:
     """派生标记，避免每条规则重复计算。"""
+    page.likely_js_rendered = _looks_js_rendered_shell(page, raw_html)
+
     # 混合内容：HTTPS 页面里引用了 http:// 的非锚点资源
     if page.final_url and page.final_url.lower().startswith("https://"):
         try:

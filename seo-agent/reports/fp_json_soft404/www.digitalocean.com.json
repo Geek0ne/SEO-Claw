@@ -1,0 +1,150 @@
+{
+  "site_id": null,
+  "domain": "www.digitalocean.com",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T19:24:41.806760Z",
+  "finished_at": "2026-09-30T19:25:03.934265Z",
+  "pages_crawled": 5,
+  "pages_discovered": 1051,
+  "duration_seconds": 22.12751135599683,
+  "health_score": 97.5,
+  "score_breakdown": {
+    "total_deduction": 2.5,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 98.8,
+      "content": 98.8,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 2,
+    "total_pages": 4,
+    "per_code": {
+      "img.alt.missing": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.25,
+        "deduction": 1.25
+      },
+      "link.noanchor": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.25,
+        "deduction": 1.25
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "sitemap.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "站点没有可用的 sitemap",
+      "description": "没有 sitemap 时，搜索引擎只能靠内链发现页面，新页面和深埋页面的收录速度会明显变慢，抓取预算也用得更浪费。",
+      "fix_hint": "生成 XML sitemap，在 robots.txt 里声明它，并提交到 Google Search Console 和百度搜索资源平台。",
+      "fix_example": "User-agent: *\nAllow: /\nSitemap: https://example.com/sitemap.xml",
+      "evidence": {
+        "tried_paths": [],
+        "error": null
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://docs.digitalocean.com/products",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 53,
+        "total_images": 76,
+        "sample_srcs": [
+          "https://docs.digitalocean.com/images/icons/ml.8fa526f2000be550be4cf13328efa900204aadddf78ca969ef95c31dee1c9c94.svg",
+          "https://docs.digitalocean.com/images/icons/ml.8fa526f2000be550be4cf13328efa900204aadddf78ca969ef95c31dee1c9c94.svg",
+          "https://docs.digitalocean.com/images/icons/managed-agents.f79ae98f5da13fc4af3d14507de4224393c96848f50df6e94e7eb74a0a4f6e6f.svg",
+          "https://docs.digitalocean.com/images/icons/managed-agents.f79ae98f5da13fc4af3d14507de4224393c96848f50df6e94e7eb74a0a4f6e6f.svg",
+          "https://docs.digitalocean.com/images/icons/managed-agents.f79ae98f5da13fc4af3d14507de4224393c96848f50df6e94e7eb74a0a4f6e6f.svg"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.digitalocean.com/support",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 33,
+        "total_images": 299,
+        "sample_srcs": [
+          "https://docs.digitalocean.com/images/icons/accounts.7c3a46a4e139957c37b1ba530846464f3b7432b7bc00793db0d8e788940ddf69.svg",
+          "https://docs.digitalocean.com/images/icons/api.036c3c2a936b5b2476bb0d87df5a0c383c8f7d2ff1db91e7739de6f5e4c30614.svg",
+          "https://docs.digitalocean.com/images/icons/app-platform.965eeb0520b4c178cc9bf64423065e5aa5c2f47ad6102384e37beca3c079f287.svg",
+          "https://docs.digitalocean.com/images/icons/backups.8f2953b640369857d8e09577aab7309b64ba37e4be8cbad0f0514549bf449bd6.svg",
+          "https://docs.digitalocean.com/images/icons/bare-metal-gpus.7498b79d7a8142afb95399794d7f631c490388aa4fb5b30d9021292dca01d125.svg"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://docs.digitalocean.com/products",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 13,
+        "sample_hrefs": [
+          "https://docs.digitalocean.com/products/digitalocean-ai-native-cloud/",
+          "https://docs.digitalocean.com/products/compute/",
+          "https://docs.digitalocean.com/products/data-services/",
+          "https://docs.digitalocean.com/products/storage/",
+          "https://docs.digitalocean.com/products/databases/"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.digitalocean.com/support",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 256,
+        "sample_hrefs": [
+          "https://docs.digitalocean.com/support/create-support-ticket/",
+          "https://docs.digitalocean.com/platform/support-plans/",
+          "https://docs.digitalocean.com/support/how-to-completely-move-a-project-from-one-team-to-another/",
+          "https://docs.digitalocean.com/support/what-do-i-do-if-my-account-was-locked-during-sign-up/",
+          "https://docs.digitalocean.com/support/why-is-my-account-now-a-team/"
+        ]
+      }
+    }
+  ]
+}
