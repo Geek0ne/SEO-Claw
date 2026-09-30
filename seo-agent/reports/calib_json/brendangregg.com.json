@@ -1,0 +1,1502 @@
+{
+  "site_id": null,
+  "domain": "brendangregg.com",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T13:14:40.516036Z",
+  "finished_at": "2026-09-30T13:15:25.023695Z",
+  "pages_crawled": 25,
+  "pages_discovered": 2264,
+  "duration_seconds": 44.507666681020055,
+  "health_score": 77.1,
+  "score_breakdown": {
+    "total_deduction": 22.88,
+    "severity_counts": {
+      "critical": 0,
+      "high": 3,
+      "medium": 3,
+      "low": 1,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 95.2,
+      "architecture": 96.8,
+      "content": 86.9,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 98.2
+    },
+    "issue_count": 82,
+    "total_pages": 25,
+    "per_code": {
+      "http.mixed_content": {
+        "severity": "high",
+        "affected_pages": 3,
+        "ratio": 0.12,
+        "deduction": 1.8
+      },
+      "meta.missing": {
+        "severity": "high",
+        "affected_pages": 13,
+        "ratio": 0.52,
+        "deduction": 7.8
+      },
+      "sitemap.missing": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.04,
+        "deduction": 0.6
+      },
+      "canonical.missing": {
+        "severity": "medium",
+        "affected_pages": 24,
+        "ratio": 0.96,
+        "deduction": 4.8
+      },
+      "img.alt.missing": {
+        "severity": "medium",
+        "affected_pages": 23,
+        "ratio": 0.92,
+        "deduction": 4.6
+      },
+      "link.noanchor": {
+        "severity": "medium",
+        "affected_pages": 16,
+        "ratio": 0.64,
+        "deduction": 3.2
+      },
+      "title.too_short": {
+        "severity": "low",
+        "affected_pages": 2,
+        "ratio": 0.08,
+        "deduction": 0.08
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "http.mixed_content",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/dtracetoolkit.html",
+      "title": "HTTPS 页面存在混合内容",
+      "description": "HTTPS 页面里加载 http:// 资源时，浏览器会拦截或降级，Chrome 会直接标记页面为「不安全」，影响排名与用户信任。",
+      "fix_hint": "把所有 http:// 资源改成 https://，或用协议相对路径。",
+      "fix_example": "把 <img src=\"http://cdn.x.com/a.jpg\"> 改为 <img src=\"https://cdn.x.com/a.jpg\">",
+      "evidence": {
+        "page_url": "https://www.brendangregg.com/dtracetoolkit.html",
+        "offending_resources": [
+          "<img src=http://www.assoc-amazon.com/e/ir?t=deirdrestraug-20&l=as2&o=1&a=0132091518>"
+        ],
+        "note": "只统计 img/script/link/iframe 等子资源，不含 <a href> 超链接"
+      }
+    },
+    {
+      "code": "http.mixed_content",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/linuxperf.html",
+      "title": "HTTPS 页面存在混合内容",
+      "description": "HTTPS 页面里加载 http:// 资源时，浏览器会拦截或降级，Chrome 会直接标记页面为「不安全」，影响排名与用户信任。",
+      "fix_hint": "把所有 http:// 资源改成 https://，或用协议相对路径。",
+      "fix_example": "把 <img src=\"http://cdn.x.com/a.jpg\"> 改为 <img src=\"https://cdn.x.com/a.jpg\">",
+      "evidence": {
+        "page_url": "https://www.brendangregg.com/linuxperf.html",
+        "offending_resources": [
+          "<iframe src=http://www.slideshare.net/slideshow/embed_code/key/iHwlnb2xUcp0Tw>",
+          "<iframe src=http://www.slideshare.net/slideshow/embed_code/key/tg8BGxTTKxpAE5>",
+          "<iframe src=http://www.slideshare.net/slideshow/embed_code/key/lgH1USZ4yJ4Slh>"
+        ],
+        "note": "只统计 img/script/link/iframe 等子资源，不含 <a href> 超链接"
+      }
+    },
+    {
+      "code": "http.mixed_content",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/overview.html",
+      "title": "HTTPS 页面存在混合内容",
+      "description": "HTTPS 页面里加载 http:// 资源时，浏览器会拦截或降级，Chrome 会直接标记页面为「不安全」，影响排名与用户信任。",
+      "fix_hint": "把所有 http:// 资源改成 https://，或用协议相对路径。",
+      "fix_example": "把 <img src=\"http://cdn.x.com/a.jpg\"> 改为 <img src=\"https://cdn.x.com/a.jpg\">",
+      "evidence": {
+        "page_url": "https://www.brendangregg.com/overview.html",
+        "offending_resources": [
+          "<img src=http://www.assoc-amazon.com/e/ir?t=deirdrestraug-20&l=as2&o=1&a=0133390098>",
+          "<img src=http://www.assoc-amazon.com/e/ir?t=deirdrestraug-20&l=as2&o=1&a=0132091518>",
+          "<img src=http://www.assoc-amazon.com/e/ir?t=deirdrestraug-20&l=as2&o=1&a=0131568191>"
+        ],
+        "note": "只统计 img/script/link/iframe 等子资源，不含 <a href> 超链接"
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/activebenchmarking.html",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/books.html",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/colonygraphs.html",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/dtkshdemos.html",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/frequencytrails.html",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/guessinggame.html",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/heatmaps.html",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/offcpuanalysis.html",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/overview.html",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/specials.html",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/tsamethod.html",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/usemethod.html",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/wss.html",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "sitemap.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "站点没有可用的 sitemap",
+      "description": "没有 sitemap 时，搜索引擎只能靠内链发现页面，新页面和深埋页面的收录速度会明显变慢，抓取预算也用得更浪费。",
+      "fix_hint": "生成 XML sitemap，在 robots.txt 里声明它，并提交到 Google Search Console 和百度搜索资源平台。",
+      "fix_example": "User-agent: *\nAllow: /\nSitemap: https://example.com/sitemap.xml",
+      "evidence": {
+        "tried_paths": [],
+        "error": null
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/activebenchmarking.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/blog/index.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/books.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/bpf-performance-tools-book.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/colonygraphs.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/dtkshdemos.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/dtrace.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/dtracetoolkit.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/ebpf.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/flamegraphs.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/flamescope.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/frequencytrails.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/guessinggame.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/heatmaps.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/linuxperf.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/methodology.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/offcpuanalysis.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/overview.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/perf.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/specials.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/tsamethod.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/usemethod.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/wss.html",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://brendangregg.com/",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 5,
+        "total_images": 5,
+        "sample_srcs": [
+          "https://www.brendangregg.com/Images/sysperf2nd_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/brendan_rajasthan2011_thumb.jpg",
+          "https://www.brendangregg.com/Images/sysperf2nd_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_360.jpg"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/activebenchmarking.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 1,
+        "total_images": 1,
+        "sample_srcs": [
+          "https://www.brendangregg.com/ActiveBenchmarking/passivebrendan.jpg"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/blog/index.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 4,
+        "total_images": 4,
+        "sample_srcs": [
+          "https://www.brendangregg.com/Images/sysperf2nd_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/sysperf2nd_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_360.jpg"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/books.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 3,
+        "total_images": 3,
+        "sample_srcs": [
+          "https://www.brendangregg.com/Images/bookshelf_2025_thumb.jpg",
+          "https://www.brendangregg.com/Images/bookshelf_2021_thumb.jpg",
+          "https://www.brendangregg.com/Images/bookshelf_2006_thumb.jpg"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/bpf-performance-tools-book.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 5,
+        "total_images": 7,
+        "sample_srcs": [
+          "https://www.brendangregg.com/Images/sysperf2nd_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_1348.png",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_chinese1_660.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_chinese2_800.jpg"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/colonygraphs.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 1,
+        "total_images": 1,
+        "sample_srcs": [
+          "https://www.brendangregg.com/ColonyGraphs/pmap-datacenter-crop.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/dtkshdemos.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 7,
+        "total_images": 7,
+        "sample_srcs": [
+          "https://www.brendangregg.com/DtkshDemos/xvmstat.png",
+          "https://www.brendangregg.com/DtkshDemos/xplot01.png",
+          "https://www.brendangregg.com/DtkshDemos/xplot02.png",
+          "https://www.brendangregg.com/DtkshDemos/xvmstat.png",
+          "https://www.brendangregg.com/DtkshDemos/xworldclock.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/dtrace.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 8,
+        "total_images": 8,
+        "sample_srcs": [
+          "https://www.brendangregg.com/Images/sysperf2nd_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/dtracebookcover_496.jpg",
+          "https://www.brendangregg.com/DTrace/iosnoop_tar1.png",
+          "https://www.brendangregg.com/DTaz/dtaz07.PNG"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/dtracetoolkit.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 4,
+        "total_images": 4,
+        "sample_srcs": [
+          "https://www.brendangregg.com/Images/sysperf2nd_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_360.jpg",
+          "https://www.brendangregg.com/DTraceToolkit/Bin099_04c.png",
+          "https://www.brendangregg.com/Images/dtracebookcover_123.jpg"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/ebpf.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 12,
+        "total_images": 14,
+        "sample_srcs": [
+          "https://www.brendangregg.com/Images/sysperf2nd_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_250.png",
+          "https://www.brendangregg.com/eBPF/tracex3_heatmap_01.png",
+          "https://www.brendangregg.com/Images/youtube-Velocity2017.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/flamegraphs.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 6,
+        "total_images": 6,
+        "sample_srcs": [
+          "https://www.brendangregg.com/Images/sysperf2nd_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_360.jpg",
+          "https://www.brendangregg.com/FlameGraphs/cpu-mysql-crop-500.png",
+          "https://www.brendangregg.com/Images/youtube-USENIXATC17.png",
+          "https://www.brendangregg.com/Images/sysperf2nd_bookcover_360.jpg"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/flamescope.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 9,
+        "total_images": 9,
+        "sample_srcs": [
+          "https://www.brendangregg.com/Images/sysperf2nd_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_360.jpg",
+          "https://www.brendangregg.com/FlameScope/flamescope-heatmap09-crop-annotated.png",
+          "https://www.brendangregg.com/FlameScope/flamescope_legend-sml.png",
+          "https://www.brendangregg.com/FlameScope/flamescope-02-annotated.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/frequencytrails.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 1,
+        "total_images": 1,
+        "sample_srcs": [
+          "https://www.brendangregg.com/FrequencyTrails/frequencytrail-mean-tshirt_500.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/heatmaps.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 1,
+        "total_images": 1,
+        "sample_srcs": [
+          "https://www.brendangregg.com/HeatMaps/latency_heatmap_tall-500.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/linuxperf.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 13,
+        "total_images": 13,
+        "sample_srcs": [
+          "https://www.brendangregg.com/Images/sysperf2nd_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_360.jpg",
+          "https://www.brendangregg.com/Perf/linux_observability_tools.png",
+          "https://www.brendangregg.com/Perf/linux_static_tools_333.png",
+          "https://www.brendangregg.com/Perf/linux_benchmarking_tools_333.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/offcpuanalysis.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 3,
+        "total_images": 3,
+        "sample_srcs": [
+          "https://www.brendangregg.com/Perf/thread_states.png",
+          "https://www.brendangregg.com/FlameGraphs/off-mysqld1.png",
+          "https://www.brendangregg.com/FlameGraphs/off-mysqld2.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/overview.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 8,
+        "total_images": 8,
+        "sample_srcs": [
+          "https://www.brendangregg.com/Images/sysperf2nd_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/brendan-yow-2018.jpg",
+          "https://www.brendangregg.com/Images/sysperf2nd_bookcover_250.png",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_250.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/perf.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 10,
+        "total_images": 10,
+        "sample_srcs": [
+          "https://www.brendangregg.com/Images/sysperf2nd_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_360.jpg",
+          "https://www.brendangregg.com/perf_events/perf_events_map.png",
+          "https://www.brendangregg.com/Images/youtube-KernelRecipes2017.png",
+          "https://www.brendangregg.com/perf_events/perf_events_map.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/specials.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 4,
+        "total_images": 4,
+        "sample_srcs": [
+          "https://www.brendangregg.com/Specials/gedwelcome.png",
+          "https://www.brendangregg.com/Specials/ged01.png",
+          "https://www.brendangregg.com/Specials/xmanagerstat1.png",
+          "https://www.brendangregg.com/Specials/simplified_linux_kernel.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 6,
+        "total_images": 7,
+        "sample_srcs": [
+          "https://www.brendangregg.com/Images/sysperf2nd_bookcover_360.jpg",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_360.jpg",
+          "https://www.brendangregg.com/SysPerf/figure_method_useflownew-500.png",
+          "https://www.brendangregg.com/SysPerf/figure_method_models1-500.png",
+          "https://www.brendangregg.com/SysPerf/figure_net_linuxstack-500.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/tsamethod.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 1,
+        "total_images": 4,
+        "sample_srcs": [
+          "https://www.brendangregg.com/TSAmethod/TSA_method_SmartOS_whiteboard2_500.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/usemethod.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 4,
+        "total_images": 4,
+        "sample_srcs": [
+          "https://www.brendangregg.com/USEmethod/B707_emergency01_crop0.jpg",
+          "https://www.brendangregg.com/USEmethod/v480.png",
+          "https://www.brendangregg.com/USEmethod/usemethod_flow.png",
+          "https://www.brendangregg.com/USEmethod/apollo_LM_guidance.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/wss.html",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 3,
+        "total_images": 3,
+        "sample_srcs": [
+          "https://www.brendangregg.com/WSS/wss-profile2-log2.png",
+          "https://www.brendangregg.com/WSS/wss-profile1-log.png",
+          "https://www.brendangregg.com/WSS/wss-profile2-log.png"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://brendangregg.com/",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 5,
+        "sample_hrefs": [
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+          "https://www.brendangregg.com/bpf-performance-tools-book.html",
+          "https://www.brendangregg.com/appearance.html",
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+          "https://www.brendangregg.com/bpf-performance-tools-book.html"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/blog/index.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 4,
+        "sample_hrefs": [
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+          "https://www.brendangregg.com/bpf-performance-tools-book.html",
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+          "https://www.brendangregg.com/bpf-performance-tools-book.html"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/books.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 3,
+        "sample_hrefs": [
+          "https://www.brendangregg.com/Images/bookshelf_2025.jpg",
+          "https://www.brendangregg.com/Images/bookshelf_2021.jpg",
+          "https://www.brendangregg.com/Images/bookshelf_2006.jpg"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/bpf-performance-tools-book.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 3,
+        "sample_hrefs": [
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+          "https://www.brendangregg.com/Images/bpfperftools_bookcover_1348.png",
+          "https://www.brendangregg.com/BPF/bpf_performance_tools_book.png"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/dtrace.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 5,
+        "sample_hrefs": [
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+          "https://www.brendangregg.com/bpf-performance-tools-book.html",
+          "https://www.brendangregg.com/DTrace/iosnoop_tar1big.png",
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+          "https://www.brendangregg.com/bpf-performance-tools-book.html"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/dtracetoolkit.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 3,
+        "sample_hrefs": [
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+          "https://www.brendangregg.com/bpf-performance-tools-book.html",
+          "https://www.brendangregg.com/DTraceToolkit/Bin099_04c.png"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/ebpf.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 13,
+        "sample_hrefs": [
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+          "https://www.brendangregg.com/bpf-performance-tools-book.html",
+          "https://www.brendangregg.com/BPF/bcc_tracing_tools_early2019.png",
+          "https://www.brendangregg.com/BPF/bpftrace_tools_early2019.png",
+          "https://www.brendangregg.com/bpf-performance-tools-book.html"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/flamegraphs.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 5,
+        "sample_hrefs": [
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+          "https://www.brendangregg.com/bpf-performance-tools-book.html",
+          "https://www.brendangregg.com/FlameGraphs/cpu-mysql-updated.svg",
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+          "https://www.brendangregg.com/bpf-performance-tools-book.html"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/flamescope.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 9,
+        "sample_hrefs": [
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+          "https://www.brendangregg.com/bpf-performance-tools-book.html",
+          "https://www.brendangregg.com/FlameScope/flamescope-heatmap09-crop-annotated.png",
+          "https://www.brendangregg.com/FlameScope/flamescope_legend-sml.png",
+          "https://www.brendangregg.com/FlameScope/flamescope-02-annotated.png"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/linuxperf.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 13,
+        "sample_hrefs": [
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+          "https://www.brendangregg.com/bpf-performance-tools-book.html",
+          "https://www.brendangregg.com/Perf/linux_observability_tools.png",
+          "https://www.brendangregg.com/Perf/linux_static_tools.png",
+          "https://www.brendangregg.com/Perf/linux_benchmarking_tools.png"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/overview.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 5,
+        "sample_hrefs": [
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+          "https://www.brendangregg.com/bpf-performance-tools-book.html",
+          "https://www.brendangregg.com/blog/2019-04-26/yow2018-cloud-performance-netflix.html",
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+          "https://www.brendangregg.com/bpf-performance-tools-book.html"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/perf.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 6,
+        "sample_hrefs": [
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+          "https://www.brendangregg.com/bpf-performance-tools-book.html",
+          "https://www.brendangregg.com/perf_events/perf_events_map.png",
+          "https://www.brendangregg.com/perf_events/perf_events_map.png",
+          "https://www.brendangregg.com/systems-performance-2nd-edition-book.html"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/specials.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 2,
+        "sample_hrefs": [
+          "https://www.brendangregg.com/Specials/gedwelcome.png",
+          "https://www.brendangregg.com/Specials/simplified_linux_kernel.png"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/systems-performance-2nd-edition-book.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 5,
+        "sample_hrefs": [
+          "https://www.brendangregg.com/bpf-performance-tools-book.html",
+          "https://www.brendangregg.com/SysPerf/figure_method_useflownew.png",
+          "https://www.brendangregg.com/SysPerf/figure_method_models1.png",
+          "https://www.brendangregg.com/SysPerf/figure_net_linuxstack.png",
+          "https://www.brendangregg.com/SysPerf/figure_mem_allocators.png"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/tsamethod.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 4,
+        "sample_hrefs": [
+          "https://www.brendangregg.com/TSAmethod/TSA_method_SmartOS_whiteboard2_500.png",
+          "https://www.brendangregg.com/TSAmethod/processlife_1000.png",
+          "https://www.brendangregg.com/TSAmethod/tsa-solaris.png",
+          "https://www.brendangregg.com/TSAmethod/RSTS_states_1200.png"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/usemethod.html",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 4,
+        "sample_hrefs": [
+          "https://www.brendangregg.com/USEmethod/B707_emergency01.jpg",
+          "https://www.brendangregg.com/USEmethod/v480.png",
+          "https://www.brendangregg.com/USEmethod/usemethod_flow.png",
+          "https://www.brendangregg.com/USEmethod/apollo_LM_guidance.png"
+        ]
+      }
+    },
+    {
+      "code": "title.too_short",
+      "severity": "low",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/tsamethod.html",
+      "title": "title 过短，浪费了黄金位置",
+      "description": "过短的 title 通常意味着没覆盖到用户搜索的关键词，浪费搜索结果里最显眼的位置。\n⚠️ 例外：站名/人名本身就是完整名称（如「Julia Evans」），或站点是单页应用时，短 title 是正常选择，不要为了凑长度硬塞关键词。",
+      "fix_hint": "补充用户真实会用到的搜索词，保持自然可读。",
+      "fix_example": null,
+      "evidence": {
+        "title": "The TSA Method",
+        "length": 14,
+        "min": 15
+      }
+    },
+    {
+      "code": "title.too_short",
+      "severity": "low",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.brendangregg.com/usemethod.html",
+      "title": "title 过短，浪费了黄金位置",
+      "description": "过短的 title 通常意味着没覆盖到用户搜索的关键词，浪费搜索结果里最显眼的位置。\n⚠️ 例外：站名/人名本身就是完整名称（如「Julia Evans」），或站点是单页应用时，短 title 是正常选择，不要为了凑长度硬塞关键词。",
+      "fix_hint": "补充用户真实会用到的搜索词，保持自然可读。",
+      "fix_example": null,
+      "evidence": {
+        "title": "The USE Method",
+        "length": 14,
+        "min": 15
+      }
+    }
+  ]
+}

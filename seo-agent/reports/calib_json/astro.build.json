@@ -1,0 +1,188 @@
+{
+  "site_id": null,
+  "domain": "astro.build",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T13:41:45.374919Z",
+  "finished_at": "2026-09-30T13:42:13.430912Z",
+  "pages_crawled": 25,
+  "pages_discovered": 1579,
+  "duration_seconds": 28.055999136005994,
+  "health_score": 99.2,
+  "score_breakdown": {
+    "total_deduction": 0.8,
+    "severity_counts": {
+      "critical": 0,
+      "high": 1,
+      "medium": 1,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 99.2,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 6,
+    "total_pages": 25,
+    "per_code": {
+      "title.duplicate": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.04,
+        "deduction": 0.6
+      },
+      "meta.duplicate": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.04,
+        "deduction": 0.2
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "title.duplicate",
+      "severity": "high",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 title 完全相同",
+      "description": "重复的 title 会让搜索引擎无法区分这些页面，权重被分散，还可能触发重复内容判断。",
+      "fix_hint": "为每个页面写能体现其独特价值的 title，用页面主题词区分。",
+      "fix_example": null,
+      "evidence": {
+        "title": "The Astro Blog | Astro",
+        "url_count": 16,
+        "duplicate_ratio": 0.64,
+        "sample_urls": [
+          "https://astro.build/blog/",
+          "https://astro.build/blog/2/",
+          "https://astro.build/blog/3/",
+          "https://astro.build/blog/4/",
+          "https://astro.build/blog/5/",
+          "https://astro.build/blog/6/",
+          "https://astro.build/blog/7/",
+          "https://astro.build/blog/8/",
+          "https://astro.build/blog/9/",
+          "https://astro.build/blog/10/"
+        ]
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "Get all the latest news from the Astroverse.",
+        "url_count": 16,
+        "sample_urls": [
+          "https://astro.build/blog/",
+          "https://astro.build/blog/2/",
+          "https://astro.build/blog/3/",
+          "https://astro.build/blog/4/",
+          "https://astro.build/blog/5/",
+          "https://astro.build/blog/6/",
+          "https://astro.build/blog/7/",
+          "https://astro.build/blog/8/",
+          "https://astro.build/blog/9/",
+          "https://astro.build/blog/10/"
+        ]
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://astro.build/blog/12/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 169,
+        "text_preview": "30% faster and more powerful than ever, Astro 3.0 is here! Includes new features and enhancements around View Transition",
+        "status_code": 200,
+        "internal_outbound_links": 64,
+        "inbound_links": 8,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://astro.build/blog/2/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 292,
+        "text_preview": "Welcome, world Get all the latest news from the Astroverse. - Announcing CloudCannon as an official Astro partner, spons",
+        "status_code": 200,
+        "internal_outbound_links": 63,
+        "inbound_links": 8,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://astro.build/blog/4/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 294,
+        "text_preview": "Welcome, world Get all the latest news from the Astroverse. - We are happy to announce Webflow's $150,000 donation to As",
+        "status_code": 200,
+        "internal_outbound_links": 64,
+        "inbound_links": 8,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://astro.build/blog/5/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 163,
+        "text_preview": "Meet Astro’s 2025 Technical Steering Committee and learn how our open governance model supports the framework’s growth, ",
+        "status_code": 200,
+        "internal_outbound_links": 64,
+        "inbound_links": 8,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    }
+  ]
+}

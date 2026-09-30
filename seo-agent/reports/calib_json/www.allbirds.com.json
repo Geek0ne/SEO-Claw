@@ -1,0 +1,882 @@
+{
+  "site_id": null,
+  "domain": "www.allbirds.com",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T13:27:02.604416Z",
+  "finished_at": "2026-09-30T13:27:43.456254Z",
+  "pages_crawled": 25,
+  "pages_discovered": 5426,
+  "duration_seconds": 40.85184501099866,
+  "health_score": 94.4,
+  "score_breakdown": {
+    "total_deduction": 5.6,
+    "severity_counts": {
+      "critical": 1,
+      "high": 2,
+      "medium": 3,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 98.6,
+      "architecture": 100.0,
+      "content": 95.8,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 42,
+    "total_pages": 25,
+    "per_code": {
+      "title.missing": {
+        "severity": "critical",
+        "affected_pages": 1,
+        "ratio": 0.04,
+        "deduction": 1.2
+      },
+      "h1.missing": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.04,
+        "deduction": 0.6
+      },
+      "meta.missing": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.04,
+        "deduction": 0.6
+      },
+      "canonical.missing": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.04,
+        "deduction": 0.2
+      },
+      "meta.duplicate": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.04,
+        "deduction": 0.2
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 14,
+        "ratio": 0.56,
+        "deduction": 2.8
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "title.missing",
+      "severity": "critical",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/agents.md",
+      "title": "页面缺少 title 标签",
+      "description": "title 是搜索结果里最重要的可点击文案。缺失时搜索引擎会自行从页面内容里截取，排名与点击率都会受损。",
+      "fix_hint": "在 <head> 里加一个 <title>，写成「核心关键词 - 品牌名」的结构。",
+      "fix_example": "<head>\n  <title>防水登山鞋 男款防滑 - 品牌名</title>\n</head>",
+      "evidence": {
+        "html_title_found": false
+      }
+    },
+    {
+      "code": "h1.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/agents.md",
+      "title": "页面没有 H1 标题",
+      "description": "H1 是页面主题的最强信号。没有 H1 时，搜索引擎只能靠正文猜测这页在讲什么。",
+      "fix_hint": "加一个 H1 写清页面主标题，位置放在正文开头。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 0
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/agents.md",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "canonical.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/agents.md",
+      "title": "页面缺少 canonical 标签",
+      "description": "URL 带参数（?utm_source、分页、筛选条件）时，搜索引擎会把它们当成不同页面，权重被分散。canonical 明确指定权威版本。",
+      "fix_hint": "在 <head> 里加 <link rel=\"canonical\" href=\"本页的规范地址\">。",
+      "fix_example": "<link rel=\"canonical\" href=\"https://example.com/product/123\">",
+      "evidence": {
+        "canonical_found": false
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "Allbirds Wool Runners for women are lightweight sneakers, washable, and made from sustainable and recycled materials. FREE shipping & returns. Our Wool Runners are destined to be a trusted companion.",
+        "url_count": 3,
+        "sample_urls": [
+          "https://www.allbirds.com/products/womens-wool-runners-natural-black",
+          "https://www.allbirds.com/products/womens-wool-runners-natural-white",
+          "https://www.allbirds.com/products/womens-wool-runners-true-black"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/mens-wool-runners",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Allbirds Wool Runners, Men's | Reviews, SIzing Info | Casual Walking, Running Shoes",
+        "length": 83,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/mens-wool-runners-true-black",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Allbirds Men's Wool Runners - True Black (Black with Cream Sole)",
+        "length": 64,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/trino-quarters-onyx",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Eco-friendly, Breathable, Wool Quarter Socks | Trino® Quarters - Onyx | Allbirds",
+        "length": 80,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/trino-tubers-navy-night",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Trino® Tubers - Navy Night | Eco-friendly, Breathable, Wool Tube Socks | Allbirds",
+        "length": 81,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/trino-tubers-onyx",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Trino® Tubers - Onyx | Eco-friendly, Breathable, Wool Tube Socks | Allbirds",
+        "length": 75,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-tree-breezers",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Allbirds Tree Breezers (Navy Night) | Sustainable Flats for Women | Reviews & Sizing Info",
+        "length": 89,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-tree-breezers-jet-black",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Women's Tree Breezers - Jet Black (Black Sole) | Washable Flats | Allbirds",
+        "length": 74,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-tree-breezers-mist",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Allbirds Tree Breezers & Reviews | Mist (Light Green) | Sustainable Flats",
+        "length": 73,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-trino-thong-nimbus",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Women's Trino® Thong - Nimbus | Thongs From Sustainable Materials | Allbirds",
+        "length": 76,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-trino-thong-peppercorn",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Women's Trino® Thong - Peppercorn | Thongs From Renewable Materials, Reviews | Allbirds",
+        "length": 87,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-wool-loungers",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Allbirds Wool Loungers & Reviews, Women's (Dapple Grey) | Wool Slip-Ons/Slippers, Sustainably Made",
+        "length": 98,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-wool-runner-mizzles-natural-grey",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Allbirds Wool Runner Mizzles & Reviews, Women's (Natural Grey) | Water Repellent Wool Shoes",
+        "length": 91,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-wool-runner-up-mizzles-natural-grey",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Allbirds Wool Runner-up Mizzles & Reviews, Women's (Natural Grey) | Wet Weather High-Top Sneaker",
+        "length": 96,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-wool-runners-true-black",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Allbirds Wool Runners & Reviews, Women's | True Black | Casual Sneakers",
+        "length": 71,
+        "limit": 60
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/mens-tree-skippers-sesame",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Men's Tree Skipper",
+          "Men's Tree Skipper",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/mens-wool-runners",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Men's Wool Runner",
+          "Men's Wool Runner",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/mens-wool-runners-natural-white",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Men's Wool Runner",
+          "Men's Wool Runner",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/mens-wool-runners-savanna-night-navy",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Men's Wool Runner",
+          "Men's Wool Runner",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/mens-wool-runners-true-black",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Men's Wool Runner",
+          "Men's Wool Runner",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/trino-quarters-onyx",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Trino® Quarters",
+          "Trino® Quarters",
+          "Better things in a better way."
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/trino-tubers-navy-night",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Trino® Tubers",
+          "Trino® Tubers",
+          "Better things in a better way."
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/trino-tubers-onyx",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Trino® Tubers",
+          "Trino® Tubers",
+          "Better things in a better way."
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-tree-breezers",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 4,
+        "h1_list": [
+          "Women's Tree Breezer",
+          "Women's Tree Breezer",
+          "Breathable By Nature",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-tree-breezers-jet-black",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 4,
+        "h1_list": [
+          "Women's Tree Breezer",
+          "Women's Tree Breezer",
+          "Breathable By Nature",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-tree-breezers-mist",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 4,
+        "h1_list": [
+          "Women's Tree Breezer",
+          "Women's Tree Breezer",
+          "Breathable By Nature",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-trino-thong-nimbus",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Women's Trino® Thong",
+          "Women's Trino® Thong",
+          "Better things in a better way."
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-trino-thong-peppercorn",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Women's Trino® Thong",
+          "Women's Trino® Thong",
+          "Better things in a better way."
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-wool-loungers",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Women's Wool Lounger",
+          "Women's Wool Lounger",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-wool-loungers-natural-grey",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Women's Wool Lounger",
+          "Women's Wool Lounger",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-wool-loungers-tuke-jam",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Women's Wool Lounger",
+          "Women's Wool Lounger",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-wool-runner-mizzles-natural-grey",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Women's Wool Runner Mizzle",
+          "Women's Wool Runner Mizzle",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-wool-runner-mizzles-true-black",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Women's Wool Runner Mizzle",
+          "Women's Wool Runner Mizzle",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-wool-runner-up-mizzles-natural-grey",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Women's Wool Runner-up Mizzle",
+          "Women's Wool Runner-up Mizzle",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-wool-runners-natural-black",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Women's Wool Runner",
+          "Women's Wool Runner",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-wool-runners-natural-white",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Women's Wool Runner",
+          "Women's Wool Runner",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-wool-runners-savanna-night-navy",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Women's Wool Runner",
+          "Women's Wool Runner",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    },
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.allbirds.com/products/womens-wool-runners-true-black",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 3,
+        "h1_list": [
+          "Women's Wool Runner",
+          "Women's Wool Runner",
+          "Better Things in a Better Way"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    }
+  ]
+}

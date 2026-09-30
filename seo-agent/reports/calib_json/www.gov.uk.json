@@ -1,0 +1,985 @@
+{
+  "site_id": null,
+  "domain": "www.gov.uk",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T13:39:34.214837Z",
+  "finished_at": "2026-09-30T13:40:16.640513Z",
+  "pages_crawled": 25,
+  "pages_discovered": 21787,
+  "duration_seconds": 42.42568204598501,
+  "health_score": 85.4,
+  "score_breakdown": {
+    "total_deduction": 14.6,
+    "severity_counts": {
+      "critical": 1,
+      "high": 2,
+      "medium": 4,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 97.6,
+      "architecture": 99.6,
+      "content": 88.2,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 53,
+    "total_pages": 25,
+    "per_code": {
+      "noindex.present": {
+        "severity": "critical",
+        "affected_pages": 2,
+        "ratio": 0.08,
+        "deduction": 2.4
+      },
+      "meta.missing": {
+        "severity": "high",
+        "affected_pages": 9,
+        "ratio": 0.36,
+        "deduction": 5.4
+      },
+      "title.duplicate": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.04,
+        "deduction": 0.6
+      },
+      "img.alt.missing": {
+        "severity": "medium",
+        "affected_pages": 9,
+        "ratio": 0.36,
+        "deduction": 1.8
+      },
+      "link.noanchor": {
+        "severity": "medium",
+        "affected_pages": 2,
+        "ratio": 0.08,
+        "deduction": 0.4
+      },
+      "meta.duplicate": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.04,
+        "deduction": 0.2
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 19,
+        "ratio": 0.76,
+        "deduction": 3.8
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "noindex.present",
+      "severity": "critical",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/employment-tribunal-decisions/miss-m-warwick-v-nhs-business-services-authority-t-a-midlands-and-lancashire-csu-2411762-2018",
+      "title": "页面被 noindex 屏蔽收录",
+      "description": "noindex 会让页面完全不出现在搜索结果里。这通常是开发环境忘记删，或者模板改版时误加。",
+      "fix_hint": "如果页面应该被收录，删掉 noindex；如果是故意屏蔽（如分页页），请在 sitemap 中也排除它。",
+      "fix_example": null,
+      "evidence": {
+        "robots_meta": "noindex, nofollow"
+      }
+    },
+    {
+      "code": "noindex.present",
+      "severity": "critical",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/employment-tribunal-decisions/mrs-v-shaw-v-smart-cars-taxis-mr-k-mr-m-hawkins-1303974-2017",
+      "title": "页面被 noindex 屏蔽收录",
+      "description": "noindex 会让页面完全不出现在搜索结果里。这通常是开发环境忘记删，或者模板改版时误加。",
+      "fix_hint": "如果页面应该被收录，删掉 noindex；如果是故意屏蔽（如分页页），请在 sitemap 中也排除它。",
+      "fix_example": null,
+      "evidence": {
+        "robots_meta": "noindex, nofollow"
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/cawdle-fen-internal-drainage-board-npsna001880-application-made-to-abstract-water/cawdle-fen-internal-drainage-board-npsna001880-application-made-to-abstract-water",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/cb21-5pa-mr-john-kaye-environmental-permit-application-advertisement-eprfb3552gga001/cb21-5pa-mr-john-kaye-environmental-permit-application-advertisement-eprfb3552gga001",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/esfa-update-1-april-2020/esfa-update-academies-1-april-2020",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/esfa-update-1-april-2020/esfa-update-further-education-1-april-2020",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/esfa-update-1-april-2020/esfa-update-local-authorities-1-april-2020",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/gu10-5aw-mr-peter-mead-environmental-permit-application-advertisement-epryb3597ena001/gu10-5aw-mr-peter-mead-environmental-permit-application-advertisement",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/reconstitution-of-the-east-suffolk-internal-drainage-board/east-suffolk-internal-drainage-board-reconstitution",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/tn22-4pa-mr-alfie-white-environmental-permit-application-advertisement-eprwb3094eda001/tn22-4pa-mr-alfie-white-environmental-permit-application-advertisement",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "meta.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/turkmenistan-country-of-concern--2/turkmenistan-country-of-concern",
+      "title": "页面缺少 meta description",
+      "description": "description 不直接影响排名，但它是搜索结果里的广告文案。缺失时搜索引擎自动截取正文，通常读起来不连贯，会明显降低点击率。",
+      "fix_hint": "补一段 70~160 字符的描述，包含核心关键词和一个明确的行动理由。",
+      "fix_example": "<meta name=\"description\" content=\"专业防水登山鞋，防滑耐磨，7天无理由退换。限时立减 200 元。\">",
+      "evidence": {
+        "meta_description_found": false
+      }
+    },
+    {
+      "code": "title.duplicate",
+      "severity": "high",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 title 完全相同",
+      "description": "重复的 title 会让搜索引擎无法区分这些页面，权重被分散，还可能触发重复内容判断。",
+      "fix_hint": "为每个页面写能体现其独特价值的 title，用页面主题词区分。",
+      "fix_example": null,
+      "evidence": {
+        "title": "[Withdrawn] CB21 5PA, Mr John Kaye: environmental permit application advertisement - EPR/FB3552GG/A001 - GOV.UK",
+        "url_count": 2,
+        "duplicate_ratio": 0.08,
+        "sample_urls": [
+          "https://www.gov.uk/government/publications/cb21-5pa-mr-john-kaye-environmental-permit-application-advertisement-eprfb3552gga001/cb21-5pa-mr-john-kaye-environmental-permit-application-advertisement-eprfb3552gga001",
+          "https://www.gov.uk/government/publications/cb21-5pa-mr-john-kaye-environmental-permit-application-advertisement-eprfb3552gga001"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/cawdle-fen-internal-drainage-board-npsna001880-application-made-to-abstract-water/cawdle-fen-internal-drainage-board-npsna001880-application-made-to-abstract-water",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 1,
+        "total_images": 2,
+        "sample_srcs": [
+          "https://www.gov.uk/assets/frontend/open-government-licence-min-93b6a51b518ff99714a1aa2a7d2162735c155ec3cb073c75fb88b2a332fa83d3.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/cb21-5pa-mr-john-kaye-environmental-permit-application-advertisement-eprfb3552gga001/cb21-5pa-mr-john-kaye-environmental-permit-application-advertisement-eprfb3552gga001",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 1,
+        "total_images": 2,
+        "sample_srcs": [
+          "https://www.gov.uk/assets/frontend/open-government-licence-min-93b6a51b518ff99714a1aa2a7d2162735c155ec3cb073c75fb88b2a332fa83d3.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/esfa-update-1-april-2020/esfa-update-academies-1-april-2020",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 1,
+        "total_images": 1,
+        "sample_srcs": [
+          "https://www.gov.uk/assets/frontend/open-government-licence-min-93b6a51b518ff99714a1aa2a7d2162735c155ec3cb073c75fb88b2a332fa83d3.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/esfa-update-1-april-2020/esfa-update-further-education-1-april-2020",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 1,
+        "total_images": 1,
+        "sample_srcs": [
+          "https://www.gov.uk/assets/frontend/open-government-licence-min-93b6a51b518ff99714a1aa2a7d2162735c155ec3cb073c75fb88b2a332fa83d3.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/esfa-update-1-april-2020/esfa-update-local-authorities-1-april-2020",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 1,
+        "total_images": 1,
+        "sample_srcs": [
+          "https://www.gov.uk/assets/frontend/open-government-licence-min-93b6a51b518ff99714a1aa2a7d2162735c155ec3cb073c75fb88b2a332fa83d3.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/gu10-5aw-mr-peter-mead-environmental-permit-application-advertisement-epryb3597ena001/gu10-5aw-mr-peter-mead-environmental-permit-application-advertisement",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 1,
+        "total_images": 2,
+        "sample_srcs": [
+          "https://www.gov.uk/assets/frontend/open-government-licence-min-93b6a51b518ff99714a1aa2a7d2162735c155ec3cb073c75fb88b2a332fa83d3.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/reconstitution-of-the-east-suffolk-internal-drainage-board/east-suffolk-internal-drainage-board-reconstitution",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 1,
+        "total_images": 2,
+        "sample_srcs": [
+          "https://www.gov.uk/assets/frontend/open-government-licence-min-93b6a51b518ff99714a1aa2a7d2162735c155ec3cb073c75fb88b2a332fa83d3.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/tn22-4pa-mr-alfie-white-environmental-permit-application-advertisement-eprwb3094eda001/tn22-4pa-mr-alfie-white-environmental-permit-application-advertisement",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 1,
+        "total_images": 2,
+        "sample_srcs": [
+          "https://www.gov.uk/assets/frontend/open-government-licence-min-93b6a51b518ff99714a1aa2a7d2162735c155ec3cb073c75fb88b2a332fa83d3.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/turkmenistan-country-of-concern--2/turkmenistan-country-of-concern",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 1,
+        "total_images": 1,
+        "sample_srcs": [
+          "https://www.gov.uk/assets/frontend/open-government-licence-min-93b6a51b518ff99714a1aa2a7d2162735c155ec3cb073c75fb88b2a332fa83d3.png"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/esfa-update-1-april-2020",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 3,
+        "sample_hrefs": [
+          "https://www.gov.uk/government/publications/esfa-update-1-april-2020/esfa-update-further-education-1-april-2020",
+          "https://www.gov.uk/government/publications/esfa-update-1-april-2020/esfa-update-academies-1-april-2020",
+          "https://www.gov.uk/government/publications/esfa-update-1-april-2020/esfa-update-local-authorities-1-april-2020"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/sp11-9aq-redenham-agriculture-limited-environmental-permit-issued-eprkp3902lpa001",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 2,
+        "sample_hrefs": [
+          "https://assets.publishing.service.gov.uk/media/63490f118fa8f5347035df84/Permit_KP3902LP.pdf",
+          "https://assets.publishing.service.gov.uk/media/63490f21d3bf7f618f80d20c/Decision_Document_KP3902LP.pdf"
+        ]
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "Employment Tribunal decision.",
+        "url_count": 2,
+        "sample_urls": [
+          "https://www.gov.uk/employment-tribunal-decisions/miss-m-warwick-v-nhs-business-services-authority-t-a-midlands-and-lancashire-csu-2411762-2018",
+          "https://www.gov.uk/employment-tribunal-decisions/mrs-v-shaw-v-smart-cars-taxis-mr-k-mr-m-hawkins-1303974-2017"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/drug-device-alerts/drug-alert-typhim-vi-orgaran-750-anti-xa-units-solution-for-injection-incorrect-patient-information-leaflet",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Orgaran 750 anti-Xa units solution for injection – incorrect patient information leaflet - GOV.UK",
+        "length": 97,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/employment-tribunal-decisions/miss-m-warwick-v-nhs-business-services-authority-t-a-midlands-and-lancashire-csu-2411762-2018",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Miss M Warwick v NHS Business Services Authority T/a Midlands and Lancashire CSU: 2411762/2018 - GOV.UK",
+        "length": 103,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/employment-tribunal-decisions/mrs-v-shaw-v-smart-cars-taxis-mr-k-mr-m-hawkins-1303974-2017",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Mrs V Shaw v Smart Cars Taxis (Mr K & Mr M Hawkins): 1303974/2017 - GOV.UK",
+        "length": 74,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/news/safety-in-use-of-methylisothiazolinone-in-cosmetic-products",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Safety-in-use of methylisothiazolinone in cosmetic products - GOV.UK",
+        "length": 68,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/cawdle-fen-internal-drainage-board-npsna001880-application-made-to-abstract-water",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "[Withdrawn] Cawdle Fen Internal Drainage Board NPS/NA/001880: application made to abstract water - GOV.UK",
+        "length": 105,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/cawdle-fen-internal-drainage-board-npsna001880-application-made-to-abstract-water/cawdle-fen-internal-drainage-board-npsna001880-application-made-to-abstract-water",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "[Withdrawn] Cawdle Fen Internal Drainage Board NPS/NA/001880: application made to abstract water - GOV.UK",
+        "length": 105,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/cb21-5pa-mr-john-kaye-environmental-permit-application-advertisement-eprfb3552gga001",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "[Withdrawn] CB21 5PA, Mr John Kaye: environmental permit application advertisement - EPR/FB3552GG/A001 - GOV.UK",
+        "length": 111,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/cb21-5pa-mr-john-kaye-environmental-permit-application-advertisement-eprfb3552gga001/cb21-5pa-mr-john-kaye-environmental-permit-application-advertisement-eprfb3552gga001",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "[Withdrawn] CB21 5PA, Mr John Kaye: environmental permit application advertisement - EPR/FB3552GG/A001 - GOV.UK",
+        "length": 111,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/esfa-update-1-april-2020/esfa-update-further-education-1-april-2020",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "[Withdrawn] ESFA Update further education: 1 April 2020 - GOV.UK",
+        "length": 64,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/esfa-update-1-april-2020/esfa-update-local-authorities-1-april-2020",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "[Withdrawn] ESFA Update local authorities: 1 April 2020 - GOV.UK",
+        "length": 64,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/gu10-5aw-mr-peter-mead-environmental-permit-application-advertisement-epryb3597ena001",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "[Withdrawn] GU10 5AW, Mr Peter Mead: environmental permit application advertisement - EPR/YB3597EN/A001 - GOV.UK",
+        "length": 112,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/gu10-5aw-mr-peter-mead-environmental-permit-application-advertisement-epryb3597ena001/gu10-5aw-mr-peter-mead-environmental-permit-application-advertisement",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "[Withdrawn] GU10 5AW, Mr Peter Mead: environmental permit application advertisement - GOV.UK",
+        "length": 92,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/impact-of-rent-growth-on-housing-benefit-expenditure",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Impact of rent growth on Housing Benefit expenditure - GOV.UK",
+        "length": 61,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/reconstitution-of-the-east-suffolk-internal-drainage-board",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "[Withdrawn] Reconstitution of the East Suffolk Internal Drainage Board - GOV.UK",
+        "length": 79,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/reconstitution-of-the-east-suffolk-internal-drainage-board/east-suffolk-internal-drainage-board-reconstitution",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "[Withdrawn] East Suffolk Internal Drainage Board: reconstitution - GOV.UK",
+        "length": 73,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/sp11-9aq-redenham-agriculture-limited-environmental-permit-issued-eprkp3902lpa001",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "SP11 9AQ, Redenham Agriculture Limited: environmental permit issued - EPR/KP3902LP/A001 - GOV.UK",
+        "length": 96,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/tn22-4pa-mr-alfie-white-environmental-permit-application-advertisement-eprwb3094eda001",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "[Withdrawn] TN22 4PA, Mr Alfie White: environmental permit application advertisement - EPR/WB3094ED/A001 - GOV.UK",
+        "length": 113,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/tn22-4pa-mr-alfie-white-environmental-permit-application-advertisement-eprwb3094eda001/tn22-4pa-mr-alfie-white-environmental-permit-application-advertisement",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "[Withdrawn] TN22 4PA, Mr Alfie White: environmental permit application advertisement - GOV.UK",
+        "length": 93,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/statistics/quarterly-sickness-absence-in-the-northern-ireland-civil-service-october-2022-december-2022",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Quarterly Sickness Absence in the Northern Ireland Civil Service: October 2022 - December 2022 - GOV.UK",
+        "length": 103,
+        "limit": 60
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 60,
+        "text_preview": "Is this page useful? - Maybe - - Thank you for your feedback",
+        "status_code": 200,
+        "internal_outbound_links": 104,
+        "inbound_links": 96,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/employment-tribunal-decisions/miss-m-warwick-v-nhs-business-services-authority-t-a-midlands-and-lancashire-csu-2411762-2018",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 124,
+        "text_preview": "Miss M Warwick v NHS Business Services Authority T/a Midlands and Lancashire CSU: 2411762/2018 Employment Tribunal decis",
+        "status_code": 200,
+        "internal_outbound_links": 72,
+        "inbound_links": 0,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/employment-tribunal-decisions/mrs-v-shaw-v-smart-cars-taxis-mr-k-mr-m-hawkins-1303974-2017",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 95,
+        "text_preview": "Mrs V Shaw v Smart Cars Taxis (Mr K & Mr M Hawkins): 1303974/2017 Employment Tribunal decision.",
+        "status_code": 200,
+        "internal_outbound_links": 72,
+        "inbound_links": 0,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/cawdle-fen-internal-drainage-board-npsna001880-application-made-to-abstract-water",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 152,
+        "text_preview": "The consultation period for this application has ended. You can view current licences on the [Public Registers](/governm",
+        "status_code": 200,
+        "internal_outbound_links": 69,
+        "inbound_links": 2,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/cb21-5pa-mr-john-kaye-environmental-permit-application-advertisement-eprfb3552gga001",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 233,
+        "text_preview": "Notice CB21 5PA, Mr John Kaye: environmental permit application advertisement - EPR/FB3552GG/A001 View the application s",
+        "status_code": 200,
+        "internal_outbound_links": 72,
+        "inbound_links": 2,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/esfa-update-1-april-2020",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 159,
+        "text_preview": "Latest information and actions from the Education and Skills Funding Agency for academies, schools, colleges, local auth",
+        "status_code": 200,
+        "internal_outbound_links": 78,
+        "inbound_links": 6,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/gu10-5aw-mr-peter-mead-environmental-permit-application-advertisement-epryb3597ena001",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 198,
+        "text_preview": "Notice GU10 5AW, Mr Peter Mead: environmental permit application advertisement - EPR/YB3597EN/A001 View the application ",
+        "status_code": 200,
+        "internal_outbound_links": 72,
+        "inbound_links": 2,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/tn22-4pa-mr-alfie-white-environmental-permit-application-advertisement-eprwb3094eda001",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 203,
+        "text_preview": "Notice TN22 4PA, Mr Alfie White: environmental permit application advertisement - EPR/WB3094ED/A001 View the application",
+        "status_code": 200,
+        "internal_outbound_links": 72,
+        "inbound_links": 2,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/publications/turkmenistan-country-of-concern--2",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 173,
+        "text_preview": "Corporate report Turkmenistan - Country of Concern This is a country of concern report taken from the Foreign and Common",
+        "status_code": 200,
+        "internal_outbound_links": 77,
+        "inbound_links": 2,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.gov.uk/government/statistics/quarterly-sickness-absence-in-the-northern-ireland-civil-service-october-2022-december-2022",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 292,
+        "text_preview": "This publication contains analyses of sickness absence in the Northern Ireland Civil Service from 1 October 2022 to 31 D",
+        "status_code": 200,
+        "internal_outbound_links": 71,
+        "inbound_links": 0,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    }
+  ]
+}

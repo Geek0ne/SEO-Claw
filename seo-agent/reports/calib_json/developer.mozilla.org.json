@@ -1,0 +1,212 @@
+{
+  "site_id": null,
+  "domain": "developer.mozilla.org",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T13:23:00.607901Z",
+  "finished_at": "2026-09-30T13:23:21.990980Z",
+  "pages_crawled": 25,
+  "pages_discovered": 23008,
+  "duration_seconds": 21.383086791000096,
+  "health_score": 97.2,
+  "score_breakdown": {
+    "total_deduction": 2.8,
+    "severity_counts": {
+      "critical": 1,
+      "high": 1,
+      "medium": 3,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 98.8,
+      "architecture": 99.8,
+      "content": 98.6,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 8,
+    "total_pages": 25,
+    "per_code": {
+      "noindex.present": {
+        "severity": "critical",
+        "affected_pages": 1,
+        "ratio": 0.04,
+        "deduction": 1.2
+      },
+      "title.duplicate": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.04,
+        "deduction": 0.6
+      },
+      "link.noanchor": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.04,
+        "deduction": 0.2
+      },
+      "meta.duplicate": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.04,
+        "deduction": 0.2
+      },
+      "title.too_long": {
+        "severity": "medium",
+        "affected_pages": 3,
+        "ratio": 0.12,
+        "deduction": 0.6
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "noindex.present",
+      "severity": "critical",
+      "market": "base",
+      "scope": "page",
+      "url": "https://developer.mozilla.org/en-US/404",
+      "title": "页面被 noindex 屏蔽收录",
+      "description": "noindex 会让页面完全不出现在搜索结果里。这通常是开发环境忘记删，或者模板改版时误加。",
+      "fix_hint": "如果页面应该被收录，删掉 noindex；如果是故意屏蔽（如分页页），请在 sitemap 中也排除它。",
+      "fix_example": null,
+      "evidence": {
+        "robots_meta": "noindex, nofollow"
+      }
+    },
+    {
+      "code": "title.duplicate",
+      "severity": "high",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 title 完全相同",
+      "description": "重复的 title 会让搜索引擎无法区分这些页面，权重被分散，还可能触发重复内容判断。",
+      "fix_hint": "为每个页面写能体现其独特价值的 title，用页面主题词区分。",
+      "fix_example": null,
+      "evidence": {
+        "title": "MDN Web Docs",
+        "url_count": 2,
+        "duplicate_ratio": 0.08,
+        "sample_urls": [
+          "https://developer.mozilla.org/",
+          "https://developer.mozilla.org/en-US/"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://developer.mozilla.org/en-US/blog/",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 4,
+        "sample_hrefs": [
+          "https://developer.mozilla.org/en-US/blog/view-transitions-beginner-guide/",
+          "https://developer.mozilla.org/en-US/blog/introducing-the-mdn-playground/",
+          "https://developer.mozilla.org/en-US/blog/baseline-unified-view-stable-web-features/",
+          "https://developer.mozilla.org/en-US/blog/css-not-pseudo-multiple-selectors/"
+        ]
+      }
+    },
+    {
+      "code": "meta.duplicate",
+      "severity": "medium",
+      "market": "base",
+      "scope": "site",
+      "url": null,
+      "title": "多个页面 meta description 相同",
+      "description": "相同的 description 让这些页面在搜索结果里长得一样，用户没有理由点开第二个。",
+      "fix_hint": "每页 description 描述该页面独有的内容与卖点。",
+      "fix_example": null,
+      "evidence": {
+        "meta_description": "The MDN Web Docs site provides information about Open Web technologies including HTML, CSS, and APIs for both Web sites and progressive web apps.",
+        "url_count": 5,
+        "sample_urls": [
+          "https://developer.mozilla.org/en-US/",
+          "https://developer.mozilla.org/en-US/404",
+          "https://developer.mozilla.org/en-US/about",
+          "https://developer.mozilla.org/en-US/advertising",
+          "https://developer.mozilla.org/en-US/blog/"
+        ]
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://developer.mozilla.org/en-US/blog/build-ai-powered-apps-openllm-vultr-gpu/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Build AI-powered applications using OpenLLM and Vultr Cloud GPU",
+        "length": 63,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://developer.mozilla.org/en-US/blog/custom-easing-in-css-with-linear/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Creating custom easing effects in CSS animations using the linear() function",
+        "length": 76,
+        "limit": 60
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://developer.mozilla.org/en-US/blog/exploring-the-broadcast-channel-api-for-cross-tab-communication/",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "Exploring the Broadcast Channel API for cross-tab communication",
+        "length": 63,
+        "limit": 60
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://developer.mozilla.org/en-US/404",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 96,
+        "text_preview": "Page not found | MDN Skip to main content Skip to search Page not found Go back to the home page",
+        "status_code": 200,
+        "internal_outbound_links": 110,
+        "inbound_links": 0,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    }
+  ]
+}

@@ -1,0 +1,209 @@
+{
+  "site_id": null,
+  "domain": "jvns.ca",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T11:29:30.035707Z",
+  "finished_at": "2026-09-30T11:29:48.829902Z",
+  "pages_crawled": 25,
+  "pages_discovered": 2436,
+  "duration_seconds": 18.794202214019606,
+  "health_score": 99.2,
+  "score_breakdown": {
+    "total_deduction": 0.8,
+    "severity_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 99.8,
+      "content": 99.4,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 8,
+    "total_pages": 25,
+    "per_code": {
+      "img.alt.missing": {
+        "severity": "medium",
+        "affected_pages": 3,
+        "ratio": 0.12,
+        "deduction": 0.6
+      },
+      "link.noanchor": {
+        "severity": "medium",
+        "affected_pages": 1,
+        "ratio": 0.04,
+        "deduction": 0.2
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://jvns.ca/blog/2026/02/18/man-pages/",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 1,
+        "total_images": 1,
+        "sample_srcs": [
+          "https://jvns.ca/images/dash.webp"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://jvns.ca/blog/2026/09/27/replacing-the-old-battery-on-rechargeable-bike-lights/",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 4,
+        "total_images": 4,
+        "sample_srcs": [
+          "https://jvns.ca/images/pcb.png",
+          "https://jvns.ca/images/battery.png",
+          "https://jvns.ca/images/light-after-1.png",
+          "https://jvns.ca/images/light-after-2.png"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://jvns.ca/til/",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 7,
+        "total_images": 7,
+        "sample_srcs": [
+          "https://jvns.ca/images/fzf-git.png",
+          "https://jvns.ca/images/fzf-jq.png",
+          "https://jvns.ca/images/hammer-unicorn.png",
+          "https://jvns.ca/images/cursor-before.png",
+          "https://jvns.ca/images/cursor-after.png"
+        ]
+      }
+    },
+    {
+      "code": "link.noanchor",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://jvns.ca/til/",
+      "title": "内部链接锚文本为空",
+      "description": "空锚文本（如 `<a href=\"/x\"></a>`）对用户和搜索引擎都没有传递任何信息，也会带来可访问性问题。",
+      "fix_hint": "给链接加上描述性锚文本。",
+      "fix_example": null,
+      "evidence": {
+        "empty_anchor_count": 2,
+        "sample_hrefs": [
+          "https://jvns.ca/images/fs_usage.png",
+          "https://jvns.ca/images/diffdiff.png"
+        ]
+      }
+    },
+    {
+      "code": "canonical.conflict",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://jvns.ca/juliasections/Uncategorized/",
+      "title": "canonical 指向了其他页面（需确认是否有意为之）",
+      "description": "canonical 与当前页面不一致时，搜索引擎会把本页权重转移给目标页。这可能是有意为之（内容已合并、历史版本别名、分页主页面），也可能是模板复制时漏改。⚠️ 工具无法自动区分这两种情况，请逐条确认：目标页存在且内容相近 → 通常没问题；目标页 404 → 确定是 bug。",
+      "fix_hint": "逐条打开 canonical 目标页确认：如果是有意合并，保持现状即可；如果是模板漏改，改成指向本页自身。",
+      "fix_example": null,
+      "evidence": {
+        "canonical": "https://jvns.ca/juliasections/Uncategorized/",
+        "page_url": "https://jvns.ca/juliasections/uncategorized/",
+        "canonical_target_status": null,
+        "verdict": "case_only_difference",
+        "verdict_explain": "canonical 与当前页仅路径大小写不同，指向的仍是本页；若站点两种形式都返回 200，保持现状即可"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://jvns.ca/categories/css/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 73,
+        "text_preview": "Category: css Moving away from Tailwind, and learning to structure my CSS",
+        "status_code": 200,
+        "internal_outbound_links": 13,
+        "inbound_links": 2,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://jvns.ca/categories/javascript/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 191,
+        "text_preview": "Category: javascript Testing Vue components in the browser Importing a frontend Javascript library without a build syste",
+        "status_code": 200,
+        "internal_outbound_links": 16,
+        "inbound_links": 2,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://jvns.ca/categories/sqlite/",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 59,
+        "text_preview": "Category: sqlite Learning a few things about running SQLite",
+        "status_code": 200,
+        "internal_outbound_links": 13,
+        "inbound_links": 2,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    }
+  ]
+}

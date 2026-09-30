@@ -1,0 +1,212 @@
+{
+  "site_id": null,
+  "domain": "nuxt.com",
+  "markets": [
+    "base"
+  ],
+  "started_at": "2026-09-30T13:49:05.988177Z",
+  "finished_at": "2026-09-30T13:49:24.371397Z",
+  "pages_crawled": 25,
+  "pages_discovered": 1148,
+  "duration_seconds": 18.383226688980358,
+  "health_score": 99.0,
+  "score_breakdown": {
+    "total_deduction": 1.0,
+    "severity_counts": {
+      "critical": 0,
+      "high": 1,
+      "medium": 1,
+      "low": 0,
+      "info": 0
+    },
+    "dimension_scores": {
+      "crawlability": 100.0,
+      "architecture": 100.0,
+      "content": 99.0,
+      "performance": 100.0,
+      "structured_data": 100.0,
+      "trust": 100.0
+    },
+    "issue_count": 8,
+    "total_pages": 25,
+    "per_code": {
+      "h1.missing": {
+        "severity": "high",
+        "affected_pages": 1,
+        "ratio": 0.04,
+        "deduction": 0.6
+      },
+      "img.alt.missing": {
+        "severity": "medium",
+        "affected_pages": 2,
+        "ratio": 0.08,
+        "deduction": 0.4
+      }
+    }
+  },
+  "issues": [
+    {
+      "code": "h1.missing",
+      "severity": "high",
+      "market": "base",
+      "scope": "page",
+      "url": "https://nuxt.com/deploy",
+      "title": "页面没有 H1 标题",
+      "description": "H1 是页面主题的最强信号。没有 H1 时，搜索引擎只能靠正文猜测这页在讲什么。",
+      "fix_hint": "加一个 H1 写清页面主标题，位置放在正文开头。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 0
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://nuxt.com/deploy",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 16,
+        "total_images": 16,
+        "sample_srcs": [
+          "https://ipx.nuxt.com/s_40x40/assets/integrations/vercel.svg",
+          "https://ipx.nuxt.com/s_40x40/assets/integrations/cleavr.svg",
+          "https://ipx.nuxt.com/s_40x40/assets/integrations/clever-cloud.svg",
+          "https://ipx.nuxt.com/s_40x40/assets/integrations/cloudflare.svg",
+          "https://ipx.nuxt.com/s_40x40/assets/integrations/digitalocean.svg"
+        ]
+      }
+    },
+    {
+      "code": "img.alt.missing",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://nuxt.com/team",
+      "title": "图片缺少 alt 文本",
+      "description": "alt 决定了图片在图片搜索和屏幕阅读器里的表现。缺失等于放弃了这部分流量，也影响可访问性合规。",
+      "fix_hint": "补上描述性 alt，格式建议「图片内容 + 上下文」。装饰性图片用 alt=\"\"。",
+      "fix_example": "<img src=\"shoe.jpg\" alt=\"黑色防水登山鞋 侧视图\">",
+      "evidence": {
+        "missing_count": 51,
+        "total_images": 51,
+        "sample_srcs": [
+          "https://ipx.nuxt.com/f_auto,s_80x80/gh_avatar/danielroe",
+          "https://ipx.nuxt.com/f_auto,s_80x80/gh_avatar/atinux",
+          "https://ipx.nuxt.com/f_auto,s_80x80/gh_avatar/pi0",
+          "https://ipx.nuxt.com/f_auto,s_80x80/gh_avatar/harlan-zw",
+          "https://ipx.nuxt.com/f_auto,s_80x80/gh_avatar/TheAlexLichter"
+        ]
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://nuxt.com/deploy",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 73,
+        "text_preview": "Stay updated on new releases and features, guides, and community updates.",
+        "status_code": 200,
+        "internal_outbound_links": 74,
+        "inbound_links": 2,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://nuxt.com/newsletter",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 102,
+        "text_preview": "The Nuxt Newsletter Get the latest releases and news about Nuxt and its ecosystem with our newsletter.",
+        "status_code": 200,
+        "internal_outbound_links": 24,
+        "inbound_links": 0,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://nuxt.com/showcase",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 211,
+        "text_preview": "Real-world Web Applications built with Nuxt Explore inspiring websites, apps, and digital experiences made by developers",
+        "status_code": 200,
+        "internal_outbound_links": 20,
+        "inbound_links": 98,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://nuxt.com/team",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 88,
+        "text_preview": "The Nuxt Team The development of Nuxt and its ecosystem is led by an international team.",
+        "status_code": 200,
+        "internal_outbound_links": 21,
+        "inbound_links": 48,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    },
+    {
+      "code": "soft404",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://nuxt.com/templates",
+      "title": "疑似软 404（需确认）",
+      "description": "页面返回 200 但正文极少，搜索引擎会识别为软 404 并停止索引。⚠️ 但索引页、目录页、标签页天生内容少，不一定是问题——工具会提供判定信号，请确认：这个页面是“该有内容却没有”，还是“本身就是列表页”。",
+      "fix_hint": "如果确实是空页面：返回真正的 404 状态码，或补上内容。如果是索引/列表页：忽略本条即可。",
+      "fix_example": null,
+      "evidence": {
+        "word_count": 73,
+        "text_preview": "Stay updated on new releases and features, guides, and community updates.",
+        "status_code": 200,
+        "internal_outbound_links": 21,
+        "inbound_links": 96,
+        "url_looks_like_index": false,
+        "verdict": "likely_index_or_hub",
+        "verdict_explain": "出链多、URL 形似索引页，大概率是正常的目录/列表页"
+      }
+    }
+  ]
+}
