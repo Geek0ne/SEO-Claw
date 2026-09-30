@@ -4,11 +4,11 @@
   "markets": [
     "base"
   ],
-  "started_at": "2026-09-29T17:18:27.250251Z",
-  "finished_at": "2026-09-29T17:18:31.435277Z",
+  "started_at": "2026-09-30T11:12:47.291308Z",
+  "finished_at": "2026-09-30T11:12:53.941682Z",
   "pages_crawled": 5,
   "pages_discovered": 638,
-  "duration_seconds": 4.1850338770018425,
+  "duration_seconds": 6.650380703998962,
   "health_score": 96.0,
   "score_breakdown": {
     "total_deduction": 4.0,

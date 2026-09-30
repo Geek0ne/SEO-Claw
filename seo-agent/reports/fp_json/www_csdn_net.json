@@ -4,11 +4,11 @@
   "markets": [
     "base"
   ],
-  "started_at": "2026-09-29T17:15:43.354961Z",
-  "finished_at": "2026-09-29T17:15:47.758621Z",
+  "started_at": "2026-09-30T11:10:09.721143Z",
+  "finished_at": "2026-09-30T11:10:14.055600Z",
   "pages_crawled": 5,
-  "pages_discovered": 598,
-  "duration_seconds": 4.403667022997979,
+  "pages_discovered": 582,
+  "duration_seconds": 4.334464256011415,
   "health_score": 77.0,
   "score_breakdown": {
     "total_deduction": 23.0,
@@ -27,7 +27,7 @@
       "structured_data": 100.0,
       "trust": 100.0
     },
-    "issue_count": 17,
+    "issue_count": 16,
     "total_pages": 5,
     "per_code": {
       "h1.missing": {
@@ -180,9 +180,9 @@
         "missing_count": 3,
         "total_images": 3,
         "sample_srcs": [
-          "https://kunyu.csdn.net/1.png?p=988&adBlockFlag=0&adId=1111879&a=1111879&c=4581446&k=&spm=3001.10471&articleId=0&d=1&t=3&u=82167ee420574b8a9b188fad01f0c008",
-          "https://kunyu.csdn.net/1.png?p=211&adId=1100044&adBlockFlag=0&a=1100044&c=0&k=&spm=3001.4737&articleId=0&d=1&t=3&u=4631104c27e6450db3bce7f06cbb11b5",
-          "https://kunyu.csdn.net/1.png?p=213&adId=1100046&adBlockFlag=0&a=1100046&c=0&k=&spm=3001.4743&articleId=0&d=1&t=3&u=ba8a181ee1aa418e89dd0c8ce754a222"
+          "https://kunyu.csdn.net/1.png?p=988&adBlockFlag=0&adId=1111879&a=1111879&c=4581446&k=&spm=3001.10471&articleId=0&d=1&t=3&u=a52f86dd8c62489da9972a9312f15e48",
+          "https://kunyu.csdn.net/1.png?p=211&adId=1100044&adBlockFlag=0&a=1100044&c=0&k=&spm=3001.4737&articleId=0&d=1&t=3&u=34a2d005038547d1aa4cd6313f306041",
+          "https://kunyu.csdn.net/1.png?p=213&adId=1100046&adBlockFlag=0&a=1100046&c=0&k=&spm=3001.4743&articleId=0&d=1&t=3&u=0e44d9828901426797061367ba55ce2e"
         ]
       }
     },
@@ -218,8 +218,8 @@
         "missing_count": 2,
         "total_images": 2,
         "sample_srcs": [
-          "https://kunyu.csdn.net/1.png?p=986&adBlockFlag=0&adId=1110646&a=1110646&c=4514432&k=&spm=3001.10469&articleId=0&d=1&t=3&u=0f354f784faf4b1d900440e1d4b72652",
-          "https://kunyu.csdn.net/1.png?p=987&adBlockFlag=0&adId=1110486&a=1110486&c=4498033&k=&spm=3001.10470&articleId=0&d=1&t=3&u=94689805981446889483f86e369bd5b4"
+          "https://kunyu.csdn.net/1.png?p=986&adBlockFlag=0&adId=1110646&a=1110646&c=4514432&k=&spm=3001.10469&articleId=0&d=1&t=3&u=c3141c85e44c4ddfa8d206d816cc0673",
+          "https://kunyu.csdn.net/1.png?p=987&adBlockFlag=0&adId=1110486&a=1110486&c=4498033&k=&spm=3001.10470&articleId=0&d=1&t=3&u=fdf0a6e414374721b6009329973b82b2"
         ]
       }
     },
@@ -234,13 +234,13 @@
       "fix_hint": "给链接加上描述性锚文本。",
       "fix_example": null,
       "evidence": {
-        "empty_anchor_count": 24,
+        "empty_anchor_count": 25,
         "sample_hrefs": [
           "https://www.csdn.net/",
-          "https://blog.csdn.net/2401_87848736/article/details/166356304",
-          "https://blog.csdn.net/bjcyck/article/details/166493158",
-          "https://blog.csdn.net/HK2KING/article/details/166734434",
-          "https://blog.csdn.net/l818188181/article/details/166773537"
+          "https://blog.csdn.net/m0_72599287/article/details/166795173",
+          "https://blog.csdn.net/m0_72599287/article/details/166647760",
+          "https://blog.csdn.net/IT_YQG_/article/details/166692747",
+          "https://blog.csdn.net/FYKJ_2010/article/details/166794361"
         ]
       }
     },
@@ -276,13 +276,12 @@
       "fix_hint": "给链接加上描述性锚文本。",
       "fix_example": null,
       "evidence": {
-        "empty_anchor_count": 5,
+        "empty_anchor_count": 4,
         "sample_hrefs": [
-          "https://blog.csdn.net/2503_94545876/article/details/164739838",
+          "https://blog.csdn.net/sdoa0806/article/details/164450649",
+          "https://blog.csdn.net/GreenHands495/article/details/164982908",
           "https://blog.csdn.net/2501_94287723/article/details/164222419",
-          "https://blog.csdn.net/HK2KING/article/details/166734434",
-          "https://blog.csdn.net/2502_93666375/article/details/166796485",
-          "https://blog.csdn.net/2301_77785315/article/details/166482498"
+          "https://blog.csdn.net/congge_study/article/details/165119262"
         ]
       }
     },
@@ -343,29 +342,6 @@
       }
     },
     {
-      "code": "h1.multiple",
-      "severity": "info",
-      "market": "base",
-      "scope": "page",
-      "url": "https://edu.csdn.net?utm_source=zhuzhantoolbar",
-      "title": "页面有多个 H1（Google 不惩罚，仅供参考）",
-      "description": "HTML5 明确允许多个 H1，Google 也公开表示多个 H1 不影响索引或排名。真正会分散主题信号的是「多个 H1 说的是同一件事」——比如站名和文章标题同时进 H1。\n⚠️ 所以这条只是提示，不是问题。很多设计良好的站点就是这么做的，不要为了消掉这条去改版面。",
-      "fix_hint": "仅当多个 H1 语义重复时才值得处理：保留最具体的一个，其余降为 H2 或改为普通文本。如果站名 H1 是模板刻意为之，保持现状即可。",
-      "fix_example": null,
-      "evidence": {
-        "h1_count": 4,
-        "h1_list": [
-          "领域会员卡",
-          "云会员",
-          "研修营",
-          "讲师推荐"
-        ],
-        "duplicated": false,
-        "verdict": "likely_intentional",
-        "verdict_explain": "Google 不惩罚多个 H1，仅供确认主题是否清晰"
-      }
-    },
-    {
       "code": "soft404",
       "severity": "info",
       "market": "base",
@@ -379,7 +355,7 @@
         "word_count": 31,
         "text_preview": "Java之路 张中强 共 4.0 节 · 268.2万 人学习",
         "status_code": 200,
-        "internal_outbound_links": 161,
+        "internal_outbound_links": 160,
         "inbound_links": 2,
         "url_looks_like_index": false,
         "verdict": "likely_index_or_hub",

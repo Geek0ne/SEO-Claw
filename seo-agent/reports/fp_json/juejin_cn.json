@@ -4,11 +4,11 @@
   "markets": [
     "base"
   ],
-  "started_at": "2026-09-29T17:15:33.350826Z",
-  "finished_at": "2026-09-29T17:15:40.399931Z",
+  "started_at": "2026-09-30T11:09:59.628327Z",
+  "finished_at": "2026-09-30T11:10:06.444517Z",
   "pages_crawled": 5,
-  "pages_discovered": 20191,
-  "duration_seconds": 7.049112672000774,
+  "pages_discovered": 20184,
+  "duration_seconds": 6.816197887994349,
   "health_score": 92.8,
   "score_breakdown": {
     "total_deduction": 7.2,
@@ -70,13 +70,13 @@
       "severity": "medium",
       "market": "base",
       "scope": "page",
-      "url": "https://juejin.cn/post/7690424960263389227",
+      "url": "https://juejin.cn/post/7690776567972626432",
       "title": "title 过长会被截断",
       "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
       "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
       "fix_example": null,
       "evidence": {
-        "title": "知识入库从 11 分钟到 3 秒：一次词库回填的批量化改造客服机器人的知识问答效果，一大半取决于知识库覆盖度。我们把客户 - 掘金",
+        "title": "PDU 需要哪些认证？CCC、CE、GS 清单对照采购或出口 PDU 时，认证清单经常被问到，但答案因\"卖到哪、卖给谁\" - 掘金",
         "length": 65,
         "limit": 30
       }
@@ -86,29 +86,13 @@
       "severity": "medium",
       "market": "base",
       "scope": "page",
-      "url": "https://juejin.cn/post/7690424960263454763",
+      "url": "https://juejin.cn/post/7690790028526059574",
       "title": "title 过长会被截断",
       "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
       "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
       "fix_example": null,
       "evidence": {
-        "title": "【唤醒实战笔记】2026-09-29 | 智能体提示词迭代史（v1 → v8）【唤醒实战笔记】2026-09-29 | - 掘金",
-        "length": 64,
-        "limit": 30
-      }
-    },
-    {
-      "code": "title.too_long",
-      "severity": "medium",
-      "market": "base",
-      "scope": "page",
-      "url": "https://juejin.cn/post/7690435049427959850",
-      "title": "title 过长会被截断",
-      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
-      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
-      "fix_example": null,
-      "evidence": {
-        "title": "做AI眼镜第197天，上次换耳朵，这次换大脑第197天研发记录：主对话模型切换、骑行导航和翻译返修、深色主题验收与3D模 - 掘金",
+        "title": "2026年创业方向MBA：跨文化课程与海外模块企业出海与创业，难点往往不在“有没有国际化标签”，而在三个具体环节：能不能 - 掘金",
         "length": 65,
         "limit": 30
       }
@@ -118,14 +102,30 @@
       "severity": "medium",
       "market": "base",
       "scope": "page",
-      "url": "https://juejin.cn/post/7690456283196325888",
+      "url": "https://juejin.cn/post/7690807431081934882",
       "title": "title 过长会被截断",
       "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
       "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
       "fix_example": null,
       "evidence": {
-        "title": "归纳星-文件管家 使用教程归纳星-文件管家 使用教程 归纳星是一款运行在 Windows 和 macOS 上的本地文件整 - 掘金",
+        "title": "晃电时 ATS 切了还是停机？先把\"断电\"和\"电压暂降\"分开机房里有一类故障现象很典型：上游电网\"晃\"了一下，ATS 双 - 掘金",
         "length": 65,
+        "limit": 30
+      }
+    },
+    {
+      "code": "title.too_long",
+      "severity": "medium",
+      "market": "base",
+      "scope": "page",
+      "url": "https://juejin.cn/post/7690839722769367049",
+      "title": "title 过长会被截断",
+      "description": "title 超出显示长度时会被搜索结果截断，关键信息放不进去就白写了。中文建议 ≤30 字，英文建议 ≤60 字符。",
+      "fix_hint": "把最重要的关键词前置，删掉形容词和冗余修饰。",
+      "fix_example": null,
+      "evidence": {
+        "title": "开源了一个 Apple Silicon Mac 风扇控制工具 MacFanPro：菜单栏 + 命令行，免费无广告 - 掘金",
+        "length": 61,
         "limit": 30
       }
     },
@@ -157,9 +157,9 @@
       "fix_example": null,
       "evidence": {
         "word_count": 100,
-        "text_preview": "不是恰饭，也不是踩一捧一。只是记录一个 Codex 老用户切换到 WorkBuddy 的真实一周，以及过程中踩到的坑和省下的钱。 一、为什么换：被逼无奈的\"搬家\" 很早就听说腾讯出了智能体编程工具 W",
+        "text_preview": "先说一个事实：2026 年的技术面试，已经和两年前完全不一样了。两年前面试问的是：\"手写一个 Promise\"、\"说说 React Fiber 原理\"...现在面试官默认你会用 AI。他们真正想知道的",
         "status_code": 200,
-        "internal_outbound_links": 137,
+        "internal_outbound_links": 136,
         "inbound_links": 8,
         "url_looks_like_index": false,
         "verdict": "likely_index_or_hub",

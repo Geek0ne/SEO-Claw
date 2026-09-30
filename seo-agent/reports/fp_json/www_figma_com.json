@@ -4,11 +4,11 @@
   "markets": [
     "base"
   ],
-  "started_at": "2026-09-29T17:13:43.818785Z",
-  "finished_at": "2026-09-29T17:14:02.411594Z",
+  "started_at": "2026-09-30T11:08:09.566421Z",
+  "finished_at": "2026-09-30T11:08:28.595342Z",
   "pages_crawled": 5,
-  "pages_discovered": 20674,
-  "duration_seconds": 18.592817253011162,
+  "pages_discovered": 20669,
+  "duration_seconds": 19.028926762985066,
   "health_score": 100.0,
   "score_breakdown": {
     "total_deduction": 0.0,
@@ -27,9 +27,31 @@
       "structured_data": 100.0,
       "trust": 100.0
     },
-    "issue_count": 0,
+    "issue_count": 1,
     "total_pages": 5,
     "per_code": {}
   },
-  "issues": []
+  "issues": [
+    {
+      "code": "h1.multiple",
+      "severity": "info",
+      "market": "base",
+      "scope": "page",
+      "url": "https://www.figma.com/contact/",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
+      "fix_example": null,
+      "evidence": {
+        "h1_count": 2,
+        "h1_list": [
+          "Contact us",
+          "Contact us"
+        ],
+        "duplicated": true,
+        "verdict": "review_worthwhile",
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
+      }
+    }
+  ]
 }

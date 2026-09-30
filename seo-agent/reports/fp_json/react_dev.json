@@ -4,11 +4,11 @@
   "markets": [
     "base"
   ],
-  "started_at": "2026-09-29T17:16:40.982923Z",
-  "finished_at": "2026-09-29T17:16:44.506646Z",
+  "started_at": "2026-09-30T11:10:57.335068Z",
+  "finished_at": "2026-09-30T11:11:00.909295Z",
   "pages_crawled": 5,
   "pages_discovered": 345,
-  "duration_seconds": 3.5237293660029536,
+  "duration_seconds": 3.574231588980183,
   "health_score": 85.0,
   "score_breakdown": {
     "total_deduction": 15.0,
@@ -27,7 +27,7 @@
       "structured_data": 100.0,
       "trust": 100.0
     },
-    "issue_count": 6,
+    "issue_count": 5,
     "total_pages": 5,
     "per_code": {
       "meta.missing": {
@@ -114,27 +114,6 @@
       "evidence": {
         "tried_paths": [],
         "error": null
-      }
-    },
-    {
-      "code": "h1.multiple",
-      "severity": "info",
-      "market": "base",
-      "scope": "page",
-      "url": "https://react.dev/",
-      "title": "页面有多个 H1（Google 不惩罚，仅供参考）",
-      "description": "HTML5 明确允许多个 H1，Google 也公开表示多个 H1 不影响索引或排名。真正会分散主题信号的是「多个 H1 说的是同一件事」——比如站名和文章标题同时进 H1。\n⚠️ 所以这条只是提示，不是问题。很多设计良好的站点就是这么做的，不要为了消掉这条去改版面。",
-      "fix_hint": "仅当多个 H1 语义重复时才值得处理：保留最具体的一个，其余降为 H2 或改为普通文本。如果站名 H1 是模板刻意为之，保持现状即可。",
-      "fix_example": null,
-      "evidence": {
-        "h1_count": 2,
-        "h1_list": [
-          "React",
-          "React Videos"
-        ],
-        "duplicated": false,
-        "verdict": "likely_intentional",
-        "verdict_explain": "Google 不惩罚多个 H1，仅供确认主题是否清晰"
       }
     }
   ]

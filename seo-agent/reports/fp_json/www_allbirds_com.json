@@ -4,11 +4,11 @@
   "markets": [
     "base"
   ],
-  "started_at": "2026-09-29T17:11:37.097670Z",
-  "finished_at": "2026-09-29T17:11:55.427661Z",
+  "started_at": "2026-09-30T11:06:10.862369Z",
+  "finished_at": "2026-09-30T11:06:21.855723Z",
   "pages_crawled": 5,
   "pages_discovered": 3030,
-  "duration_seconds": 18.329998425004305,
+  "duration_seconds": 10.993360759021016,
   "health_score": 86.0,
   "score_breakdown": {
     "total_deduction": 14.0,
@@ -141,9 +141,9 @@
       "market": "base",
       "scope": "page",
       "url": "https://www.allbirds.com/products/mens-wool-runners",
-      "title": "页面有多个 H1（Google 不惩罚，仅供参考）",
-      "description": "HTML5 明确允许多个 H1，Google 也公开表示多个 H1 不影响索引或排名。真正会分散主题信号的是「多个 H1 说的是同一件事」——比如站名和文章标题同时进 H1。\n⚠️ 所以这条只是提示，不是问题。很多设计良好的站点就是这么做的，不要为了消掉这条去改版面。",
-      "fix_hint": "仅当多个 H1 语义重复时才值得处理：保留最具体的一个，其余降为 H2 或改为普通文本。如果站名 H1 是模板刻意为之，保持现状即可。",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
       "fix_example": null,
       "evidence": {
         "h1_count": 3,
@@ -154,7 +154,7 @@
         ],
         "duplicated": true,
         "verdict": "review_worthwhile",
-        "verdict_explain": "存在内容完全相同的 H1，可能是模板重复渲染"
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
       }
     },
     {
@@ -163,9 +163,9 @@
       "market": "base",
       "scope": "page",
       "url": "https://www.allbirds.com/products/mens-wool-runners-natural-white",
-      "title": "页面有多个 H1（Google 不惩罚，仅供参考）",
-      "description": "HTML5 明确允许多个 H1，Google 也公开表示多个 H1 不影响索引或排名。真正会分散主题信号的是「多个 H1 说的是同一件事」——比如站名和文章标题同时进 H1。\n⚠️ 所以这条只是提示，不是问题。很多设计良好的站点就是这么做的，不要为了消掉这条去改版面。",
-      "fix_hint": "仅当多个 H1 语义重复时才值得处理：保留最具体的一个，其余降为 H2 或改为普通文本。如果站名 H1 是模板刻意为之，保持现状即可。",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
       "fix_example": null,
       "evidence": {
         "h1_count": 3,
@@ -176,7 +176,7 @@
         ],
         "duplicated": true,
         "verdict": "review_worthwhile",
-        "verdict_explain": "存在内容完全相同的 H1，可能是模板重复渲染"
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
       }
     },
     {
@@ -185,9 +185,9 @@
       "market": "base",
       "scope": "page",
       "url": "https://www.allbirds.com/products/womens-wool-runners-natural-black",
-      "title": "页面有多个 H1（Google 不惩罚，仅供参考）",
-      "description": "HTML5 明确允许多个 H1，Google 也公开表示多个 H1 不影响索引或排名。真正会分散主题信号的是「多个 H1 说的是同一件事」——比如站名和文章标题同时进 H1。\n⚠️ 所以这条只是提示，不是问题。很多设计良好的站点就是这么做的，不要为了消掉这条去改版面。",
-      "fix_hint": "仅当多个 H1 语义重复时才值得处理：保留最具体的一个，其余降为 H2 或改为普通文本。如果站名 H1 是模板刻意为之，保持现状即可。",
+      "title": "模板重复渲染了多个内容完全相同的 H1",
+      "description": "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，站名 H1 + 文章标题 H1 是很常见且合理的设计。\n⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。",
+      "fix_hint": "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。",
       "fix_example": null,
       "evidence": {
         "h1_count": 3,
@@ -198,7 +198,7 @@
         ],
         "duplicated": true,
         "verdict": "review_worthwhile",
-        "verdict_explain": "存在内容完全相同的 H1，可能是模板重复渲染"
+        "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染"
       }
     }
   ]

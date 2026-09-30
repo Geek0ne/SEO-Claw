@@ -4,11 +4,11 @@
   "markets": [
     "base"
   ],
-  "started_at": "2026-09-29T17:06:56.320204Z",
-  "finished_at": "2026-09-29T17:07:09.660220Z",
+  "started_at": "2026-09-30T11:00:59.859644Z",
+  "finished_at": "2026-09-30T11:01:11.081191Z",
   "pages_crawled": 5,
   "pages_discovered": 1114,
-  "duration_seconds": 13.34002303800662,
+  "duration_seconds": 11.221553149982356,
   "health_score": 77.0,
   "score_breakdown": {
     "total_deduction": 23.0,
@@ -27,7 +27,7 @@
       "structured_data": 100.0,
       "trust": 97.0
     },
-    "issue_count": 18,
+    "issue_count": 17,
     "total_pages": 5,
     "per_code": {
       "http.mixed_content": {
@@ -383,28 +383,6 @@
           "https://www.brendangregg.com/SysPerf/figure_net_linuxstack.png",
           "https://www.brendangregg.com/SysPerf/figure_mem_allocators.png"
         ]
-      }
-    },
-    {
-      "code": "h1.multiple",
-      "severity": "info",
-      "market": "base",
-      "scope": "page",
-      "url": "https://www.brendangregg.com/blog/index.html",
-      "title": "页面有多个 H1（Google 不惩罚，仅供参考）",
-      "description": "HTML5 明确允许多个 H1，Google 也公开表示多个 H1 不影响索引或排名。真正会分散主题信号的是「多个 H1 说的是同一件事」——比如站名和文章标题同时进 H1。\n⚠️ 所以这条只是提示，不是问题。很多设计良好的站点就是这么做的，不要为了消掉这条去改版面。",
-      "fix_hint": "仅当多个 H1 语义重复时才值得处理：保留最具体的一个，其余降为 H2 或改为普通文本。如果站名 H1 是模板刻意为之，保持现状即可。",
-      "fix_example": null,
-      "evidence": {
-        "h1_count": 3,
-        "h1_list": [
-          "Brendan Gregg's Blog",
-          "Blog Posts",
-          "Archive"
-        ],
-        "duplicated": false,
-        "verdict": "likely_intentional",
-        "verdict_explain": "Google 不惩罚多个 H1，仅供确认主题是否清晰"
       }
     }
   ]
