@@ -107,7 +107,14 @@ def test_h1_missing_fires():
 
 
 def test_h1_multiple_fires():
-    codes, _ = audit_one(html(h1=["第一个", "第二个"]))
+    """只报内容完全相同的 H1——那是模板重复渲染。
+
+    旧版对「多个 H1」一律报，结果 23 站回归里 14 条里 0 条属实、
+    10 条是噪音（站名 H1 + 文章标题 H1 这种合理设计），而规则自己的
+    描述却写着「不要为了消掉这条去改版面」。规则和描述自相矛盾，
+    用户只能二选一：听规则的改版面，或者无视报告。
+    """
+    codes, _ = audit_one(html(h1=["同一个标题", "同一个标题"]))
     assert "h1.multiple" in codes
 
 
@@ -358,16 +365,25 @@ def test_genuinely_thin_titles_still_reported(title):
     assert "title.too_short" in codes, f"{title!r} 应被报出但没有"
 
 
-def test_h1_multiple_downgraded_to_info():
-    """Google 不惩罚多个 H1。降级后必须明确告知「别为此改版面」，
-    否则用户会为了消一条 INFO 去动正常的模板。"""
-    _, issues = audit_one(
+def test_h1_multiple_different_content_is_not_reported():
+    """站名 H1 + 文章标题 H1 是常见且合理的设计，不该报。
+
+    这是本条规则被反复回炉的根源：降级成 INFO 仍不够——噪音依然占
+    可观比例，而它对用户毫无价值。Google 公开表示多个 H1 不影响
+    索引或排名，内容不同就没什么可改的。
+    """
+    codes, _ = audit_one(
         html(title="示例页面 - 演示站", body="<h1>站名</h1><h1>文章标题</h1><p>x</p>")
     )
-    hit = next(i for i in issues if i.code == "h1.multiple")
-    assert hit.severity is Severity.INFO
-    assert hit.evidence["verdict"] == "likely_intentional"
-    assert hit.evidence["duplicated"] is False
+    assert "h1.multiple" not in codes
+
+
+def test_h1_multiple_case_insensitive_duplicate_is_reported():
+    """反向：只差大小写/空白也算重复，不能被漏掉。"""
+    codes, _ = audit_one(
+        html(title="示例页面 - 演示站", body="<h1>同一个标题</h1><h1> 同一个标题 </h1><p>x</p>")
+    )
+    assert "h1.multiple" in codes
 
 
 def test_h1_multiple_flags_verbatim_duplicates():

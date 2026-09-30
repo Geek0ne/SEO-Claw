@@ -172,35 +172,40 @@ class H1Missing(Rule):
 class H1Multiple(Rule):
     code = "h1.multiple"
     severity = Severity.INFO
-    title = "页面有多个 H1（Google 不惩罚，仅供参考）"
+    title = "模板重复渲染了多个内容完全相同的 H1"
     description = (
-        "HTML5 明确允许多个 H1，Google 也公开表示多个 H1 不影响索引或排名。"
-        "真正会分散主题信号的是「多个 H1 说的是同一件事」——比如站名和文章标题同时进 H1。\n"
-        "⚠️ 所以这条只是提示，不是问题。很多设计良好的站点就是这么做的，不要为了消掉这条去改版面。"
+        "多个 H1 本身不是问题：HTML5 明确允许，Google 也公开表示不影响索引或排名，"
+        "站名 H1 + 文章标题 H1 是很常见且合理的设计。\n"
+        "⚠️ 所以这条只报一种情况：**多个 H1 的内容完全一样**。"
+        "那通常是模板被重复渲染，属于真 bug；如果只是内容不同，保持现状即可，不要为了消掉这条去改版面。"
     )
     fix_hint = (
-        "仅当多个 H1 语义重复时才值得处理：保留最具体的一个，其余降为 H2 或改为普通文本。"
-        "如果站名 H1 是模板刻意为之，保持现状即可。"
+        "保留最具体的一个 H1，其余内容完全相同的降为 H2 或改为普通文本。"
+        "如果多个 H1 内容本就不同（站名 + 文章标题），无需处理。"
     )
 
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
         if len(page.h1) <= 1:
             return
         normalized = {h.strip().lower() for h in page.h1 if h.strip()}
-        # 只有「语义重复」才值得提一句；站名 H1 + 文章标题是常见且合理的组合
-        duplicated = len(normalized) < len(page.h1)
+        # ★ 只有「内容完全相同」才算问题。这是本站实测数据倒逼的：
+        #   23 站回归里 h1.multiple 报 14 条，0 条属实、10 条是噪音，
+        #   全部是「站名 H1 + 文章标题 H1」这种合理设计。
+        #   旧版无论是否重复都报一条 INFO，而它自己的描述却写着
+        #   「不要为了消掉这条去改版面」——规则自相矛盾，用户只能二选一：
+        #   听规则的改版面，或者无视报告。这正是噪音的代价。
+        #   上一版已降级为 INFO，但误报回归证明降级不够：噪音仍占全部发现项的
+        #   可观比例。现在只在真重复时触发。
+        if len(normalized) >= len(page.h1):
+            return
         yield self._issue(
             page,
             {
                 "h1_count": len(page.h1),
                 "h1_list": page.h1[:5],
-                "duplicated": duplicated,
-                "verdict": "likely_intentional" if not duplicated else "review_worthwhile",
-                "verdict_explain": (
-                    "Google 不惩罚多个 H1，仅供确认主题是否清晰"
-                    if not duplicated
-                    else "存在内容完全相同的 H1，可能是模板重复渲染"
-                ),
+                "duplicated": True,
+                "verdict": "review_worthwhile",
+                "verdict_explain": "存在内容完全相同的 H1，多半是模板重复渲染",
             },
         )
 
