@@ -13,6 +13,7 @@ M0 阶段刻意做简单：同步 + 内存 frontier + 磁盘 checkpoint。
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 import time
@@ -263,13 +264,29 @@ class Crawler:
         origin = f"{urlparse(start).scheme}://{domain}"
 
         visited: set[str] = set()
-        self._load_checkpoint(domain, visited)
+        # ⚠️ 续跑必须同时拿回 frontier 和已解析的 pages：
+        # 只拿 visited 会让种子自己命中 visited（normalize 后 key 相同），
+        # frontier 一开始就空，续跑报告全空——实测踩过。
+        ckpt = self._load_checkpoint(domain)
 
         sitemap_urls = self._discover_sitemap(origin)
 
-        frontier: list[tuple[str, int, Optional[str]]] = [(start, 0, None)]
+        frontier: list[tuple[str, int, Optional[str]]] = []
         pages: list[Page] = []
-        discovered = 1
+        if ckpt:
+            visited.update(ckpt["visited"])
+            for item in ckpt["frontier"]:
+                if len(item) >= 2:
+                    frontier.append((item[0], int(item[1]), item[2] if len(item) > 2 else None))
+            for raw in ckpt["pages"]:
+                try:
+                    pages.append(Page.model_validate(raw))
+                except Exception:  # noqa: BLE001 — 单条坏数据不该毁掉整份续跑
+                    continue
+        # frontier 为空（首次跑、或旧版纯文本 checkpoint）才重新播种
+        if not frontier:
+            frontier.append((start, 0, None))
+        discovered = 1 + len(visited)
         self.discovered_count = 1  # 爬取中途异常退出时也有值可读
         # 连续连接失败计数：达到阈值说明对方在按 IP 限流/拉黑，继续打只会让封禁更久
         consecutive_errors = 0
@@ -281,7 +298,6 @@ class Crawler:
                 continue
             frontier.append((url, 1, start))
             discovered += 1
-
         while frontier and len(pages) < cfg.max_pages:
             url, depth, parent = frontier.pop(0)
             key = normalize_url(url)
@@ -350,9 +366,9 @@ class Crawler:
                     discovered += 1
 
             if len(pages) % 25 == 0:
-                self._save_checkpoint(domain, visited)
+                self._save_checkpoint(domain, visited, frontier, pages)
 
-        self._save_checkpoint(domain, visited)
+        self._save_checkpoint(domain, visited, frontier, pages)
         self.discovered_count = discovered
         return pages
 
@@ -487,29 +503,66 @@ class Crawler:
         safe = domain.replace("/", "_").replace(":", "_")
         return self.checkpoint_dir / f"{safe}.visited"
 
-    def _load_checkpoint(self, domain: str, visited: set[str]) -> None:
-        """注意：续跑时会跳过已抓页面，因此这些页面的解析结果也会丢失。
+    def _load_checkpoint(self, domain: str) -> Optional[dict]:
+        """读回上次中断时的 frontier / visited / 已解析页面。
 
-        M0 可接受（M1 改成把解析结果一起持久化到 DB，再按 page 续跑）。
+        ⚠️ 之前这里只回填 visited，续跑必然抓回 0 页。实测：
+        种子 https://www.w3.org/ 归一化后就是 "w3.org/"，它自己在
+        visited 里 → frontier 一开始就空 → 报告全空。
+        而且 frontier 丢了以后，光有 visited 也补不回来：frontier 是
+        队列本身，没队列就无从续跑。所以三样都得存。
+
+        兼容旧版纯文本格式（一行一个 visited key）：读成 visited，
+        但此时 frontier 缺失，调用方必须重新播种。
         """
         path = self._checkpoint_path(domain)
         if not path or not path.exists():
-            return
+            return None
         try:
-            for line in path.read_text(encoding="utf-8").splitlines():
-                if line.strip():
-                    visited.add(line.strip())
+            raw = path.read_text(encoding="utf-8")
         except OSError:
-            pass
+            return None
+        try:
+            data = json.loads(raw)
+        except (ValueError, TypeError):
+            # 旧版格式：每行一个 visited
+            return {"visited": [ln.strip() for ln in raw.splitlines() if ln.strip()],
+                    "frontier": [], "pages": []}
+        if not isinstance(data, dict):
+            return None
+        return {
+            "visited": list(data.get("visited") or []),
+            "frontier": [tuple(x) for x in (data.get("frontier") or [])],
+            "pages": list(data.get("pages") or []),
+        }
 
-    def _save_checkpoint(self, domain: str, visited: set[str]) -> None:
+    def _save_checkpoint(self, domain: str, visited: set[str],
+                         frontier: list, pages: list) -> None:
+        """原子写：先写临时文件再 rename。
+
+        之前是 write_text 直写，中途被 kill 会留下半截 JSON，下次
+        续跑读到坏文件只能当没 checkpoint——等于静默退化成从零开始。
+        """
         path = self._checkpoint_path(domain)
         if not path:
             return
+        payload = {
+            "visited": sorted(visited),
+            # parent 可能为 None；list→tuple 不行（JSON 会把 tuple 存成 list），
+            # 读回时再补成 tuple。
+            "frontier": [[u, d, p] for (u, d, p) in frontier],
+            # Page 是 pydantic BaseModel，可直接 dump
+            "pages": [p.model_dump(mode="json") for p in pages],
+        }
+        tmp = path.with_suffix(path.suffix + ".tmp")
         try:
-            path.write_text("\n".join(sorted(visited)), encoding="utf-8")
+            tmp.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+            tmp.replace(path)
         except OSError:
-            pass
+            try:
+                tmp.unlink(missing_ok=True)
+            except OSError:
+                pass
 
 
 def _canonicalize(url: str) -> str:
