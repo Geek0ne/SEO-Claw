@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import re
 from typing import Iterable
+from urllib.parse import urlsplit
 
 from ....models import Issue, Market, Page, Scope, Severity
 from ....util import normalize_url, same_url_ignoring_path_case
@@ -227,6 +229,96 @@ class CanonicalMissing(Rule):
             yield self._issue(page, {"canonical_found": False})
 
 
+# ── canonical 常见等价写法 ──────────────────────────────────────
+#
+# 真实样本里 canonical.conflict 的 21 条，除 1 条外全都是「同一篇内容的
+# 正规变体写法」，不是权重转移：canonical 剥掉了跟踪参数、加了 /index、
+# 指了 /home、去掉了语言前缀、或指向同名 PDF。
+#
+# 这些**不该按 MEDIUM「canonical 指向其他页面」报**——那句话会让用户去改
+# 本来正确的写法。按同文件里 case_only_difference 的既有惯例处理：
+# 降 INFO + 在 evidence 里说清是哪一种变体，而不是静默丢弃。
+
+# 结尾可省略的「首页别名」。真实样本：cs.cmu.edu/→/index、
+# cs.umd.edu/→/home、who.int/europe/home→/europe。
+_TRAILING_ALIASES = frozenset({
+    "index", "index.html", "index.htm",
+    "home", "home.html", "home.htm",
+    "default", "default.html", "default.htm",
+})
+
+_BENIGN_VARIANT_REASONS = {
+    "query_dropped": "canonical 去掉了当前页带的查询参数（跟踪/会话参数），路径本身是同一页",
+    "index_or_home_alias": "canonical 用 /index、/home、/default 指向同一页（站点自己的索引别名）",
+    "pdf_variant": "canonical 指向同一篇文章的 PDF 版本",
+    "lang_prefix": "canonical 去掉了语言前缀（如 /de/cloud/x → /cloud/x），指向同一份内容",
+}
+
+
+def _split_url(url: str) -> tuple[str, str]:
+    """拆成 (host 去 www., path)，不碰 query——query 差异由调用方单独判。"""
+    p = urlsplit(url)
+    host = (p.netloc or "").lower()
+    if host.startswith("www."):
+        host = host[4:]
+    path = p.path or "/"
+    if not path.startswith("/"):
+        path = "/" + path
+    return host, path
+
+
+def _strip_trailing_alias(path: str) -> str:
+    """去掉结尾的 /index、/home、/default 这类别名段。
+
+    按**整段**匹配而不是后缀匹配：否则 /myindex 会被当成 /my + index
+    而错误折叠，那会把真正不同的两页当成同一页。
+    """
+    segs = [s for s in path.split("/") if s]
+    if segs and segs[-1].lower() in _TRAILING_ALIASES:
+        segs = segs[:-1]
+    return "/" + "/".join(segs) if segs else "/"
+
+
+def _strip_lang_prefix(path: str) -> str:
+    """去掉开头一段语言标签（de、zh-CN、en_US…）。
+
+    只在还剩至少两段时才剥：否则 /de 会被剥成 /，任何两字母目录都会塌掉。
+    """
+    segs = [s for s in path.split("/") if s]
+    if len(segs) >= 2 and re.fullmatch(r"[a-z]{2}(?:[-_][a-z]{2,4})?", segs[0], re.I):
+        return "/" + "/".join(segs[1:])
+    return path
+
+
+def _benign_canonical_variant(current: str, canonical: str) -> str | None:
+    """canonical 是否只是当前页的「正规变体写法」。
+
+    返回 _BENIGN_VARIANT_REASONS 的 key；不是这类变体则返回 None，
+    交回规则按真冲突处理。
+    """
+    hc, pc = _split_url(current)
+    hk, pk = _split_url(canonical)
+    if hc != hk:
+        return None  # 跨域 canonical：那是另一回事，不能在这里放行
+
+    a, b = _strip_trailing_alias(pc), _strip_trailing_alias(pk)
+    if a == b:
+        # 去别名后一致，但原文不同 → 是别名写法；原文就一致 → 只差 query
+        return "index_or_home_alias" if pc != pk else "query_dropped"
+
+    # PDF 变体：nature.com/articles/X → /articles/X.pdf
+    if b.lower().endswith(".pdf") and b[:-4] == a:
+        return "pdf_variant"
+
+    # 语言前缀：naaptol.com/ro/print.html → /print
+    def bare(p: str) -> str:
+        return p[:-5] if p.lower().endswith(".html") else p
+
+    if _strip_lang_prefix(bare(a)) == bare(b) or _strip_lang_prefix(bare(b)) == bare(a):
+        return "lang_prefix"
+    return None
+
+
 @reg.register
 class CanonicalConflict(Rule):
     code = "canonical.conflict"
@@ -268,6 +360,16 @@ class CanonicalConflict(Rule):
                 "canonical 与当前页仅路径大小写不同，指向的仍是本页；"
                 "若站点两种形式都返回 200，保持现状即可"
             )
+            yield self._issue(page, evidence, severity=Severity.INFO)
+            return
+
+        # 常见等价写法（/index、/home、语言前缀、同名 PDF、参数剥离）
+        # 是同一页的不同写法，不是权重转移。按 case_only_difference 的
+        # 既有惯例降 INFO 并说明是哪一种，而不是报成冲突让用户去改。
+        benign = _benign_canonical_variant(current, page.canonical)
+        if benign:
+            evidence["verdict"] = f"benign_variant:{benign}"
+            evidence["verdict_explain"] = _BENIGN_VARIANT_REASONS[benign]
             yield self._issue(page, evidence, severity=Severity.INFO)
             return
 
