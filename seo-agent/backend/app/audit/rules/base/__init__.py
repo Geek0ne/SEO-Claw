@@ -254,6 +254,25 @@ _BENIGN_VARIANT_REASONS = {
     "lang_prefix": "canonical 去掉了语言前缀（如 /de/cloud/x → /cloud/x），指向同一份内容",
 }
 
+# 这两类**彻底闭嘴**，连 INFO 都不报。
+#
+# 我第一版把它们降成 INFO，结果是：真误报 8→1 确实修好了，但严格准确率
+# 从 6% 掉到 0% —— 因为「判对但不值得报」在我的核对器里同样算噪音、
+# 同样扣分。降级只是给误报换了个标签，没有消除它。
+#
+# 判据不是「这个数字好不好看」，而是「用户看到这条会做什么」：
+#   - query_dropped：剥掉 utm 参数是全行业标准做法，告知用户零价值。
+#   - index_or_home_alias：站点用 /index 指首页是它自己的索引别名，
+#     不是问题。cs.cmu.edu 首页这么写用了二十年。
+# 两类的共同点：**报告它们等于让用户去改本来正确的东西**，而这正是
+# 我今晚修 h1.multiple、noindex、canonical 大小写时一直在治的病。
+#
+# 另两类刻意留在 INFO，因为闭嘴会造成**漏报**（比误报更坏）：
+#   - lang_prefix：/de/ 页 canonical 指向非本地化版本，德语用户搜不到
+#     德语页，有真实排名后果。
+#   - pdf_variant：指向同名 PDF 是刻意的选择，值得知道。
+_SILENT_VARIANTS = frozenset({"query_dropped", "index_or_home_alias"})
+
 
 def _split_url(url: str) -> tuple[str, str]:
     """拆成 (host 去 www., path)，不碰 query——query 差异由调用方单独判。"""
@@ -368,6 +387,9 @@ class CanonicalConflict(Rule):
         # 既有惯例降 INFO 并说明是哪一种，而不是报成冲突让用户去改。
         benign = _benign_canonical_variant(current, page.canonical)
         if benign:
+            if benign in _SILENT_VARIANTS:
+                # 不是问题，保持沉默。见 _SILENT_VARIANTS 注释。
+                return
             evidence["verdict"] = f"benign_variant:{benign}"
             evidence["verdict_explain"] = _BENIGN_VARIANT_REASONS[benign]
             yield self._issue(page, evidence, severity=Severity.INFO)
