@@ -31,6 +31,7 @@ import sys
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any
+from urllib.parse import urlsplit
 
 UA = "Mozilla/5.0 (compatible; SEOAgentAudit/1.0; +https://example.com/bot)"
 _cache: dict[str, str | None] = {}
@@ -120,6 +121,118 @@ def _meta(h: str, key: str) -> str | None:
 def _title(h: str) -> str | None:
     m = re.search(r"<title[^>]*>(.*?)</title>", h, re.I | re.S)
     return _strip(m.group(1)) if m else None
+
+
+def _is_cjk(s: str) -> bool:
+    """中日韩字符。与 baidu 包的 _is_cjk 同口径——两边必须一致，
+    否则「核对器说规则错」只是口径差异，不是真错。"""
+    return any("一" <= ch <= "鿿" for ch in s or "")
+
+
+def _hreflang_pairs(h: str) -> list[tuple[str, str]]:
+    """抽 <link rel="alternate" hreflang="xx" href="yy">。
+
+    刻意**不复用 extract 的 page.hreflang**：核对器要验的是「页面上有没有
+    这个声明」。若直接拿提取结果，提取器漏采就会被当成页面没有——那样验的
+    就不是页面而是提取器了。两者独立才能互为验证。
+    """
+    out: list[tuple[str, str]] = []
+    for tag in _tags(h, r"<link[^>]*>"):
+        if not re.search(r"rel\s*=\s*[\"']?alternate", tag, re.I):
+            continue
+        code = _attr(tag, "hreflang")
+        href = _attr(tag, "href")
+        if code and href:
+            out.append((code.strip(), href.strip()))
+    return out
+
+
+def _html_lang(h: str) -> str:
+    m = re.search(r"<html[^>]*\blang\s*=\s*[\"']([^\"']*)[\"']", h, re.I)
+    return (m.group(1).strip() if m else "")
+
+
+def _site_root(url: str) -> str:
+    """取 scheme://host 部分（给 robots.txt 拼 URL 用）。"""
+    p = url.split("/", 3)
+    return "/".join(p[:3]) if len(p) >= 3 else url
+
+
+def _norm_url(url: str) -> str:
+    """比较两个 URL 是否同一资源用。**必须保留 path。**
+
+    ⚠️ 我第一版误用了 _site_root，那函数会把 path 整个剥掉：
+        https://ex.com/en/page.html -> https://ex.com
+    用它做 hreflang 自引用比对时，两边都被剥成 host、永远相等 →
+    「有没有自引用」这个判断恒为「有」→ 6 条全部误判成假误报。
+    比 URL 身份和比 URL 根是两件事，名字相近最容易混。
+
+    口径对齐 backend/app/util.normalize_url：去协议、去 www.、去
+    fragment、去跟踪参数、去尾斜杠、index.html 等价于目录。
+    """
+    if not url:
+        return ""
+    u = url.strip()
+    p = urlsplit(u)
+    host = (p.netloc or "").lower()
+    if host.startswith("www."):
+        host = host[4:]
+    path = (p.path or "/").rstrip("/") or "/"
+    if path.endswith("/index.html"):
+        path = path[: -len("/index.html")] or "/"
+    elif path.endswith("index.html"):
+        path = path[: -len("index.html")] or "/"
+    return f"{host}{path.lower()}"
+
+
+def _curl_status(url: str, timeout: int = 15) -> int | None:
+    """只要 HTTP 状态码。None = 压根没连上（与 404 含义完全不同，
+    robots.txt 缺失时 fetch() 返回 None，但 None 也可能是超时）。"""
+    try:
+        p = subprocess.run(
+            ["curl", "-sS", "-o", "/dev/null", "-w", "%{http_code}",
+             "-L", "--max-time", str(timeout), url],
+            capture_output=True, text=True, timeout=timeout + 5,
+        )
+    except (subprocess.SubprocessError, OSError):
+        return None
+    code = (p.stdout or "").strip()
+    return int(code) if code.isdigit() else None
+
+
+def _curl_body(url: str, timeout: int = 15) -> str | None:
+    try:
+        p = subprocess.run(
+            ["curl", "-sS", "-L", "--max-time", str(timeout), url],
+            capture_output=True, text=True, timeout=timeout + 5,
+        )
+    except (subprocess.SubprocessError, OSError):
+        return None
+    return p.stdout if p.returncode == 0 else None
+
+
+def _robots_groups(text: str) -> dict[str, list[tuple[str, str]]]:
+    """robots.txt → {ua: [(directive, value)]}。
+
+    只实现核对所需的最小子集：连续多个 User-agent 归为一组；
+    Allow/Disallow 挂到当前组的所有 UA 上（含无 UA 时的 `*`）。
+    不实现最长前缀/同长 Allow 优先那套完整协议——核对器只用来判
+    「是不是全站屏蔽」这一种确凿情形，复杂的部分拿不准就判存疑。
+    """
+    groups: dict[str, list[tuple[str, str]]] = {}
+    current: list[str] = []
+    for raw in (text or "").splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if not line or ":" not in line:
+            continue
+        key, val = line.split(":", 1)
+        key, val = key.strip().lower(), val.strip()
+        if key == "user-agent":
+            current.append(val.lower() or "*")
+        elif key in ("allow", "disallow"):
+            for ua in current or ["*"]:
+                groups.setdefault(ua, []).append((key, val))
+    return groups
 
 
 def _visible_text(h: str) -> str:
@@ -334,6 +447,141 @@ def verify(code: str, url: str, h: str | None, ev: dict[str, Any]) -> Verdict:
         same = _content_same(h, th)
         return Verdict("false_positive", f"canonical 指向 {href[:40]}，两页内容相同（合法归一）") \
             if same else Verdict("true_positive", f"canonical 指向 {href[:40]}，但两页内容不同")
+
+    # ---- v5 全市场补扫新增触发的 9 种 code ----
+    # 此前核对器不认这些，会全判 unknown，于是多市场准确率**算不出来**。
+    # 阈值一律取规则源码的类常量（title.chinese_too_long.LIMIT=30、
+    # meta.chinese_semantic_incomplete._MIN_REPEATS=3 / _GRAM_LENS=(2,3,4)、
+    # img.alt.generic._GENERIC），不另拍一套：两边口径必须一致，
+    # 否则「核对器说规则错」只是口径差异而非真错。
+
+    if code == "title.chinese_too_long":
+        t = _title(h)
+        if not t:
+            return Verdict("false_positive", "无 title")
+        if not _is_cjk(t):
+            # 规则只对含中日韩字符的标题启用 30 字阈值；英文标题归 base 的 60
+            return Verdict("false_positive", f"标题无中日韩字符，走英文阈值: {t[:40]}")
+        n = len(t.strip())
+        return Verdict("true_positive", f"len={n} > 30（中文阈值）") \
+            if n > 30 else Verdict("false_positive", f"len={n} ≤ 30")
+
+    if code == "img.alt.generic":
+        generic = {"picture", "2", "图片", "3", "placeholder", "untitled", "图片2",
+                   "img", "photo", "图片1", "照片", "icon", "图像", "image", "1"}
+        hits = []
+        for tag in _tags(h, r"<img[^>]*>"):
+            alt = _attr(tag, "alt")
+            if alt and alt.strip().lower() in generic:
+                hits.append(alt.strip())
+        return Verdict("true_positive", f"{len(hits)} 张图 alt 属泛用词: {sorted(set(hits))[:5]}") \
+            if hits else Verdict("false_positive", "无泛用 alt")
+
+    if code == "meta.chinese_semantic_incomplete":
+        def _repeated(text: str) -> dict:
+            if not text or not _is_cjk(text):
+                return {}
+            counts: dict = {}
+            for n in (2, 3, 4):
+                c: dict = {}
+                for i in range(len(text) - n + 1):
+                    g = text[i : i + n]
+                    if _is_cjk(g):
+                        c[g] = c.get(g, 0) + 1
+                for g, num in c.items():
+                    if num >= 3:
+                        counts[g] = num
+            return {g: n for g, n in counts.items()
+                    if not any(g != o and g in o for o in counts)}
+
+        rt = _repeated(_title(h) or "")
+        rd = _repeated(_meta(h, "description") or "")
+        if not rt and not rd:
+            return Verdict("false_positive", "标题与描述均无 ≥3 次重复的中文词根")
+        return Verdict("true_positive",
+                       f"重复词根 title={sorted(rt)[:3]} / desc={sorted(rd)[:3]}")
+
+    if code == "hreflang.x_default_missing":
+        pairs = _hreflang_pairs(h)
+        if not pairs:
+            return Verdict("false_positive", "页面无 hreflang 声明")
+        langs = {c.split("-")[0].lower() for c, _ in pairs if c and c != "x-default"}
+        if len(langs) < 2:
+            return Verdict("false_positive", f"只声明 {len(langs)} 种语言，不算多语言站")
+        if any(c.lower() == "x-default" for c, _ in pairs):
+            return Verdict("false_positive", "有 x-default")
+        return Verdict("true_positive", f"声明 {sorted(langs)} 但无 x-default")
+
+    if code == "hreflang.inconsistent_with_lang":
+        pairs = _hreflang_pairs(h)
+        if not pairs:
+            return Verdict("false_positive", "页面无 hreflang 声明")
+        # x-default 同样要排除：切开得 "x"，会被当成一种语言。规则侧
+        # （google/i18n.py）已修，这里是同一处错误的镜像。
+        declared = {
+            c.split("-")[0].lower()
+            for c, _ in pairs
+            if c and c.strip().lower() != "x-default"
+        }
+        if not declared:
+            return Verdict("false_positive", "只声明了 x-default，无实际语言")
+        own = _html_lang(h).split("-")[0].strip().lower()
+        if not own:
+            return Verdict("false_positive", "html 无 lang（该由 lang.missing 报）")
+        if own in declared:
+            return Verdict("false_positive", f"html lang={own} ∈ {sorted(declared)}")
+        return Verdict("true_positive", f"html lang={own} ∉ {sorted(declared)}")
+
+    if code == "hreflang.self_reference_missing":
+        pairs = _hreflang_pairs(h)
+        if not pairs:
+            return Verdict("false_positive", "页面无 hreflang 声明")
+        own_lang = _html_lang(h).split("-")[0].strip().lower()
+        if not own_lang:
+            return Verdict("false_positive", "html 无 lang，无从判断自引用")
+        # ⚠️ 用 _norm_url 而不是 _site_root：后者把 path 剥掉，
+        # 比对恒相等 → 恒判「有自引用」。见 _norm_url 注释。
+        target = _norm_url(ev.get("self_url") or url)
+        for c, href in pairs:
+            same_lang = c.split("-")[0].strip().lower() == own_lang
+            if _norm_url(href) == target and (same_lang or c.lower() == "x-default"):
+                return Verdict("false_positive", f"有自引用 {c}")
+        return Verdict("true_positive", f"无指向自身的 hreflang（lang={own_lang}）")
+
+    if code == "mobile.landing_page_missing":
+        v = _meta(h, "viewport")
+        if v:
+            return Verdict("false_positive", f"有 viewport: {v[:40]}")
+        return Verdict("true_positive", "无 viewport meta")
+
+    if code == "robots.missing":
+        ru = ev.get("robots_url") or f"{_site_root(url)}/robots.txt"
+        st = _curl_status(ru)
+        if st is None:
+            return Verdict("unknown", "robots.txt 连不上，无法确认是否 404")
+        return Verdict("true_positive", f"robots.txt HTTP {st}") \
+            if st == 404 else Verdict("false_positive", f"robots.txt HTTP {st}，非 404")
+
+    if code == "robots.baiduspider_not_allowed":
+        ru = ev.get("robots_url") or f"{_site_root(url)}/robots.txt"
+        text = _curl_body(ru)
+        if text is None:
+            return Verdict("unknown", "robots.txt 取不到，无法核对 Baiduspider 组")
+        g = _robots_groups(text)
+        matched = ev.get("matched_group") or ""
+        rules = g.get(matched.lower()) if matched else None
+        if rules is None:
+            return Verdict("false_positive", f"robots.txt 无 {matched or 'baiduspider'} 组")
+        # 只判「全站屏蔽」这一种确凿情形；部分路径屏蔽需要最长前缀 +
+        # 同长度 Allow 优先的完整协议匹配，核对器不实现那套——拿不准就存疑
+        disallow_root = any(d == "disallow" and v == "/" for d, v in rules)
+        allow_all = any(d == "allow" and v == "/" for d, v in rules)
+        others = [v for d, v in rules if d == "disallow" and v != "/"]
+        if disallow_root and not allow_all and not others:
+            return Verdict("true_positive", f"{matched} 组 Disallow: /（全站屏蔽）")
+        if others or allow_all:
+            return Verdict("unknown", f"{matched} 组为部分路径屏蔽，需逐路径匹配才能定论")
+        return Verdict("false_positive", f"{matched} 组无 Disallow: /")
 
     if code == "h1.missing":
         tags = _tags(h, r"<h1[^>]*>(.*?)</h1>")

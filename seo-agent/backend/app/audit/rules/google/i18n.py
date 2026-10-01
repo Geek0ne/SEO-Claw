@@ -52,7 +52,15 @@ class HreflangMismatchesLang(Rule):
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
         if page.status_code != 200 or not page.hreflang:
             return
-        declared = {code.split("-")[0].lower() for code, _ in page.hreflang if code}
+        # ⚠️ x-default 必须排除：它按 "-" 切开得到 "x"，会被当成一种语言塞进
+        # declared，于是「html lang=en 只声明了 x-default」会误报成不一致
+        # （实测冒烟就撞到：html lang=en ∉ ['x']）。x-default 是兜底标记，
+        # 不是语言。下面的 x_default_missing 规则已经单独处理它。
+        declared = {
+            code.split("-")[0].lower()
+            for code, _ in page.hreflang
+            if code and code.strip().lower() != "x-default"
+        }
         if not declared:
             return
         own = (page.lang or "").split("-")[0].strip().lower()
