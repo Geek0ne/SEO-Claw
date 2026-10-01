@@ -168,6 +168,36 @@ def _content_same(a: str, b: str) -> bool:
     return len(ta & tb) / len(ta | tb) >= 0.7
 
 
+# 比对「两页内容相同」时，两页正文都得够长才作数。
+#
+# 实踩：indiehackers 的 /products/new 与 canonical 目标 /sign-in、fotocasa 的
+# /es/user/alerts 与 /es/login，这两组**本不是同一篇内容**，但两次抓取各自都
+# 落到了同一个登录页，于是 _content_same 判「相同」→ 报成 false_positive。
+# 后果是 canonical.conflict 的 11 条「误报」里 9 条是假的，准确率被算低。
+#
+# 这与「判缺 X 必须先正面看到 X」是同一个错误的镜像：不是没看到「缺」，而是
+# **没看到内容就下了「内容相同」的结论**。两页都短成登录页/人机挑战/JS 壳
+# 时，Jaccard 再高也只说明它们同为一张壳，不说明文章相同。
+MIN_CANON_TEXT = 400
+
+_THIN_PAGE_RE = re.compile(
+    r"sign\s?in|log\s?in|entra en tu cuenta|create an account|"
+    r"just a moment|checking your browser|please enable javascript|"
+    r"enable javascript to (run|view)",
+    re.I,
+)
+
+
+def _too_thin_to_compare(h: str | None) -> bool:
+    """正文太短、或整页就是登录/挑战壳 → 不能拿它比「内容是否相同」。"""
+    if not h:
+        return True
+    text = _visible_text(h)
+    if len(text) < MIN_CANON_TEXT:
+        return True
+    return bool(_THIN_PAGE_RE.search(text[:2000]))
+
+
 def _shingles(text: str, n: int = 5) -> set[str]:
     """字符 n-gram 集合；文字太短就退化为整串。"""
     t = re.sub(r"\s+", "", (text or "").lower())
@@ -292,6 +322,15 @@ def verify(code: str, url: str, h: str | None, ev: dict[str, Any]) -> Verdict:
         th = fetch(target) if target else None
         if th is None:
             return Verdict("unknown", f"canonical={href[:50]}，目标页取不到，无法比内容")
+        # 先排除「两页都退化成登录页/壳」，再谈内容是否相同。
+        # 见 _too_thin_to_compare 注释：不排除就会把抓取失败当成合法归一。
+        if _too_thin_to_compare(h) or _too_thin_to_compare(th):
+            side = "本页" if _too_thin_to_compare(h) else "目标页"
+            return Verdict(
+                "unknown",
+                f"canonical={href[:44]}，但{side}正文过短或为登录/人机挑战页，"
+                f"取不到真实内容，无法比",
+            )
         same = _content_same(h, th)
         return Verdict("false_positive", f"canonical 指向 {href[:40]}，两页内容相同（合法归一）") \
             if same else Verdict("true_positive", f"canonical 指向 {href[:40]}，但两页内容不同")
