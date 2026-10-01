@@ -452,6 +452,32 @@ def _anchor_text(el: Any) -> str:
     return text  # 保留原样（哪怕是符号），让 link.noanchor 规则能提示
 
 
+def _is_decorative(el: Any, anchor: str) -> bool:
+    """纯装饰性链接：对可见用户、读屏软件和爬虫都不构成锚文本。
+
+    判据是 **<a> 自身** 被显式排除在可访问性树之外，且拿不到任何锚文本：
+
+        <a href="/x" aria-hidden="true" tabindex="-1"><img src="logo.svg" alt=""></a>
+
+    这类在大型站点上极常见——ocw.mit.edu 首页 887 个链接里 114 个锚文本
+    为空，其中 **96 个**正是这种 logo 图标链接（实测），且它们的
+    ``<img alt="">`` 也为空。
+
+    不排除的话 link.noanchor 会在该站永久亮红灯，而用户能做的只是往
+    alt 里填字 —— 而这些图标对读屏用户本就不可见，填了也没用。
+
+    两个条件都成立才算：
+      1. ``aria-hidden="true"`` 或 ``tabindex="-1"`` 写在 <a> 自己身上
+         （不是内部的 <img> 身上 —— 后者只说明图片被隐藏，链接仍可见）
+      2. 抽出来的锚文本为空（含 img alt / aria-label / title 都为空）
+    """
+    if anchor.strip():
+        return False
+    return (el.get("aria-hidden") or "").strip().lower() == "true" or (
+        el.get("tabindex") or ""
+    ).strip() == "-1"
+
+
 def _extract_links(doc: Any, page: Page, base_url: str, domain: str) -> None:
     for el in doc.xpath("//a[@href]"):
         href = (el.get("href") or "").strip()
@@ -464,12 +490,14 @@ def _extract_links(doc: Any, page: Page, base_url: str, domain: str) -> None:
             continue
         internal = is_internal(absolute, domain)
         rel = (el.get("rel") or "").lower()
+        anchor = _anchor_text(el)
         page.links.append(
             LinkRef(
                 href=absolute,
-                anchor=_anchor_text(el),
+                anchor=anchor,
                 kind=LinkKind.INTERNAL if internal else LinkKind.EXTERNAL,
                 nofollow="nofollow" in rel,
+                decorative=_is_decorative(el, anchor),
             )
         )
     page.internal_link_count = sum(1 for l in page.links if l.kind == LinkKind.INTERNAL)

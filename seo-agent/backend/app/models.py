@@ -87,6 +87,12 @@ class LinkRef(BaseModel):
     nofollow: bool = False
     # 抓取阶段回填：内链目标最终状态码（None = 未抓）
     target_status: Optional[int] = None
+    # 纯装饰性链接：<a> 自身带 aria-hidden="true" 或 tabindex="-1"，且
+    # 内含图片 alt 也为空。对可见用户和读屏软件都不存在，对爬虫更没有
+    # 锚文本可言。ocw.mit.edu 首页 114 个「空锚」里有 96 个是这种 logo
+    # 图标链接（实测），把它们算进 link.noanchor 会让规则在该站永久
+    # 亮红灯，而用户无从下手。
+    decorative: bool = False
 
 
 class Page(BaseModel):

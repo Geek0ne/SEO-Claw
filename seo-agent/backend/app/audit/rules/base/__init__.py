@@ -573,11 +573,27 @@ class LinkNoAnchor(Rule):
     fix_hint = "给链接加上描述性锚文本。"
 
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
-        empties = [l.href for l in page.links if l.kind.value == "internal" and not l.anchor]
+        # 排除装饰性链接（<a aria-hidden="true"><img alt=""></a>）：它们对可见
+        # 用户、读屏软件和爬虫都不构成锚文本，让用户去改等于让人改本来正确
+        # 的东西。ocw.mit.edu 首页 114 个「空锚」里 96 个是这种（实测）。
+        empties = [
+            l.href
+            for l in page.links
+            if l.kind.value == "internal" and not l.anchor and not l.decorative
+        ]
         # 只报「本页有多个空锚」的情况：单个往往是无害的 UI 元素
         if len(empties) >= 2:
             yield self._issue(
-                page, {"empty_anchor_count": len(empties), "sample_hrefs": empties[:5]}
+                page,
+                {
+                    "empty_anchor_count": len(empties),
+                    "sample_hrefs": empties[:5],
+                    "excluded_decorative": sum(
+                        1
+                        for l in page.links
+                        if l.kind.value == "internal" and not l.anchor and l.decorative
+                    ),
+                },
             )
 
 
