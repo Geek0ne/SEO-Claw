@@ -14,6 +14,7 @@ M0 阶段刻意做简单：同步 + 内存 frontier + 磁盘 checkpoint。
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import time
@@ -201,6 +202,8 @@ class Crawler:
     def __init__(self, config: Optional[CrawlConfig] = None, checkpoint_dir: Optional[Path] = None) -> None:
         self.config = config or CrawlConfig()
         self.checkpoint_dir = checkpoint_dir
+        # pages.jsonl 里已经成功落盘的条数，续写时只追加新增的那些
+        self._pages_persisted = 0
         self.limiter = RateLimiter(
             self.config.per_domain_rps,
             self.config.total_rps,
@@ -516,53 +519,112 @@ class Crawler:
         但此时 frontier 缺失，调用方必须重新播种。
         """
         path = self._checkpoint_path(domain)
+        pages = self._load_pages(domain)
+        self._pages_persisted = len(pages)
         if not path or not path.exists():
-            return None
+            # visited 丢了但 pages 还在：保���已解析结果，重新播种继续抓。
+            # 全丢才算没有 checkpoint。
+            return {"visited": [], "frontier": [], "pages": pages} if pages else None
         try:
             raw = path.read_text(encoding="utf-8")
         except OSError:
-            return None
+            return {"visited": [], "frontier": [], "pages": pages} if pages else None
         try:
             data = json.loads(raw)
         except (ValueError, TypeError):
-            # 旧版格式：每行一个 visited
+            # 旧版纯文本格式：每行一个 visited。frontier 缺失 → 调用方重新播种
             return {"visited": [ln.strip() for ln in raw.splitlines() if ln.strip()],
-                    "frontier": [], "pages": []}
+                    "frontier": [], "pages": pages}
         if not isinstance(data, dict):
-            return None
+            return {"visited": [], "frontier": [], "pages": pages} if pages else None
+        # 兼容上一版把 pages 塞在同一个 JSON 里的格式
+        inline = list(data.get("pages") or [])
+        if inline and not pages:
+            pages = inline
         return {
             "visited": list(data.get("visited") or []),
             "frontier": [tuple(x) for x in (data.get("frontier") or [])],
-            "pages": list(data.get("pages") or []),
+            "pages": pages,
         }
+
+    def _pages_path(self, domain: str) -> Optional[Path]:
+        """已解析页面的追加日志（JSONL）。与 .visited 分开，原因见 _save_checkpoint。"""
+        path = self._checkpoint_path(domain)
+        if not path:
+            return None
+        return path.with_name(path.name + ".pages.jsonl")
+
+    def _load_pages(self, domain: str) -> list:
+        """读回 pages.jsonl。
+
+        追加写中途被 kill 会留下半截最后一行，所以**逐行解析、坏行跳过**，
+        而不是整体 json.loads 失败就丢全部。半截行正是「刚好被杀」最常见的
+        形态，在续跑场景下要能容下来。
+        """
+        ppath = self._pages_path(domain)
+        if not ppath or not ppath.exists():
+            return []
+        out: list[dict] = []
+        try:
+            with ppath.open("r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        obj = json.loads(line)
+                    except ValueError:
+                        continue  # 半截行
+                    if isinstance(obj, dict):
+                        out.append(obj)
+        except OSError:
+            return out
+        return out
 
     def _save_checkpoint(self, domain: str, visited: set[str],
                          frontier: list, pages: list) -> None:
-        """原子写：先写临时文件再 rename。
+        """visited/frontier 小 → 原子重写；pages 大 → **只追加**。
 
-        之前是 write_text 直写，中途被 kill 会留下半截 JSON，下次
-        续跑读到坏文件只能当没 checkpoint——等于静默退化成从零开始。
+        ⚠️ 上一版把三者放一个 JSON、每 25 页全量重写，实测抓 35 页时
+        checkpoint 就到了 935KB，1000 页会变成 ~26MB 反复重写 40 次——
+        「1000 页不崩」那条验收我自己差点做崩。根因是**全量重写**，
+        不是数据量本身，所以拆成两个文件：小的照旧重写（要保证原子性），
+        大的改成 JSONL 追加，写入量从 O(n²) 降到 O(n)。
         """
         path = self._checkpoint_path(domain)
-        if not path:
-            return
-        payload = {
-            "visited": sorted(visited),
-            # parent 可能为 None；list→tuple 不行（JSON 会把 tuple 存成 list），
-            # 读回时再补成 tuple。
-            "frontier": [[u, d, p] for (u, d, p) in frontier],
-            # Page 是 pydantic BaseModel，可直接 dump
-            "pages": [p.model_dump(mode="json") for p in pages],
-        }
-        tmp = path.with_suffix(path.suffix + ".tmp")
-        try:
-            tmp.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-            tmp.replace(path)
-        except OSError:
+        if path:
+            payload = {
+                "visited": sorted(visited),
+                # parent 可能为 None；list→tuple 不行（JSON 存成 list），读回时再补
+                "frontier": [[u, d, p] for (u, d, p) in frontier],
+            }
+            tmp = path.with_suffix(path.suffix + ".tmp")
             try:
-                tmp.unlink(missing_ok=True)
+                tmp.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+                tmp.replace(path)
             except OSError:
-                pass
+                try:
+                    tmp.unlink(missing_ok=True)
+                except OSError:
+                    pass
+
+        ppath = self._pages_path(domain)
+        if not ppath:
+            return
+        pending = pages[self._pages_persisted:]
+        if not pending:
+            return
+        try:
+            with ppath.open("a", encoding="utf-8") as f:
+                for p in pending:
+                    f.write(json.dumps(p.model_dump(mode="json"), ensure_ascii=False) + "\n")
+                f.flush()
+                os.fsync(f.fileno())
+            self._pages_persisted += len(pending)
+        except OSError:
+            # 追加失败就停在原处：下次续跑会重写这些页（visited 里已有它们，
+            # 所以不重复抓，只是这批解析结果没存上——比坏 checkpoint 强）
+            pass
 
 
 def _canonicalize(url: str) -> str:

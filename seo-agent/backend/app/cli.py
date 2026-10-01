@@ -68,8 +68,30 @@ def cmd_scan(args: argparse.Namespace) -> int:
     site_facts["hit_page_limit"] = bool(
         getattr(crawler, "aborted_reason", None) or len(pages) >= cfg.max_pages
     )
-    coverage = len(pages) / max(discovered, 1)
-    print(f"→ 抓取覆盖率：{len(pages)}/{discovered} = {coverage:.1%}", file=sys.stderr)
+    # ⚠️ 分子只数**抓成功**的页。pages 里混着失败页（429/403/超时/连接错误），
+    # 它们进 pages 列表但一行内容都没有——算进分子就成了「抓到了」。
+    # 实测踩过：w3.org 被打限流，种子页 429、frontier 空，
+    # 报告却打「1/1 = 100.0%」——一页没抓到还宣称 100% 覆盖。
+    # 这跟 gymshark 的 0.0 分、lobste.rs 的 100 分是同一类病：把抓取失败
+    # 当成正常结果报出去。全站 0 页成功时必须显式说明，不能给百分比。
+    ok_pages = [p for p in pages if p.status_code == 200 and not p.error]
+    failed = len(pages) - len(ok_pages)
+    if ok_pages:
+        coverage = len(ok_pages) / max(discovered, 1)
+        print(
+            f"→ 抓取覆盖率：{len(ok_pages)}/{discovered} = {coverage:.1%}"
+            + (f"（{failed} 页抓取失败，未计入）" if failed else ""),
+            file=sys.stderr,
+        )
+    else:
+        # 0 页成功时给百分比就是在撒谎，直接说没抓到
+        print(
+            f"⚠️ 抓取覆盖率：0/{discovered} —— **本页都没抓成功**，"
+            f"{failed} 次请求全部失败（限流/封禁/网络）。下面的结论不可用。",
+            file=sys.stderr,
+        )
+    site_facts["pages_ok"] = len(ok_pages)
+    site_facts["pages_failed"] = failed
 
     # 回访 canonical 目标：区分「指向不存在的地址」与「有意的版本别名/合并」
     if not args.no_verify_canonical:
