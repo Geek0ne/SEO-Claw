@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from typing import Iterable
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 from ....models import Issue, Market, Page, Scope, Severity
 from ....util import normalize_url, same_url_ignoring_path_case
@@ -363,12 +363,22 @@ _SILENT_VARIANTS = frozenset({"query_dropped", "index_or_home_alias"})
 
 
 def _split_url(url: str) -> tuple[str, str]:
-    """拆成 (host 去 www., path)，不碰 query——query 差异由调用方单独判。"""
+    """拆成 (host 去 www., path)，不碰 query——query 差异由调用方单独判。
+
+    path 会做**百分号解码**。实测样本：www.aucklandnz.com 的
+    `/collections/girl%E2%80%99s-night-out`（页面 URL 是编码形式）与
+    canonical 里的 `/collections/girl’s-night-out`（裸字符形式）——
+    两条 curl 都是 200 且无跳转，实为同一页面。不解码就会把同一个页面
+    判成「canonical 指向别处」。
+
+    只解码 path 而非整条 URL：query 的编码语义由调用方单独判，动它会
+    连带影响 canonical_target_status 那些键。
+    """
     p = urlsplit(url)
     host = (p.netloc or "").lower()
     if host.startswith("www."):
         host = host[4:]
-    path = p.path or "/"
+    path = unquote(p.path or "/")
     if not path.startswith("/"):
         path = "/" + path
     return host, path

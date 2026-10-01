@@ -194,20 +194,81 @@ def test_hreflang_pointing_to_page_is_fine():
 
 
 def test_og_missing_fires_low():
-    """og 缺失只影响分享卡片，不影响排名——必须 LOW。报高危是夸大。"""
+    """og 缺失只影响分享卡片，不影响排名——必须 LOW。报高危是夸大。
+
+    这条已改成 SITE 级：og 标签写在模板里，是站点级属性。同站 5 页全缺
+    本来就是同一个问题的 5 份拷贝，按页报成 N 遍是纯噪音——107 站实测
+    这条贡献了 149 条发现、135 条「属实但噪音」、0 条误报，占全部噪音 93%。
+
+    ⚠️ 单页不再触发（单页时我们无法区分「只有这个页面没写」和「全站都没写」）。
+    """
+    pages = [extract_page(f"https://demo.test/p{i}", html()) for i in range(5)]
+    issues, _ = run_audit(pages, "demo.test", [Market.BASE, Market.GOOGLE])
+    hit = codes(issues, "og.basic_missing")
+    assert hit, "5 页全缺 og 时未报出"
+    assert hit[0].severity is Severity.LOW, "og 缺失不影响排名，必须 LOW"
+    assert len(hit) == 1, f"站点级应只报 1 次，实际 {len(hit)} 次"
+    assert hit[0].evidence["pages_checked"] == 5
+
+
+def test_og_missing_fires_without_enough_pages():
+    """SITE 级 ≠ 必须够页数。
+
+    这条**故意不挂 ctx.has_enough_data()**：那个门槛（≥20 页 + 覆盖率
+    ≥50%）只适用于靠「没看到」下结论的规则。og:title 就写在 <head> 里，
+    是直接证据。扫描用 --max-pages 5，若挂上门槛这条就永远沉默——
+    准确率会因为它闭眼而「变好看」，那不是修复。
+    """
+    pages = [extract_page(f"https://demo.test/p{i}", html()) for i in range(3)]
+    issues, _ = run_audit(pages, "demo.test", [Market.BASE, Market.GOOGLE])
+    assert codes(issues, "og.basic_missing"), "3 页也必须能报出"
+
+
+def test_og_single_page_still_fires():
+    """单页样本**仍然触发**——我第一版断言写反了。
+
+    判据是「**观察到**的页面里有没有缺的」，不是页面数量：抓到 1 页、
+    这页缺 og，那它就是缺 og。写「单页不报」等于给规则凭空加了个
+    样本量门槛，那和我加og SITE 级时犯的错是同一个——用沉默换好看。
+    """
     hit = codes(audit(html()), "og.basic_missing")
-    assert hit
-    assert hit[0].severity is Severity.LOW
+    assert hit, "单页缺失也是缺失"
+    assert hit[0].evidence["pages_checked"] == 1
+
+
+def test_og_partial_site_keeps_own_pages_silent():
+    """只有部分页面缺 og → 不是站点级问题，不报。
+
+    部分页面有、部分没有，说明作者只在部分模板里写了，那是另一回事。
+    在站点级把它抹平会掩盖真实的不一致。"""
+    full_og = (
+        '<meta property="og:title" content="T">'
+        '<meta property="og:description" content="D">'
+        '<meta property="og:image" content="https://demo.test/c.png">'
+    )
+    pages = [
+        extract_page("https://demo.test/p0", html(full_og)),
+        extract_page("https://demo.test/p1", html()),
+        extract_page("https://demo.test/p2", html()),
+        extract_page("https://demo.test/p3", html()),
+    ]
+    issues, _ = run_audit(pages, "demo.test", [Market.BASE, Market.GOOGLE])
+    assert not codes(issues, "og.basic_missing"), "部分页面缺失时不该按站点级报"
 
 
 def test_og_complete_is_silent():
-    issues = audit(
-        html(
-            '<meta property="og:title" content="T">'
-            '<meta property="og:description" content="D">'
-            '<meta property="og:image" content="https://demo.test/c.png">'
+    pages = [
+        extract_page(
+            f"https://demo.test/p{i}",
+            html(
+                '<meta property="og:title" content="T">'
+                '<meta property="og:description" content="D">'
+                '<meta property="og:image" content="https://demo.test/c.png">'
+            ),
         )
-    )
+        for i in range(5)
+    ]
+    issues, _ = run_audit(pages, "demo.test", [Market.BASE, Market.GOOGLE])
     assert not codes(issues, "og.basic_missing")
 
 

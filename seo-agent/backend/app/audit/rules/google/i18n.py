@@ -312,6 +312,15 @@ class SocialMetaMissing(Rule):
     code = "og.basic_missing"
     severity = Severity.LOW
     market = Market.GOOGLE
+    # 为什么改成 SITE 级：og 标签写在模板里，是**站点级**属性，不是页面级。
+    # 同一站点 5 页全缺 → 本来就是同一个问题的 5 份拷贝。107 站实测这条
+    # 贡献 149 条发现、135 条「属实但噪音」、0 条误报——占了全部噪音的 93%，
+    # 而没有一条是用户「必须修」的问题。按页报 N 遍就是纯噪音。
+    #
+    # ⚠️ SITE 级规则的 page 参数是哨兵对象（status_code=0），
+    # **绝不能读 page 的字段**——读到的永远是空值，规则会静默失效。
+    # 必须走 ctx.all_pages。这个坑真的踩过：改完不报错，就是不触发。
+    scope = Scope.SITE
     title = "缺少 Open Graph 标签（影响社交分享卡片）"
     description = (
         "og:title / og:description / og:image 决定链接分享到微信、微博、"
@@ -328,21 +337,46 @@ class SocialMetaMissing(Rule):
     )
 
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
-        if page.status_code != 200:
+        # ⚠️ 这里**故意不加** ctx.has_enough_data()。
+        #
+        # 那个门槛（抓够 20 页 + 覆盖率 ≥50%）只适用于靠「**没看到**」下结论的
+        # 规则——没发现指向 X 的内链，不代表 X 不存在。og 不是这种：og:title
+        # 就写在 <head> 里，我们对每个页面都**正面看到或没看到**，是直接证据。
+        #
+        # 我第一版照抄了 schema.missing 的守卫，结果扫描用 --max-pages 5，
+        # crawled 永远 <20 → 这条规则**永远不会触发**。准确率会因为它闭眼
+        # 而"变好看"——那是我一整晚在治的同一个病：把沉默当成修复。
+        observed = [p for p in ctx.all_pages if p.status_code == 200 and p.is_html]
+        if not observed:
             return
-        missing = []
-        if not page.og_title:
-            missing.append("og:title")
-        if not page.og_description:
-            missing.append("og:description")
-        if not page.og_image:
-            missing.append("og:image")
-        if not missing:
+
+        # 只有当**所有**观察到的页面都缺才算站点级问题。部分页面有、
+        # 部分没有 → 说明作者只在部分模板里写了，那是另一回事，
+        # 按页报出来更准确，不该在这里被抹平。
+        full = [
+            p
+            for p in observed
+            if not (p.og_title and p.og_description and p.og_image)
+        ]
+        if len(full) < len(observed):
             return
+
+        # 全部页面都缺 → 缺的就是这三项（任一页有就不算站点级问题）
+        missing = [
+            tag
+            for attr, tag in (
+                ("og_title", "og:title"),
+                ("og_description", "og:description"),
+                ("og_image", "og:image"),
+            )
+            if not getattr(observed[0], attr)
+        ]
         yield self._issue(
             page,
             {
                 "missing": missing,
+                "pages_checked": len(observed),
+                "pages_missing": len(full),
                 "note": "og 标签只影响社交分享卡片，不影响搜索排名",
                 "verdict": "affects_sharing_only",
             },
