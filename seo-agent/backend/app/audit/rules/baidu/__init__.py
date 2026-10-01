@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from collections import Counter
 from typing import Any, Iterable, Optional
 from urllib.parse import urlparse
@@ -40,6 +41,65 @@ def _cjk_ratio(text: str) -> float:
     if not text:
         return 0.0
     return sum(1 for ch in text if "一" <= ch <= "鿿") / len(text)
+
+
+def _is_japanese(page: Page, extra_text: str = "") -> bool:
+    """这个页面是日语的吗？日语不能按中文规则判。
+
+    日文里汉字（kanji）占比很高，「大阪都構想」「内存」这类词中日同形，
+    所以光看汉字分不出中日。真正的判据是**假名**：日语必须有假名
+    （ひらがな／カタカナ）才能读得出来，中文（以及这条规则面向的
+    百度中文生态里的一切）不会用。
+
+    双重判据，`lang` 属性只是其中之一：
+    1. `<html lang="ja">` —— 最直接；
+    2. 假名字符存在 —— 抗住翻译代理把 lang 属性改写成 zh-CN 的情况。
+    """
+    if (page.lang or "").lower().split("-")[0] == "ja":
+        return True
+    sample = f"{page.title or ''}{extra_text}"
+    return any(0x3040 <= ord(ch) <= 0x30FF for ch in sample)
+
+
+def _norm_url(url: str) -> str:
+    """URL 归一化，只用于「这个 href 是不是本页」的比对。"""
+    return (url or "").strip().rstrip("/").lower()
+
+
+def _is_translation_view(page: Page) -> bool:
+    """当前标题是不是「抓取时协商出来的翻译版」，而不是作者自己写的标题？
+
+    crawler 用 `Accept-Language: zh-CN` 发请求，Discourse 这类站点（以及
+    任何接了 Google Translate 的站点）会**把整页机器翻译成中文再返回**：
+    `<title>`、`meta description`、`og:*` 全部变成中文，`lang` 也变成 zh-CN。
+
+    翻译版的中文标题不是作者写的，作者也改不了——按它去要求作者改标题，
+    等于让人去改一个不存在的东西。实测样本（2026-10 回源核对）：
+
+        meta.discourse.org/t/self-hosters-...-ram-usage/413692
+          Accept-Language: en      -> lang=en, title="Self-hosters: Rebuild..."
+          Accept-Language: zh-CN   -> lang=zh-CN, title="自托管用户：重新编译..."
+
+    判据（只用 Page 上已有的字段，不改数据层）：
+    页面声明了 hreflang，且其中**存在中文变体、却没有任何中文变体指向本页**。
+    这正是「本页是源文档，中文是协商出来的」的签名。对照真正的中文本地化页
+    atlassian.com/zh/...：它声明 `zh-Hans` 指向自己 → 不是翻译视图，照常判定。
+    """
+    if not page.hreflang:
+        return False
+    if (page.lang or "").lower().split("-")[0] != "zh":
+        return False
+    self_url = _norm_url(page.final_url or page.url)
+    has_zh_alternate = False
+    for code, href in page.hreflang:
+        code = (code or "").lower().replace("_", "-")
+        if code != "zh" and not code.startswith("zh-"):
+            continue
+        has_zh_alternate = True
+        if _norm_url(href) == self_url:
+            # 本页自己就是被声明的中文版本 → 作者写的中文，照常判定
+            return False
+    return has_zh_alternate
 
 
 # --------------------------------------------------------------------------
@@ -216,6 +276,98 @@ class BaiduspiderNotAllowed(Rule):
         )
 
 
+def _is_emoji(ch: str) -> bool:
+    """emoji / 符号类区块，实际渲染接近全宽。"""
+    cp = ord(ch)
+    return (
+        0x1F000 <= cp <= 0x1FAFF
+        or 0x2600 <= cp <= 0x27BF
+        or 0x2B00 <= cp <= 0x2BFF
+        or 0x1F1E6 <= cp <= 0x1F1FF
+    )
+
+
+def _is_wide(ch: str) -> bool:
+    """全角字符：汉字、假名、全角标点、全角字母等（每个 1em）。"""
+    return unicodedata.east_asian_width(ch) in ("W", "F")
+
+
+# 半角字符宽度表（16px 基准无衬线字体的经验值）。
+# ⚠️ 这张表与 `app/audit/rules/google/__init__.py` 里的 `_W_*` 同源，**必须保持同步**。
+#   之前试过直接 `from ..google import _estimate_title_px` 复用，但两个市场包
+#   互相 import 会构成环（google.i18n → google → baidu），直接让整个规则
+#   注册表加载失败、251 个测试全红。现文件是独占修改范围，无法把共用函数上提，
+#   所以只能在这端口一份——这是已知的技术债，改 google 包时需同步这里。
+_W_NARROW = set("iljItf.,;:'!|()[]-·’‘“”\"`")
+_W_UPPER = 10.7
+_W_LOWER = 8.0
+_W_DIGIT = 8.9
+_W_SPACE = 4.4
+_W_PUNCT = 5.5
+_W_OTHER_ALPHA = 9.0
+_W_EMOJI = 16.0
+_W_CURLY = set("“”‘’")
+
+
+def _char_px(ch: str, curly_w: float) -> float:
+    cp = ord(ch)
+    # 变体选择符 / ZWJ 不占宽度
+    if cp == 0x200D or 0xFE00 <= cp <= 0xFE0F:
+        return 0.0
+    if _is_emoji(ch):
+        return _W_EMOJI
+    if _is_wide(ch):
+        return _W_EMOJI
+    if ch in _W_CURLY:
+        return curly_w
+    if ch.isspace():
+        return _W_SPACE
+    if ch in _W_NARROW:
+        return 4.5
+    if ch.isdigit():
+        return _W_DIGIT
+    if ch.isalpha():
+        if ch.isascii():
+            return _W_UPPER if ch.isupper() else _W_LOWER
+        return _W_OTHER_ALPHA
+    return _W_PUNCT
+
+
+def _title_px(title: str) -> float:
+    """标题在搜索结果里的渲染宽度（px）。
+
+    百度结果页的标题是**按像素宽度截断**的，约 30 个汉字——不是按字符数。
+    汉字 1em = 16px，所以预算 = 30 × 16 = 480px（见 ChineseTitleTooLong）。
+
+    旧实现用 `len(title)`，等于把半角 ASCII 也当 1em 算，白送预算。实测误报样本
+    （2026-10 回源核对，均为真实回访数据）：
+
+        「借助 Statuspage 提高透明度 | Atlassian」            31 字符 → 274px
+        「关于零售商 | 查找店铺库存 | Bellroy零售商及销售点」  31 字符 → 366px
+
+    两者都远在 480px 之内，百度根本不会截断，却都被判成超长。
+    注意方向：这是把**算错的测量**改对，不是把上限往上抬——31 个纯汉字
+    （496px）依旧照报。
+    """
+    # 中文排版里 “” 是全角，英文里是窄的
+    curly_w = _W_EMOJI if any(_is_wide(c) for c in title) else 4.5
+    return sum(_char_px(ch, curly_w) for ch in title)
+
+
+def _visible_prefix_by_px(title: str, budget_px: float) -> str:
+    """按像素预算切出可见前缀，与实际截断行为一致。"""
+    curly_w = _W_EMOJI if any(_is_wide(c) for c in title) else 4.5
+    out = ""
+    used = 0.0
+    for ch in title:
+        w = _char_px(ch, curly_w)
+        if used + w > budget_px:
+            break
+        out += ch
+        used += w
+    return out
+
+
 # --------------------------------------------------------------------------
 # 中文 title
 # --------------------------------------------------------------------------
@@ -235,8 +387,9 @@ class ChineseTitleTooLong(Rule):
     fix_hint = "把核心关键词放最前面，控制在 30 字以内；品牌名和副标题能砍就砍。"
     fix_example = "防水登山鞋 男款防滑耐磨 - 登山者（18 字）"
 
-    # 百度标题显示上限（含标点），按字符计
+    # 百度结果页标题的显示宽度上限：约 30 个汉字（= 30 × 16px = 480px）
     LIMIT = 30
+    BUDGET_PX = 480.0
 
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
         if page.status_code != 200 or not page.title:
@@ -245,22 +398,38 @@ class ChineseTitleTooLong(Rule):
         #   纯英文/数字标题走 base 包的 60 字符阈值，这里必须保持沉默。
         if not _is_cjk(page.title):
             return
-        length = page.title_length or len(page.title)
-        if length <= self.LIMIT:
+        # ★ 作用域一：日语不按中文规则判。中日汉字同形，日文标题里汉字
+        #   占比很高，`_is_cjk` 必然放行，但中文 SERP 的截断规律套不上去。
+        if _is_japanese(page):
+            return
+        # ★ 作用域二：抓取时协商出来的翻译版，中文标题不是作者写的。
+        if _is_translation_view(page):
             return
 
-        shown = page.title[: self.LIMIT]
+        px = _title_px(page.title)
+        if px <= self.BUDGET_PX:
+            return
+
+        shown = _visible_prefix_by_px(page.title, self.BUDGET_PX)
+        length = page.title_length or len(page.title)
         yield self._issue(
             page,
             {
                 "title": page.title,
                 "length": length,
+                "estimated_px": round(px, 1),
+                "budget_px": self.BUDGET_PX,
                 "limit_zh": self.LIMIT,
                 "limit_en": 60,
                 "visible_prefix": shown,
-                "truncated_tail": page.title[self.LIMIT :],
-                "wasted_chars": length - self.LIMIT,
-                "note": "本条只对含中日韩字符的标题生效；英文标题请看 title.too_long（60 字符阈值）",
+                "truncated_tail": page.title[len(shown) :],
+                "overflow_px": round(px - self.BUDGET_PX, 1),
+                "note": (
+                    "按 SERP 渲染宽度判定（复用 google 包的像素宽度表），"
+                    "预算 480px = 30 个汉字；本条只对含中日韩字符、"
+                    "且非日语、非抓取翻译版的标题生效；"
+                    "纯英文标题请看 title.too_long（60 字符阈值）"
+                ),
             },
         )
 
@@ -312,6 +481,15 @@ class ChineseSemanticIncomplete(Rule):
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
         if page.status_code != 200:
             return
+        # ★ 作用域一：日语不按中文规则判。这条规则跑的是中文 2/3/4-gram 词根
+        #   统计，中文文本的切分规律在日文上不成立——而且日文汉字与中文同形，
+        #   「大阪」「内存」这类词根在正常日文新闻里重复出现是极自然的，
+        #   n-gram 一律误判。实测样本：朝日新闻标题里的「大阪」重复 4 次。
+        if _is_japanese(page, page.meta_description or ""):
+            return
+        # ★ 作用域二：抓取时协商出来的翻译版，中文不是作者写的语言。
+        if _is_translation_view(page):
+            return
         title_terms = self._repeated_terms(page.title or "")
         desc_terms = self._repeated_terms(page.meta_description or "")
         if not title_terms and not desc_terms:
@@ -327,6 +505,13 @@ class ChineseSemanticIncomplete(Rule):
                 "meta_description_repeated_terms": desc_terms,
                 "min_repeats": self._MIN_REPEATS,
                 "gram_lengths_checked": list(self._GRAM_LENS),
+                "repeated_in": (
+                    "title"
+                    if title_terms and not desc_terms
+                    else "meta_description"
+                    if desc_terms and not title_terms
+                    else "title_and_meta_description"
+                ),
                 "verdict": "likely_keyword_stuffing",
                 "verdict_explain": (
                     "同一中文词根重复出现 ≥3 次。中文搜索引擎生态里这是公认的堆砌写法，"

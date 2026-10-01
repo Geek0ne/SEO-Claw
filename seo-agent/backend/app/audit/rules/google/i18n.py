@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import re
 from typing import Iterable
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from ....models import Issue, Market, Page, Scope, Severity
 from ....util import normalize_url
@@ -28,6 +28,65 @@ reg = default_registry()
 
 def _is_cjk_url(text: str) -> bool:
     return any("一" <= ch <= "鿿" for ch in text)
+
+
+# 站点自建的「首页别名」末段。真实样本：www.edx.org/ 的 hreflang en 指向
+# https://www.edx.org/homepage，而当前 URL 是 https://www.edx.org/。
+# 首页别名不是权重转移，也不该被要求补自引用（与 base 包 canonical 的
+# index_or_home_alias 同一惯例：按**整段**匹配，避免 /myhomepage 被折叠）。
+_HOME_ALIAS_SEGMENTS = frozenset({
+    "index", "index.html", "index.htm",
+    "home", "home.html", "home.htm", "homepage",
+    "default", "default.html", "default.htm",
+})
+
+
+def _split_doc(url_norm: str) -> tuple[str, str]:
+    """拆归一化 URL 成 (host, path)，query 另算。"""
+    path, _, query = url_norm.partition("?")
+    host, _, rest = path.partition("/")
+    return host, ("/" + rest if rest else "/")
+
+
+def _strip_home_alias(path: str) -> str:
+    segs = [s for s in path.split("/") if s]
+    if segs and segs[-1].lower() in _HOME_ALIAS_SEGMENTS:
+        segs = segs[:-1]
+    return "/" + "/".join(segs) if segs else "/"
+
+
+def _same_document(a: str, b: str) -> bool:
+    """两个归一化 URL 是否指向同一份文档（允许首页别名差异）。
+
+    仅当 host 相同、且路径只在结尾的首页别名段上有差别时才算同一份。
+    /product/index 与 /product 是同一页；/a/home 与 /b/home 不是。
+    """
+    if not a or not b:
+        return False
+    if a == b:
+        return True
+    ha, pa = _split_doc(a)
+    hb, pb = _split_doc(b)
+    if ha != hb or (a.partition("?")[2]) != (b.partition("?")[2]):
+        return False
+    return _strip_home_alias(pa) == _strip_home_alias(pb)
+
+
+def _drop_view_params(url: str) -> str | None:
+    """剥掉「同一文档的不同视图」参数（分页/CMS 内部页码）。
+
+    只剥白名单参数名；其它 query（?sort=、?id=123…）保持不动——那些
+    可能是真的另一份内容，放过去等于制造漏报。
+    """
+    parsed = urlparse(url)
+    kept = [
+        (k, v)
+        for k, v in parse_qsl(parsed.query, keep_blank_values=True)
+        if k.lower() not in HreflangSelfMissing._VIEW_PARAMS
+    ]
+    if len(kept) == len(parse_qsl(parsed.query, keep_blank_values=True)):
+        return None  # 没有视图参数，调用方应回退到原身份
+    return urlunparse(parsed._replace(query=urlencode(kept)))
 
 
 @reg.register
@@ -65,6 +124,20 @@ class HreflangMismatchesLang(Rule):
             return
         own = (page.lang or "").split("-")[0].strip().lower()
         if not own or own in declared:
+            return
+        # 集合里有 x-default 时，「本页语言没被显式声明」不构成不一致——
+        # 前提是 x-default 指回**本页自己**（那它就是本页的兜底条目，
+        # 本页语言已被它覆盖，不需要再重复声明一次自己）。
+        # 真实样本：cloudflare.com 首页 lang=en，集合里 10 种非英语言 +
+        # x-default→https://www.cloudflare.com/（=本页）。要求它再补一条
+        # en 指向自己，属于让用户去改本来正确的写法。
+        # ⚠️ 反过来，x-default 指向**别的**页面时不能放行：那说明本页语言
+        # 真的没进集合，可能被配对到错误版本——那才是真问题，仍要报。
+        if any(
+            code.strip().lower() == "x-default"
+            and normalize_url(href) == normalize_url(page.final_url or page.url)
+            for code, href in page.hreflang
+        ):
             return
 
         yield self._issue(
@@ -105,6 +178,19 @@ class HreflangSelfMissing(Rule):
         '<link rel="alternate" hreflang="x-default" href="https://example.com/">'
     )
 
+    # 「同一份文档的不同视图」参数：分页、CMS 内部页码。
+    # 这些参数标识的是**同一篇文档的一个位置**，不是一篇独立文档，
+    # 按 Google 的说法它们本来就不该有自己的 hreflang 集合，
+    # 更不该被要求有独立自引用（真实样本：meta.discourse.org 的 ?page=4、
+    # pagerduty.com 的 ?page_id=36859，两者集合里都有正确的语言条目，
+    # 只是 href 指的是不带该参数的主文档 URL）。
+    # 刻意用**白名单参数名**而不是「忽略全部 query」：?sort= ?color= ?id=123
+    # 那些确实可能是另一份内容，误当自引用会造成漏报（比误报更坏）。
+    _VIEW_PARAMS = frozenset({
+        "page", "p", "pag", "pageno", "page_id", "pageid",
+        "offset", "start", "startindex",
+    })
+
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
         if page.status_code != 200 or not page.hreflang:
             return
@@ -114,10 +200,21 @@ class HreflangSelfMissing(Rule):
         if not own_lang:
             return  # 没有 lang 就无从判断自引用该写什么，交给 lang.missing 报
 
+        # 本页对外声明的身份：有 canonical 就以 canonical 为准。
+        # Google 要求 hreflang 指向 canonical URL，所以拿请求 URL 去和
+        # hreflang 比，在有 canonical 的站点上会稳定地比不相等。
+        identity = normalize_url(page.canonical) if page.canonical else own_url
+        # 分页视图：拿去掉视图参数的主文档 URL 当身份
+        view_base = _drop_view_params(page.final_url or page.url)
+        view_identity = normalize_url(view_base) if view_base else ""
+
         has_self = False
         for code, href in page.hreflang:
             same_lang = code.split("-")[0].strip().lower() == own_lang
-            if normalize_url(href) == own_url and (same_lang or code.lower() == "x-default"):
+            if not (same_lang or code.lower() == "x-default"):
+                continue
+            target = normalize_url(href)
+            if _same_document(target, identity) or _same_document(target, view_identity):
                 has_self = True
                 break
 

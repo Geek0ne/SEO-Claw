@@ -23,6 +23,22 @@ class TitleMissing(Rule):
     fix_example = "<head>\n  <title>防水登山鞋 男款防滑 - 品牌名</title>\n</head>"
 
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
+        # ⚠️ 「静态 HTML 里没找到 title」推不出「这个页面没有 title」。
+        #
+        # 实测 www.agoda.com：初始 HTML 有 737KB，但**整份文档里根本没有
+        # <title> 标签**（curl -sL 后 grep -c '<title' 命中 0 次），
+        # title 是客户端 JS 注入的。提取层静态解析拿不到 → 旧版报
+        # CRITICAL「页面缺少 title」，用户会照着去改一个明明有 title 的首页。
+        #
+        # 这和 noindex.present、Soft404 是同一个错误：把「我没看见」当成
+        # 「它不存在」。判据必须是**正面证据**，而提取层已经把那个证据算好了：
+        # likely_js_rendered（在 _looks_js_rendered_shell 里量测 HTML 体积、
+        # 框架指令特征、挂载点得出，不是猜的）。agoda 实测该标记为 True。
+        #
+        # 判对的场景一条没少：非 JS 渲染页面缺 title 照报，因为那时候
+        # 「静态 HTML 里没有」就等于「浏览器里也没有」。
+        if page.likely_js_rendered:
+            return
         if page.status_code == 200 and not page.title:
             yield self._issue(page, {"html_title_found": False})
 
@@ -86,11 +102,71 @@ class TitleTooShort(Rule):
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
         if not page.title or not (0 < page.title_length < 15):
             return
-        if self._looks_like_proper_name(page.title.strip()):
+        title = page.title.strip()
+        # ⚠️ 占位符豁免的判定**必须排在 proper-name 豁免之前**，否则形同虚设。
+        # 「Home」「Index」「Document」「Untitled」都是单词首字母大写、
+        # 不含功能词的短词，_looks_like_proper_name 一律放它们过关
+        # （实测 'Home' → proper_name=True），占位符检查永远轮不到执行。
+        # 而这些词恰恰是**没改完的模板默认值**：既没品牌也没关键词，
+        # 用户看到这条会去改一个本来就该改的东西——是真问题，不该放过。
+        # 品牌名（Apple、Nike 这类真单词）不在 _PLACEHOLDER_TITLES 里，
+        # 照旧按 proper-name 豁免，放宽范围严格限定在这十几个别名上。
+        if title.lower() in self._PLACEHOLDER_TITLES:
+            pass  # 落到下面照报
+        elif self._looks_like_proper_name(title):
+            return
+        # 功能性页面的短 title 是**正确答案**，不该参与「黄金位」评估
+        elif self._is_functional_page(page):
             return
         yield self._issue(
             page, {"title": page.title, "length": page.title_length, "min": 15}
         )
+
+    # ── 功能性页面判定 ──────────────────────────────────────────
+    #
+    # ⚠️ 这条规则的立论是「title 是搜索结果里最显眼的位置，写短了等于浪费」。
+    # 但这个前提**只对「要参与关键词竞争的内容页」成立**。对功能性页面，
+    # title 是一枚标签，不是广告位，写短恰恰是对的。
+    #
+    # 实测三个样本，全部按旧逻辑误报：
+    #   www.gov.sg/            title='Home | gov.sg'    13 字 → 首页
+    #   indiehackers.com/login title='Sign in'          7 字 → 登录页
+    #     （实测 302 到 /sign-in，`Sign in` 正是登录页的规范写法）
+    #
+    # 要求作者给登录页起一个 15 字以上的标题，等于让用户去改本来正确的东西：
+    # 用户收到这条会去干嘛？把「Sign in」改成「Sign in - Welcome Back to
+    # Indie Hackers」，纯粹为了迎合尺子，搜索结果反而更差。
+    #
+    # ⚠️ 判据必须落在 **URL 形态**上，不能靠 title 字面猜。
+    # 「Home | gov.sg」里没有 home/首页之外的线索，纯字面规则要么漏、要么
+    # 误伤真的内容页。URL 是页面角色的客观事实，title 只是结果。
+    _FUNCTIONAL_PATH_SEGMENTS = frozenset({
+        # 登录/认证
+        "login", "logout", "signin", "sign-in", "sign_in", "auth",
+        "authenticate", "sso", "session",
+        # 法律与无障碍声明
+        "accessibility", "accessibility-statement", "web-accessibility-statement",
+        "privacy", "privacy-policy", "terms", "terms-of-use", "legal",
+        "disclaimer", "cookies", "cookie-policy", "imprint", "notices",
+    })
+
+    # 这些 title 无论出现在哪种页面上都是**真问题**：它们既没品牌也没关键词，
+    # 是没改完的默认占位符。所以功能性页面的豁免不覆盖它们。
+    _PLACEHOLDER_TITLES = frozenset({
+        "home", "index", "page", "default", "untitled", "document", "loading",
+        "welcome", "test", "none", "null", "todo", "new page", "site",
+        "首页", "主页", "文档", "未命名", "默认",
+    })
+
+    @classmethod
+    def _is_functional_page(cls, page: Page) -> bool:
+        """按 URL 形态判断这是不是「title 本来就该短」的功能性页面。"""
+        path = (urlsplit(page.final_url or page.url or "").path or "/").lower()
+        segments = [s for s in path.split("/") if s]
+        # 首页：站点根路径
+        if not segments:
+            return True
+        return any(s in cls._FUNCTIONAL_PATH_SEGMENTS for s in segments)
 
 
 @reg.register
@@ -166,6 +242,18 @@ class H1Missing(Rule):
     fix_hint = "加一个 H1 写清页面主标题，位置放在正文开头。"
 
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
+        # ⚠️ 与 title.missing 同源：静态 HTML 里没看到 h1，不等于渲染后没有。
+        # 实测 www.agoda.com：737KB 页面 h1_count=0，同时
+        # likely_js_rendered=True——它是个内容饱满的电商首页，只是正文在
+        # 客户端跑完之后才有。在这种页面上报 HIGH「页面没有 H1」是纯噪音。
+        #
+        # ⚠️ 但**不要**因此放松对普通页面的判据。实测 arxiv.org 与
+        # bellroy.com 首页确实一个 <h1> 都没有（直接 grep 原始 HTML：
+        # `<h1` 命中 0 次，arxiv 有 9 个 <h2>；两者 likely_js_rendered 均为
+        # False，是服务端渲染的静态页面）。那两条是**真问题、如实属实**，
+        # 本条规则保持原样照报——不是提取层漏采，是页面真的没有 h1。
+        if page.likely_js_rendered:
+            return
         if page.status_code == 200 and not page.h1:
             yield self._issue(page, {"h1_count": 0})
 

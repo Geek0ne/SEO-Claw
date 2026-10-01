@@ -273,12 +273,30 @@ class TitlePixelOverflow(Rule):
     # 桌面端搜索结果标题的经验截断宽度
     _THRESHOLD_PX = 580.0
 
+    # 估算表的**最大**误差幅度（见 _estimate_title_px 的注释），对应标题
+    # **完全由字体决定宽度**的字符（拉丁字母、空格、标点、emoji）。
+    # 像素估算不是测量值：结论只有在「估值的下界仍然越界」时才可靠，否则
+    # 报的只是估算误差本身。
+    #
+    # 为什么不直接减一个固定的 10%：误差来源**因字符而异**。汉字/假名/谚文
+    # 的字宽就是 1em（确定性），估算误差≈0；真正不确定的是拉丁字母和空格，
+    # 它们的字宽随字体和抗锯齿变化。所以误差带按「字宽随字体而变的字符占比」
+    # 缩放（见 _estimate_title_px 的 variable_share）。
+    #   - 37 个汉字 = 592px：字宽确定，误差带 0 → 越过 580px 就是事实 → 必报
+    #   - golf.com 583.9px：全是拉丁字母，误差带 10% → 下界 525.5px < 580px，
+    #     超出量（3.9px，0.7%）完全落在估算误差里，结论不可靠 → 闭嘴
+    # 真实样本见 reports/ 里的 2026 回源核对记录。
+    _MAX_ESTIMATE_ERROR = 0.10
+
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
         title = page.title
         if page.status_code != 200 or not title:
             return
         est = _estimate_title_px(title)
-        if est["estimated_px"] <= self._THRESHOLD_PX:
+        # 误差带随「字宽不确定的字符占比」缩放
+        band = self._MAX_ESTIMATE_ERROR * est["variable_share"]
+        # 只在误差带下界仍超出阈值时才报——避免把估算误差当成发现
+        if est["estimated_px"] * (1.0 - band) <= self._THRESHOLD_PX:
             return
         yield self._issue(
             page,
@@ -288,10 +306,13 @@ class TitlePixelOverflow(Rule):
                 "estimated_px": round(est["estimated_px"], 1),
                 "threshold_px": self._THRESHOLD_PX,
                 "overflow_px": round(est["estimated_px"] - self._THRESHOLD_PX, 1),
+                "estimate_error_band": round(band, 4),
+                "low_bound_px": round(est["estimated_px"] * (1.0 - band), 1),
                 "cjk_chars": est["cjk"],
                 "latin_chars": est["latin"],
                 "space_chars": est["space"],
                 "other_chars": est["other"],
+                "emoji_chars": est["emoji"],
                 "verdict": "likely_truncated",
                 "verdict_explain": (
                     "按 16px 基准字体的字符宽度表估算得出。"
@@ -404,6 +425,30 @@ _W_DIGIT = 8.9
 _W_SPACE = 4.4
 _W_PUNCT = 5.5
 _W_OTHER_ALPHA = 9.0  # 西里尔、希腊等
+_W_EMOJI = 16.0  # emoji 按 1em 全宽渲染，当成标点算会窄一半
+
+# 中英文弯引号。ASCII 的 ' " 确实窄，但 “”‘’ 在 CJK 字体里是全角
+# （=1em）。按 4.5px 算会低估约 3.5px/个（真实样本：discourse 的中文标题）。
+_W_CURLY_QUOTES = set("“”‘’")
+_W_CURLY_QUOTES_NARROW = 4.5
+_W_CURLY_QUOTES_FULL = 16.0
+
+
+def _is_emoji(ch: str) -> bool:
+    """emoji / 符号类区块。这些字符实际渲染都接近全角。"""
+    cp = ord(ch)
+    return (
+        0x1F000 <= cp <= 0x1FAFF  # 各类 pictograph、emoji
+        or 0x2600 <= cp <= 0x27BF  # 杂项符号、装饰符号（✓★❤…）
+        or 0x2B00 <= cp <= 0x2BFF  # 补充箭头/星号
+        or 0x1F1E6 <= cp <= 0x1F1FF  # 区域指示符（国旗）
+    )
+
+
+def _is_emoji_modifier(ch: str) -> bool:
+    """变体选择符 / ZWJ：只影响相邻 glyph 形状，本身不占宽度。"""
+    cp = ord(ch)
+    return cp == 0x200D or 0xFE00 <= cp <= 0xFE0F
 
 
 def _estimate_title_px(title: str) -> dict[str, int | float]:
@@ -412,34 +457,60 @@ def _estimate_title_px(title: str) -> dict[str, int | float]:
     纯确定性计算：同样的字符串永远得到同样的结果，不依赖字体环境。
     """
     total = 0.0
-    cjk = latin = space = other = 0
+    cjk = latin = space = other = emoji = 0
+    # variable = 字宽随字体而变（估算有误差）的字符数。汉字/假名/谚文是 1em
+    # 定宽，计入它只会虚增误差带，把本来确定的越界结论也一并抹掉。
+    variable = 0
+    # 弯引号按全角还是窄，取决于这句 title 是不是 CJK 排版的——
+    # 中文标题里的 “” 就是全角，英文标题里的 ' 是窄的。
+    curly_w = _W_CURLY_QUOTES_FULL if any(_is_cjk(ch) for ch in title) else _W_CURLY_QUOTES_NARROW
     for ch in title:
-        if _is_cjk(ch):
-            # CJK 是全角，等于一个 em
+        if _is_emoji_modifier(ch):
+            continue
+        if _is_emoji(ch):
+            total += _W_EMOJI
+            emoji += 1
+            variable += 1
+        elif _is_cjk(ch):
+            # CJK 是全角，等于一个 em（定宽，不计入误差）
             total += 16.0
             cjk += 1
+        elif ch in _W_CURLY_QUOTES:
+            total += curly_w
+            latin += 1
+            variable += 1
         elif ch.isspace():
             total += _W_SPACE
             space += 1
+            variable += 1
         elif ch in _W_NARROW:
             total += 4.5
             latin += 1
+            variable += 1
         elif ch.isdigit():
             total += _W_DIGIT
             other += 1
+            variable += 1
         elif _is_latin(ch):
             total += _W_UPPER if ch.isupper() else _W_LOWER
             latin += 1
+            variable += 1
         elif ch.isalpha():
             total += _W_OTHER_ALPHA
             other += 1
+            variable += 1
         else:
             total += _W_PUNCT
             other += 1
+            variable += 1
+    counted = cjk + latin + space + other + emoji
     return {
         "estimated_px": total,
         "cjk": cjk,
         "latin": latin,
         "space": space,
         "other": other,
+        "emoji": emoji,
+        # 字宽随字体而变的字符占比 ∈ [0,1]；它决定估算有多大不确定性
+        "variable_share": (variable / counted) if counted else 0.0,
     }
