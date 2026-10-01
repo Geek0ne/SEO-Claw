@@ -93,13 +93,23 @@ def cmd_scan(args: argparse.Namespace) -> int:
     site_facts["pages_ok"] = len(ok_pages)
     site_facts["pages_failed"] = failed
 
-    # 回访 canonical 目标：区分「指向不存在的地址」与「有意的版本别名/合并」
-    if not args.no_verify_canonical:
+    # 回访外部目标。canonical：区分「指向不存在的地址」与「有意的版本别名/合并」；
+    # og:image：区分「封面图真的打不开」与「根本没回访过」。
+    # 合在一个 verifier 里，避免开两个 HTTP 客户端。
+    if not args.no_verify_canonical or not args.no_verify_og_image:
         with Crawler(cfg) as verifier:
-            site_facts["canonical_target_status"] = verifier.verify_canonical_targets(pages)
-        checked = len(site_facts.get("canonical_target_status") or {})
-        if checked:
-            print(f"→ canonical 目标回访：{checked} 个", file=sys.stderr)
+            if not args.no_verify_canonical:
+                site_facts["canonical_target_status"] = verifier.verify_canonical_targets(pages)
+                checked = len(site_facts.get("canonical_target_status") or {})
+                if checked:
+                    print(f"→ canonical 目标回访：{checked} 个", file=sys.stderr)
+            if not args.no_verify_og_image:
+                # ⚠️ 之前这个键没人写，`og:image.broken` 在生产里是条死规则：
+                # 规则写得对（没回访就不猜），但没人喂数据，测试里手塞值就绿了。
+                site_facts["og_image_status"] = verifier.verify_og_image_targets(pages)
+                n = len(site_facts.get("og_image_status") or {})
+                if n:
+                    print(f"→ og:image 回访：{n} 个", file=sys.stderr)
     if "sitemap_found" in site_facts:
         state = "找到" if site_facts["sitemap_found"] else "未找到"
         print(f"→ sitemap：{state}（{site_facts.get('sitemap_url_count', 0)} 个 URL）", file=sys.stderr)
@@ -154,9 +164,8 @@ def _collect_site_facts(crawler: Crawler) -> dict:
     facts: dict = {}
 
     # --- robots.txt ---
-    for origin, rp in getattr(crawler.robots, "_parsers", {}).items():
-        if origin != facts.get("_origin_hint"):
-            pass
+    # （原先这里有个遍历 robots._parsers 的循环，循环体只有 pass，
+    #  读的 _origin_hint 全库从未被写过——纯死代码，已删。）
     robots_client = getattr(crawler.robots, "_client", None)
     facts["robots_url"] = None
     facts["robots_status"] = None
@@ -263,6 +272,8 @@ def main(argv: list[str] | None = None) -> int:
     scan.add_argument("--ignore-robots", action="store_true", help="⚠️ 忽略 robots.txt，仅限你自有站点调试")
     scan.add_argument("--no-verify-canonical", action="store_true",
                       help="跳过 canonical 目标回访（会少一批请求）")
+    scan.add_argument("--no-verify-og-image", action="store_true",
+                      help="跳过 og:image 回访（会少一批请求；跳过则分享卡片类问题不报）")
     scan.add_argument("--adaptive-backoff", dest="adaptive_backoff", action="store_true", default=True,
                       help="遇 429/403 自动降速（默认开启）")
     scan.add_argument("--no-adaptive-backoff", dest="adaptive_backoff", action="store_false",

@@ -396,6 +396,16 @@ class Crawler:
             if key not in targets and len(targets) < limit:
                 targets[key] = page.canonical
 
+        result = self._probe_targets(targets)
+        return result
+
+    def _probe_targets(self, targets: dict[str, str]) -> dict[str, int]:
+        """对 {归一化URL: 原始URL} 逐个探 HTTP 状态码，返回 {归一化URL: 状态码}。
+
+        HEAD 不被支持时（403/405/501）退回 GET——很多 CDN/图床对 HEAD
+        直接给 403，不退回就会把正常的图误判成「打不开」。
+        请求失败记 0（区别于 404：连都没连上）。
+        """
         result: dict[str, int] = {}
         for key, url in targets.items():
             self.limiter.wait(urlparse(url).netloc)
@@ -404,11 +414,38 @@ class Crawler:
                 if resp.status_code in (403, 405, 501):  # HEAD 不被支持，退回 GET
                     resp = self.client.get(url)
                 result[key] = resp.status_code
-            except httpx.HTTPError as exc:
+            except httpx.HTTPError:
                 result[key] = 0
                 if self.config.adaptive_backoff:
                     self.limiter.slow_down()
         return result
+
+    def verify_og_image_targets(self, pages: list[Page], limit: int = 40) -> dict[str, int]:
+        """回访 og:image，拿到 HTTP 状态码。
+
+        og:image 指向的图打不开时，微信/微博等分享卡片会显示空白或占位图，
+        看起来像站点坏了——但这**不影响排名**，所以规则侧是 INFO 而非高危。
+
+        ⚠️ 之前这条回访**没人做**：`og_image_status` 只有规则侧在读，全库零
+        写入，于是 `og:image.broken` 永远是条死规则——规则本身写得对
+        （`status is None` 就不猜，不拿「没检查过」冒充「有问题」），
+        但没人喂它数据，测试里手塞值就绿了，生产上永远不会触发。
+
+        这与 sitemap 的 `tried_paths` 是同一类病：**证据链缺一环**，
+        区别是这个是「规则永远沉默」，那个是「结论对但证据不支撑结论」。
+
+        限量 40：图床通常在 CDN 上，一次扫描没必要把全站封面图都打一遍。
+        """
+        from .util import normalize_url
+
+        targets: dict[str, str] = {}
+        for page in pages:
+            if not page.og_image or page.status_code != 200:
+                continue
+            key = normalize_url(page.og_image)
+            if key not in targets and len(targets) < limit:
+                targets[key] = page.og_image
+        return self._probe_targets(targets)
 
     # -- 内部方法 ---------------------------------------------------------
 
