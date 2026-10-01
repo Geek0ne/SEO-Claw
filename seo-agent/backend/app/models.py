@@ -112,9 +112,15 @@ class Page(BaseModel):
     lang: Optional[str] = None
 
     # --- 多语言 / 社交分享 ---
-    # 补这两组字段是被两个规则子任务同时卡住后的决定：没有它们，
-    # hreflang 与 og:* 类规则只能靠猜，是「死规则」——要么永不触发，
-    # 要么乱触发。数据层不支持的规则，写出来比不写更糟。
+    # 这两组字段当初是为了解开两个规则包的死结才加的：没有它们，
+    # hreflang 与 og:* 类规则只能靠猜——要么永不触发，要么乱触发。
+    # 数据层不支持的规则，写出来比不写更糟。
+    #
+    # ⚠️ 本注释曾长期写着「它们是死规则」，但紧跟其后就把字段声明了，
+    # 而 extract.py 也确实在采集（见 _extract_i18n）。留着会让人以为
+    # hreflang/og 规则不可用——那是 Google 规则包放弃 hreflang 时的
+    # **当时**状态，数据层补齐后已过期。判据是实跑 extract_page()，
+    # 不是读这段注释。
     # hreflang: [(lang_code, href)]，含 x-default
     hreflang: list[tuple[str, str]] = Field(default_factory=list)
     # Open Graph / Twitter Card，社交分享卡片的来源
