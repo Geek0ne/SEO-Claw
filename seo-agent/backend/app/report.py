@@ -303,6 +303,25 @@ def _render_issue_line(
 def _render_evidence(issue: Issue, max_urls: int) -> list[str]:
     """证据区——产品的信任机制：每条结论都能追到原始数据。"""
     lines: list[str] = []
+    # tried_paths 是「试过哪些 sitemap 地址、各自什么结果」。它默认会掉进
+    # 下面的 str(value) 分支，被 200 字符截断成一坨 Python dict repr——
+    # 技术上有证据，读起来像日志。这里单独渲染成列表。
+    tried = issue.evidence.get("tried_paths")
+    if isinstance(tried, list) and tried:
+        lines.append("**试过的路径**（证明确实去试过，而不是直接判「没有」）：")
+        lines.append("")
+        for item in tried[:max_urls]:
+            if isinstance(item, dict):
+                status = item.get("status")
+                code = str(status) if status is not None else (item.get("error") or "无响应")
+                mark = "✓" if item.get("ok") else "✗"
+                lines.append(f"- {mark} HTTP {code} `{item.get('url', '')}`")
+            else:
+                lines.append(f"- {item}")
+        remaining = len(tried) - max_urls
+        if remaining > 0:
+            lines.append(f"- ……另有 {remaining} 个")
+        lines.append("")
     sample_urls = issue.evidence.get("sample_urls")
     if isinstance(sample_urls, list) and sample_urls:
         lines.append("**证据**：")
@@ -320,6 +339,8 @@ def _render_evidence(issue: Issue, max_urls: int) -> list[str]:
             if key in ("verdict", "verdict_explain"):
                 lines.append(f"- **{key}**: {value}")
                 continue
+            if key == "tried_paths":
+                continue  # 已在上面单独渲染
             shown = str(value)
             if len(shown) > 200:
                 shown = shown[:197] + "..."

@@ -63,6 +63,9 @@ class SitemapResult:
     found: bool = False
     urls: list[str] = field(default_factory=list)
     sources: list[str] = field(default_factory=list)  # 实际读取到的 sitemap 地址
+    # 每次尝试过的路径及其结果。sitemap.missing 的 evidence 要靠它证明
+    # 「确实去试了」——空列表会和「根本没试」长得一模一样。
+    tried: list[dict] = field(default_factory=list)
     error: Optional[str] = None
     truncated: bool = False
 
@@ -143,6 +146,32 @@ class SitemapFinder:
         return out
 
     def _load(self, url: str, result: SitemapResult, depth: int) -> bool:
+        """记录一次尝试后委托 _load_inner。
+
+        ⚠️ 记录点必须在这里、而不是只写在内层成功分支上。
+        _load_inner 有 5 个 early return（非 200、超时、HTTP 错误、
+        没有 <loc>、递归超限），只在成功时记录等于**绝大多数尝试都不留痕**——
+        而恰恰是这些「试了但没找到」才是 sitemap.missing 的关键证据。
+        早踩过：`tried_paths` 是从 site_facts 里读的，但 site_facts 从来
+        没被填过这个键，所以证据恒为 `[]`，看起来像「没试就判没有」。
+        """
+        self._last_status: Optional[int] = None
+        self._last_error: Optional[str] = None
+        try:
+            ok = self._load_inner(url, result, depth)
+        except Exception as exc:  # noqa: BLE001 — 单个 sitemap 读不动不该毁掉整次探测
+            self._last_error = type(exc).__name__
+            ok = False
+        result.tried.append({
+            "url": url,
+            "depth": depth,
+            "status": self._last_status,
+            "ok": bool(ok),
+            "error": self._last_error,
+        })
+        return ok
+
+    def _load_inner(self, url: str, result: SitemapResult, depth: int) -> bool:
         if depth > MAX_INDEX_DEPTH:
             return False
         if self._deadline is not None and time.monotonic() > self._deadline:
@@ -150,7 +179,9 @@ class SitemapFinder:
             return False
         try:
             resp = self._client.get(url)
-        except httpx.HTTPError:
+            self._last_status = resp.status_code
+        except httpx.HTTPError as exc:
+            self._last_error = type(exc).__name__
             return False
         if resp.status_code != 200 or not resp.content:
             return False

@@ -193,6 +193,10 @@ def _collect_site_facts(crawler: Crawler) -> dict:
         facts["sitemap_sources"] = sm.sources
         facts["sitemap_error"] = sm.error
         facts["sitemap_truncated"] = sm.truncated
+        # 试过的路径。规则侧的 evidence 靠它证明「确实去试过」——
+        # 这个键此前**从来没被填过**，所以 tried_paths 恒为 []，
+        # 看起来像「没试就判没有」。
+        facts["sitemap_tried"] = sm.tried
 
     return facts
 
