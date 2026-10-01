@@ -129,6 +129,23 @@ def render_markdown(
     lines.append("")
 
     # ---- 健康分 ----
+    if report.health_score is None:
+        # ⚠️ 「未评估」≠「满分」。score() 在 0 页时返回 None 而不是 100，
+        # 这里必须把这个状态说出来。若渲染层照样打 100，用户会以为全站
+        # 审过了、没问题——而实际上一页都没抓到。两种 0 页场景：
+        #   - robots.txt 禁抓（lobste.rs 是 User-agent:* / Disallow:/）
+        #   - 请求全被限流/封禁（w3.org 种子页 429 → frontier 空）
+        lines.append("## 健康分：未评估")
+        lines.append("")
+        lines.append(
+            f"> ⚠️ **本次没有审到任何页面，所以不给分。**"
+            f"已发现 {report.pages_discovered} 个 URL，但 0 页抓取成功。"
+        )
+        lines.append(
+            "> 「未评估」不等于「没问题」——它只说明这次什么也没检查到。"
+            "常见原因：robots.txt 禁止抓取、被对方限流/封禁、需 JS 渲染、网络故障。"
+        )
+        lines.append("")
     if report.health_score is not None:
         lines.append(f"## 健康分：{report.health_score:.0f} / 100")
         # ⚠️ 样本量警告：扣分系数是「受影响页面占比」，页数越少占比越粗。
@@ -180,7 +197,14 @@ def render_markdown(
     else:
         lines.append("## 结论")
         lines.append("")
-        lines.append("本次扫描没有发现问题。保持现有做法，继续关注内容质量与外链。")
+        if report.health_score is None:
+            lines.append(
+                "本次扫描**没有审到任何页面**，因此无法给出结论。"
+                "请先解决抓取本身的问题（robots 限制、反爬、网络或 JS 渲染），"
+                "再重跑一次。"
+            )
+        else:
+            lines.append("本次扫描没有发现问题。保持现有做法，继续关注内容质量与外链。")
         lines.append("")
 
     # ---- 全部问题（按根因聚合）----
@@ -311,7 +335,8 @@ def summarize_console(report: SiteReport) -> str:
         "",
         f"域名     {report.domain}",
         f"抓取     {report.pages_crawled} 页 / 发现 {report.pages_discovered} 个 URL",
-        f"健康分   {report.health_score:.0f}/100" if report.health_score is not None else "健康分   -",
+        f"健康分   {report.health_score:.0f}/100" if report.health_score is not None
+        else "健康分   未评估（0 页）",
         f"问题数   {len(report.issues)}"
         f"（严重 {len(by_sev[Severity.CRITICAL])} / 高 {len(by_sev[Severity.HIGH])}"
         f" / 中 {len(by_sev[Severity.MEDIUM])} / 低 {len(by_sev[Severity.LOW])}）",

@@ -63,8 +63,8 @@ def score(
     issues: list[Issue],
     total_pages: int,
     domain: str | None = None,
-) -> tuple[float, dict[str, object]]:
-    """计算 0~100 健康分。
+) -> tuple[float | None, dict[str, object]]:
+    """计算 0~100 健康分。没审到任何页面时返回 None，**不给分**。
 
     按 code 聚合，用「**该问题影响到的页面占比**」作为扣分系数，
     而不是把每条问题单独除以总页数。
@@ -75,6 +75,26 @@ def score(
 
     传入 `domain` 时只给「本站」扣分，兄弟子域的问题单独列出（见下）。
     """
+    # ⚠️ 0 页 → 返回 None，不给分。
+    #
+    # 原来这里直接 `pages = max(total_pages, 1)` 兜底：0 页被当成 1 页算，
+    # 一个问题都没有 → 扣分 0 → **健康分 100.0**。实测两处：
+    #   lobste.rs 的 robots.txt 是 `User-agent: * / Disallow: /`（全面禁止），
+    #     守规矩的结果是 0 页，报告却写「健康分 100.0、零问题」；
+    #   w3.org 被限流时种子页 429，frontier 空，同样 0 页拿 100 分。
+    # 两种都会让用户以为全站审过了、没问题——**「没审到」和「没问题」是两件事**，
+    # 报成 100 分就是把前者说成后者。
+    #
+    # 与 gymshark 那次同一个病（子域问题算进主站分 → 0.0 分）：把不该算的
+    # 算进了分数。这次的反向版本。
+    if total_pages <= 0:
+        return None, {
+            "not_evaluated": True,
+            "reason": "no_pages_audited",
+            "total_pages": total_pages,
+            "issue_count": len(issues),
+        }
+
     pages = max(total_pages, 1)
 
     # 兄弟子域的问题不进主站健康分。
