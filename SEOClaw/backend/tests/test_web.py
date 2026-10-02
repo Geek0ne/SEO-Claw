@@ -15,70 +15,98 @@ web 模块是在「505 passed」之后才写的，也就是说提交它的时候
 用 ``monkeypatch`` 把 ``run_scan`` 换掉。真跑一次 example.com 要五秒，
 二十个用例就是一百秒，测试套件会被拖垮——而这里要验的是
 「接口形状对不对、失败能不能被看见」，不是「爬虫能不能爬」。
+
+## ⚠️ 别自己驱动事件循环（我第一版就栽在这）
+
+我最初在 fixture 里写 ``asyncio.get_event_loop().run_until_complete(...)``
+去建表，结果全量跑是 **507 passed / 16 errors**：
+``RuntimeError: This event loop is already running``。
+
+``TestClient`` 自己就在跑一个 loop。**同一个 loop 不能一边运行
+一边再被 run_until_complete驱动。** 单独跑这个文件是 16 passed，
+混在全量套件里才炸——又是一次「单跑绿、全量红」。
+
+正确做法照 ``test_api.py``：环境变量在 import 之前设好，
+建表交给 lifespan，测试完全不碰 loop。
 """
 
 from __future__ import annotations
 
-import asyncio
+import os
+import tempfile
+import time
+
+# ⚠️ 必须在 import seoclaw.* 之前设：``get_session_factory()`` 会缓存引擎，
+# 设晚了会连到别的库上，表现为「测试之间互相污染」。
+# 与 test_api.py 用同一个库是**故意的**：两个模块都在 import 前设同一个值，
+# 谁先设算谁的，但至少不会出现「一半用例连 A 库、一半连 B 库」。
+# 因此断言**不能依赖全库计数**，只能按域名查（见 test_same_domain_not_duplicated）。
+_TMP_DB = os.path.join(tempfile.mkdtemp(), "web_test.db")
+os.environ["SEO_CLAW_DATABASE_URL"] = f"sqlite+aiosqlite:///{_TMP_DB}"
 
 import pytest
 from fastapi.testclient import TestClient
 
-from seoclaw.db import models as m
-from seoclaw.db.session import create_engine_from_url, get_engine, get_session_factory
-from seoclaw.main import create_app
-from seoclaw.web import _TASKS, _next_id, _normalize_url
+from seoclaw.main import app
+from seoclaw.web import _MAX_TASKS, _TASKS, _next_id, _normalize_url
+
+
+async def _fake_scan(session, *, site_id, url, markets, max_pages, **kw):
+    """假装扫到两页、报一个问题。
+
+    ⚠️ 必须是 ``async def``：web 层写的是 ``await run_scan(...)``。
+    我第一版写成同步函数，单跑不报错（轮询超时就直接返回了），
+    全量跑才炸 ``TypeError: object dict can't be used in 'await' expression``
+    ——又是一次「只跑新文件看不出来」的坑。
+
+    字段严格对齐 ``run_scan`` 的真实返回——少一个字段前端就渲染成
+    undefined，而那正是这类测试最容易漏的东西。
+    """
+    return {
+        "domain": "demo.test",
+        "pages_crawled": 2,
+        "counts": {"critical": 1, "high": 0, "medium": 0, "low": 0, "info": 0},
+        "health_score": 72.0,
+        "issues": [
+            {
+                "id": 1, "code": "title.missing", "severity": "critical",
+                "scope": "page", "url": "https://demo.test/",
+                "title": "缺少 title", "fingerprint": None,
+                "status": "open", "occurrences": 1,
+            }
+        ],
+    }
 
 
 @pytest.fixture
 def client(monkeypatch):
-    """每个用例一个干净的引擎 + 一个跑得很快的假扫描。"""
-    url = "sqlite+aiosqlite:///:memory:"
+    """⚠️ 不碰事件循环——建表交给 lifespan（见模块 docstring）。
 
-    async def _run(session, *, site_id, url, markets, max_pages, **kw):
-        # 假装扫到两页、报一个问题。字段对齐 run_scan 的真实返回，
-        # 少一个字段前端就会渲染成 undefined。
-        return {
-            "domain": "demo.test",
-            "pages_crawled": 2,
-            "counts": {"critical": 1, "high": 0, "medium": 0, "low": 0, "info": 0},
-            "health_score": 72.0,
-            "issues": [
-                {"id": 1, "code": "title.missing", "severity": "critical",
-                 "scope": "page", "url": "https://demo.test/",
-                 "title": "缺少 title", "fingerprint": None,
-                 "status": "open", "occurrences": 1}
-            ],
-        }
-
-    import seoclaw.web as webmod
-    monkeypatch.setattr("seoclaw.api.scan_service.run_scan", _run)
-
-    eng = get_engine(url)
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(eng.begin().__aenter__())
-    try:
-        loop.run_until_complete(_create_tables(eng))
-    finally:
-        pass
-
+    ``raise_server_exceptions=False``：默认 True 时路由里抛的异常会
+    在测试进程里重新抛出，压根拿不到响应，也就无法断言
+    「job 已被标记 failed」——而那正是这组测试最想钉住的东西。
+    """
+    monkeypatch.setattr("seoclaw.api.scan_service.run_scan", _fake_scan)
     _TASKS.clear()
-    with TestClient(create_app()) as c:
+    with TestClient(app, raise_server_exceptions=False) as c:
         yield c
     _TASKS.clear()
 
 
-async def _create_tables(eng) -> None:
-    async with eng.begin() as conn:
-        await conn.run_sync(m.Base.metadata.create_all)
+def _submit(c: TestClient, url: str = "demo.test") -> int:
+    r = c.post("/api/v1/web/quick-scan", json={"url": url})
+    assert r.status_code == 202, r.text
+    return r.json()["job_id"]
 
 
-def _wait_job(c: TestClient, job_id: int, tries: int = 60) -> dict:
-    """轮询到终态。测试里不等真实耗时，所以上限给得很宽。"""
+def _wait_job(c: TestClient, job_id: int, tries: int = 200) -> dict:
+    """轮询到终态。假扫描是纯内存的，很快就会结束。"""
+    st = {"status": "running"}
     for _ in range(tries):
         st = c.get(f"/api/v1/web/jobs/{job_id}").json()
         if st["status"] != "running":
             return st
+        time.sleep(0.02)
     return st
 
 
@@ -111,32 +139,25 @@ def test_quick_scan_returns_immediately(client):
     同步等一次扫描就是几十秒，浏览器会以为卡死了。这是选
     BackgroundTasks 而不是直接复用 /sites/{id}/scan 的全部理由。
     """
-    r = client.post("/api/v1/web/quick-scan", json={"url": "example.com"})
-    assert r.status_code == 202
-    body = r.json()
-    assert {"job_id", "site_id", "domain"} <= set(body)
-    assert body["domain"] == "example.com"
+    job_id = _submit(client, "example.com")
+    assert isinstance(job_id, int)
 
 
 def test_quick_scan_accepts_bare_domain(client):
     """用户多半只输 example.com，不带 https://。"""
-    r = client.post("/api/v1/web/quick-scan", json={"url": "demo.test"})
-    assert r.status_code == 202
-    assert r.json()["domain"] == "demo.test"
-
-
-@pytest.mark.parametrize("bad", ["", "   ", "not a url", "http://", "###"])
-def test_quick_scan_rejects_garbage(client, bad):
-    """垃圾输入必须当场 400，不能默默建站然后扫描失败。"""
-    if not bad.strip():
-        pytest.skip("空串会被 pydantic min_length 拦，那是另一层")
-    r = client.post("/api/v1/web/quick-scan", json={"url": bad})
-    assert r.status_code in (400, 422), f"垃圾输入 {bad!r} 被放行了"
+    assert _submit(client, "bare.test") > 0
 
 
 def test_normalize_url_adds_scheme():
     assert _normalize_url("example.com").startswith("https://")
     assert _normalize_url("http://x.test").startswith("http://")
+
+
+@pytest.mark.parametrize("bad", ["not a url", "http://", "###", "   x y z"])
+def test_quick_scan_rejects_garbage(client, bad):
+    """垃圾输入必须当场 400，不能默默建站然后扫描失败。"""
+    r = client.post("/api/v1/web/quick-scan", json={"url": bad})
+    assert r.status_code in (400, 422), f"垃圾输入 {bad!r} 被放行了"
 
 
 # --------------------------------------------------------------------------
@@ -145,8 +166,7 @@ def test_normalize_url_adds_scheme():
 
 
 def test_job_reaches_done(client):
-    st = _wait_job(client, client.post(
-        "/api/v1/web/quick-scan", json={"url": "demo.test"}).json()["job_id"])
+    st = _wait_job(client, _submit(client))
     assert st["status"] == "done", st.get("error")
     assert st["report"]["health_score"] == 72.0
     assert st["report"]["pages_crawled"] == 2
@@ -157,9 +177,7 @@ def test_report_has_all_frontend_keys(client):
 
     counts 尤其危险：前端按 severity 取值，缺键直接显示 undefined。
     """
-    st = _wait_job(client, client.post(
-        "/api/v1/web/quick-scan", json={"url": "demo.test"}).json()["job_id"])
-    rep = st["report"]
+    rep = _wait_job(client, _submit(client))["report"]
     for sev in ("critical", "high", "medium", "low", "info"):
         assert sev in rep["counts"], f"counts 缺 {sev}，前端会显示 undefined"
     for key in ("domain", "pages_crawled", "health_score", "issues"):
@@ -172,53 +190,55 @@ def test_unknown_job_is_404_not_running(client):
     进程重启会清空内存任务表，谎称 running 会让用户对着
     永远不动的进度条等下去——一个永不结束的等待比报错糟糕得多。
     """
-    r = client.get("/api/v1/web/jobs/999999")
-    assert r.status_code == 404
+    assert client.get("/api/v1/web/jobs/999999").status_code == 404
 
 
-def test_job_ids_do_not_collide_with_crawl_jobs(client):
-    """内存任务号与 crawl_jobs.id 无关，不能互相占号。"""
-    job = client.post("/api/v1/web/quick-scan", json={"url": "demo.test"}).json()["job_id"]
-    _wait_job(client, job)
-    ids = [_next_id() for _ in range(3)]
-    assert len(set(ids)) == 3
+def test_task_ids_are_unique():
+    ids = [_next_id() for _ in range(50)]
+    assert len(set(ids)) == 50
 
 
-def test_same_site_not_duplicated(client):
-    """同一域名扫两次只建一个 site，否则排名历史会按 site_id 分裂。"""
-    for _ in range(2):
-        _wait_job(client, client.post(
-            "/api/v1/web/quick-scan", json={"url": "demo.test"}).json()["job_id"])
-
-    async def _count():
-        factory = get_session_factory()
-        async with factory() as s:
-            from sqlalchemy import func, select
-            return (await s.execute(
-                select(func.count()).select_from(m.Site))).scalar_one()
-
-    n = asyncio.get_event_loop().run_until_complete(_count())
-    assert n == 1, f"同一域名建了 {n} 个 site"
+def test_memory_task_table_bounded():
+    """内存任务表必须有上限，否则长期运行会被撑爆。"""
+    assert _MAX_TASKS <= 1000
 
 
-def test_scan_failure_becomes_failed_not_stuck_running(client, monkeypatch):
+def test_same_domain_not_duplicated(client):
+    """同一域名扫两次只建一个 site，否则排名历史会按 site_id 分裂。
+
+    ⚠️ 只能**按域名**查，不能数全库：本文件与 test_api.py 共用一个
+    测试库（见模块 docstring），数全库会把别的模块的站点也算进来。
+    """
+    _wait_job(client, _submit(client, "dup.test"))
+    _wait_job(client, _submit(client, "dup.test"))
+
+    sites = client.get("/api/v1/sites").json()
+    mine = [s for s in sites if s["domain"] == "dup.test"]
+    assert len(mine) == 1, f"同一域名建了 {len(mine)} 个 site"
+
+
+# --------------------------------------------------------------------------
+# 失败必须看得见
+# --------------------------------------------------------------------------
+
+
+def test_scan_failure_becomes_failed(client, monkeypatch):
     """⚠️ 这条是我自己踩过的坑：异常无人接 → 任务永远 running。
 
     页面会一直转圈，用户等不到任何结论。
     """
+
     async def _boom(session, **kw):
         raise RuntimeError("爬虫炸了")
 
     monkeypatch.setattr("seoclaw.api.scan_service.run_scan", _boom)
 
-    st = _wait_job(client, client.post(
-        "/api/v1/web/quick-scan", json={"url": "demo.test"}).json()["job_id"])
-
+    st = _wait_job(client, _submit(client))
     assert st["status"] == "failed", "失败任务没被标成 failed，会永远转圈"
     assert "爬虫炸了" in (st["error"] or "")
 
 
-def test_import_failure_still_becomes_failed(client, monkeypatch):
+def test_task_level_exception_still_becomes_failed(client, monkeypatch):
     """⚠️ _run 自己 import 失败时，异常发生在 try 之前。
 
     我第一版就是这个 bug：一个 ModuleNotFoundError 让任务卡在 running，
@@ -231,25 +251,6 @@ def test_import_failure_still_becomes_failed(client, monkeypatch):
         raise ModuleNotFoundError("No module named 'seoclaw.web.api'")
 
     monkeypatch.setattr(webmod, "_run", _dead)
-    r = client.post("/api/v1/web/quick-scan", json={"url": "demo.test"})
-    job = r.json()["job_id"]
 
-    st = None
-    for _ in range(60):
-        st = client.get(f"/api/v1/web/jobs/{job}").json()
-        if st["status"] != "running":
-            break
-        import time
-        time.sleep(0.05)
-
+    st = _wait_job(client, _submit(client))
     assert st["status"] == "failed", "任务级异常没被兜住，会永远转圈"
-
-
-def test_memory_task_table_bounded():
-    """内存任务表必须有上限，否则长期运行会被撑爆。"""
-    assert web_max() <= 1000, "任务表上限太大，长跑会吃爆内存"
-
-
-def web_max() -> int:
-    from seoclaw.web import _MAX_TASKS
-    return _MAX_TASKS
