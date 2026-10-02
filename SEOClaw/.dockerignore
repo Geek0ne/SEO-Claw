@@ -1,0 +1,28 @@
+# 构建产物与依赖：镜像里不需要，本地有就行
+.git
+.github
+.venv
+.deps
+__pycache__
+*.pyc
+*.egg-info
+build
+dist
+
+# 测试与工具：线上不跑
+tests/
+tools/
+backend/tests/
+
+# 运行时产物
+reports/
+*.db
+*.sqlite3
+.pytest_cache/
+
+# 文档（镜像里用不到）
+*.md
+
+# 开发配置
+.env
+.env.*

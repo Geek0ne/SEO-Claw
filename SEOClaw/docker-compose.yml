@@ -1,0 +1,37 @@
+services:
+  seoclaw:
+    build: .
+    image: seoclaw:latest
+    container_name: seoclaw
+    restart: unless-stopped
+
+    # ⚠️ 只绑 127.0.0.1：公网入口交给 nginx（见 nginx.conf），
+    # 直接 0.0.0.0:8000 会把没有限流、没有 TLS 的服务暴露出去。
+    # 要临时从别的机器调试，改成 "8000:8000" 并确保防火墙只放行自己的 IP。
+    ports:
+      - "127.0.0.1:8000:8000"
+
+    environment:
+      # 生产建议换 PostgreSQL：
+      #   postgresql+asyncpg://user:pass@db:5432/seoclaw
+      # ⚠️ 别用 SQLite 上生产——它没有并发写保护，两个人同时扫就锁库。
+      SEO_CLAW_DATABASE_URL: sqlite+aiosqlite:////srv/data/seoclaw.db
+
+      # 礼貌度。想更快就调高，但要连带调低被目标站拉黑的概率。
+      SEO_CLAW_RPS: "3"
+
+    volumes:
+      # 数据卷：容器重建不丢历史。
+      # ⚠️ 但 SQLite 落在这个卷上依然只适合单机单进程；要多副本必须换 PG。
+      - seoclaw-data:/srv/data
+
+    logging:
+      driver: json-file
+      options:
+        # ⚠️ 不设上限的话，扫描日志会把磁盘写满——而这恰好发生在
+        # 服务最忙、最不该停的时候。
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  seoclaw-data:
