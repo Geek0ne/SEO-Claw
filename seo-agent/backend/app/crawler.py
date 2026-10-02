@@ -202,6 +202,14 @@ class Crawler:
     def __init__(self, config: Optional[CrawlConfig] = None, checkpoint_dir: Optional[Path] = None) -> None:
         self.config = config or CrawlConfig()
         self.checkpoint_dir = checkpoint_dir
+        # 增量扫描的上一轮快照：``url -> Page``。命中且服务器回 304 时
+        # 直接复用旧 Page 的解析结果（省掉重传正文与重复解析）。
+        self.prior: dict[str, Page] = {}
+        # 304 的命中次数，供 CLI 如实汇报「省了多少」。
+        self.not_modified_count = 0
+        self.conditional_sent = 0
+        # 增量扫描开关：开启后发条件请求，并让审计引擎跳过 304 页面的规则。
+        self.incremental = False
         # pages.jsonl 里已经成功落盘的条数，续写时只追加新增的那些
         self._pages_persisted = 0
         self.limiter = RateLimiter(
@@ -271,6 +279,18 @@ class Crawler:
         # 只拿 visited 会让种子自己命中 visited（normalize 后 key 相同），
         # frontier 一开始就空，续跑报告全空——实测踩过。
         ckpt = self._load_checkpoint(domain)
+        # 增量扫描的基准：上一轮已解析的页面。
+        # ⚠️ 与「续跑」是两件事——续跑是为了不重复抓，prior 是为了让服务器
+        # 回 304。续跑命中的页面走 visited 短路、根本不发请求，
+        # 所以除非显式开启增量，否则 prior 不参与。
+        if self.incremental:
+            for raw in (ckpt or {}).get("pages") or []:
+                try:
+                    p = Page.model_validate(raw)
+                except Exception:  # noqa: BLE001 — 单条坏数据不该毁掉整轮增量
+                    continue
+                if p.etag or p.last_modified:
+                    self.prior[p.url] = p
 
         sitemap_urls = self._discover_sitemap(origin)
 
@@ -451,8 +471,20 @@ class Crawler:
 
     def _fetch(self, url: str, depth: int, discovered_from: Optional[str]) -> Optional[Page]:
         start = time.monotonic()
+        # 条件请求：带上上次的 ETag / Last-Modified，服务器回 304 就不传正文。
+        # 107 站全量重扫一轮约 40 分钟，成本几乎全在 HTTP 上——没有这一层，
+        # 增量扫描只能省下规则执行的几秒，抓取时间一分不省。
+        headers: dict[str, str] = {}
+        prior = self.prior.get(url)
+        if prior is not None and prior.status_code == 200 and not prior.error:
+            if prior.etag:
+                headers["If-None-Match"] = prior.etag
+            if prior.last_modified:
+                headers["If-Modified-Since"] = prior.last_modified
+        if headers:
+            self.conditional_sent += 1
         try:
-            resp = self.client.get(url)
+            resp = self.client.get(url, headers=headers or None)
         except httpx.TimeoutException:
             return Page(url=url, depth=depth, discovered_from=discovered_from,
                         error="timeout", is_html=False)
@@ -462,6 +494,21 @@ class Crawler:
             # 此时应中止整域扫描而不是继续重试（见 crawl() 的连续失败熔断）。
             return Page(url=url, depth=depth, discovered_from=discovered_from,
                         error=f"http_error: {type(exc).__name__}: {exc}", is_html=False)
+
+        # 304：内容没变。复用上一轮的解析结果，但**必须重新落 etag/时间戳**，
+        # 并标 not_modified=True —— 规则层据此知道「这次没重新检查过」，
+        # 不能把缓存当成「检查过且没问题」。增量扫描最容易出的错就在这里。
+        if resp.status_code == 304 and prior is not None:
+            self.not_modified_count += 1
+            cached = prior.model_copy(
+                update={
+                    "etag": resp.headers.get("etag") or prior.etag,
+                    "last_modified": resp.headers.get("last-modified") or prior.last_modified,
+                    "not_modified": True,
+                    "elapsed_ms": int((time.monotonic() - start) * 1000),
+                }
+            )
+            return cached
 
         elapsed = int((time.monotonic() - start) * 1000)
         if len(resp.content) > self.config.max_html_bytes:
@@ -481,6 +528,8 @@ class Crawler:
             discovered_from=discovered_from,
             elapsed_ms=elapsed,
         )
+        page.etag = resp.headers.get("etag")
+        page.last_modified = resp.headers.get("last-modified")
 
         # JS 渲染：只在「静态 HTML 看起来是 SPA 空壳」时才做，不是每页都渲染。
         # 实测依据：go.dev 静态 HTML 里几乎没有 <a>，不开渲染只抓到 1 个 URL。

@@ -57,6 +57,10 @@ def cmd_scan(args: argparse.Namespace) -> int:
             last[0] = now
             print(f"  [{n}/{cfg.max_pages}] {page.status_code} {page.word_count:>6}字 {page.url[:80]}", file=sys.stderr)
 
+        crawler.incremental = bool(args.incremental)
+        if args.incremental and not checkpoint:
+            print("⚠️ --incremental 需要 --checkpoint 提供上一轮快照，没有基准就退化成全量扫描",
+                  file=sys.stderr)
         pages = crawler.crawl(args.url, on_page=progress)
         discovered = getattr(crawler, "discovered_count", len(pages))
         site_facts = _collect_site_facts(crawler)
@@ -116,7 +120,14 @@ def cmd_scan(args: argparse.Namespace) -> int:
     if site_facts.get("robots_status"):
         print(f"→ robots.txt：HTTP {site_facts['robots_status']}", file=sys.stderr)
 
-    issues, _ctx = run_audit(pages, urlparse(args.url).netloc, markets, site_facts)
+    # 增量收益要如实报，不能只在没报错时悄悄变快
+    if args.incremental:
+        hit = getattr(crawler, "not_modified_count", 0)
+        sent = getattr(crawler, "conditional_sent", 0)
+        print(f"→ 增量扫描：条件请求 {sent} 次，其中 {hit} 个页面服务器回 304（未重传正文）",
+              file=sys.stderr)
+    issues, _ctx = run_audit(pages, urlparse(args.url).netloc, markets, site_facts,
+                             incremental=bool(args.incremental))
     netloc = urlparse(args.url).netloc
     # 分母只算本站页面。抓取器会把兄弟子域也当站内（is_internal 按可注册域
     # 判断，对内链权重传递是对的），但计分不该跨子域——gymshark 25 页里
@@ -283,6 +294,9 @@ def main(argv: list[str] | None = None) -> int:
     scan.add_argument("--render-timeout", type=float, default=20.0,
                       help="单页渲染超时秒数（默认 20，仅在开启 --render-js 时生效）")
     scan.add_argument("--quiet", "-q", action="store_true")
+    scan.add_argument("--incremental", action="store_true",
+                      help="增量扫描：带 ETag/Last-Modified 条件请求，服务器回 304 的页面跳过规则重跑"
+                           "（需要 --checkpoint 提供上一轮快照）")
     scan.set_defaults(func=cmd_scan)
 
     rules = sub.add_parser("rules", help="列出已加载的检查项")

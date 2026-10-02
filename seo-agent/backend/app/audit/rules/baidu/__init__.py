@@ -178,6 +178,8 @@ def _site_chinese_ratio(pages: list[Page]) -> tuple[float, int]:
 @reg.register
 class BaiduspiderNotAllowed(Rule):
     code = "robots.baiduspider_not_allowed"
+    # 读 ctx.site_facts（robots.txt 是本轮重新抓的）
+    uses_site_facts = True
     market = Market.BAIDU
     severity = Severity.HIGH
     scope = Scope.SITE

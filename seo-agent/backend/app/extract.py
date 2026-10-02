@@ -9,6 +9,7 @@ HTML 提取层：把原始 HTML 变成结构化的 `Page` 对象。
 
 from __future__ import annotations
 
+import hashlib
 import re
 from typing import Any, Optional
 from urllib.parse import urljoin, urlparse
@@ -261,7 +262,46 @@ def extract_page(
     if _looks_client_render_failure(raw_html, page):
         page.error = "client_render_failed"
 
+    page.content_hash = _content_hash(page)
     return page
+
+
+def _content_hash(page: Page) -> str:
+    """规范化内容的摘要 —— 增量扫描的判定基准。
+
+    ⚠️ 只覆盖**规则会读的语义字段**，且必须排除每次都变的值：
+    fetched_at / elapsed_ms / not_modified 一旦参与比较，哈希每次都不同，
+    全部页面每次都会被判「已变」，60+ 条规则无限重跑，增量扫描等于没做。
+
+    刻意**不**包含 raw_html 整体：广告位轮播、CSRF token、时间戳都会让
+    同一篇文章的哈希天天变，而那些东西规则根本不读。
+
+    提取失败时返回空串 —— 上一轮算不出 hash 时不能当成「内容没变」。
+    """
+    if not page.text and not page.title and not page.status_code:
+        return ""
+    parts = [
+        str(page.status_code),
+        page.title or "",
+        page.meta_description or "",
+        page.canonical or "",
+        page.robots_meta or "",
+        page.viewport or "",
+        page.lang or "",
+        repr(sorted(page.hreflang)),
+        page.og_title or "",
+        page.og_description or "",
+        page.og_image or "",
+        page.twitter_card or "",
+        repr(page.h1),
+        repr(sorted(page.headings)),
+        page.text,
+        repr(page.links),
+        repr([(i.src, i.alt) for i in page.images]),
+        repr(page.microdata_types),
+        str(page.jsonld),
+    ]
+    return hashlib.sha256("\u0000".join(parts).encode("utf-8")).hexdigest()[:32]
 
 
 # --------------------------------------------------------------------------

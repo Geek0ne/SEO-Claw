@@ -439,6 +439,8 @@ def _benign_canonical_variant(current: str, canonical: str) -> str | None:
 @reg.register
 class CanonicalConflict(Rule):
     code = "canonical.conflict"
+    # 读 ctx.site_facts：增量扫描时即使页面 304 未变也必须重跑
+    uses_site_facts = True
     severity = Severity.MEDIUM
     title = "canonical 指向了其他页面（需确认是否有意为之）"
     description = (
@@ -835,6 +837,8 @@ class Soft404(Rule):
 @reg.register
 class SitemapMissing(Rule):
     code = "sitemap.missing"
+    # 读 ctx.site_facts：增量扫描时即使页面 304 未变也必须重跑
+    uses_site_facts = True
     severity = Severity.HIGH
     scope = Scope.SITE
     title = "站点没有可用的 sitemap"
@@ -863,6 +867,8 @@ class SitemapMissing(Rule):
 @reg.register
 class RobotsMissing(Rule):
     code = "robots.missing"
+    # 读 ctx.site_facts：增量扫描时即使页面 304 未变也必须重跑
+    uses_site_facts = True
     severity = Severity.MEDIUM
     scope = Scope.SITE
     title = "缺少 robots.txt"
@@ -882,6 +888,8 @@ class RobotsMissing(Rule):
 @reg.register
 class RobotsBlocksBots(Rule):
     code = "robots.blocks_own_site"
+    # 读 ctx.site_facts：增量扫描时即使页面 304 未变也必须重跑
+    uses_site_facts = True
     severity = Severity.CRITICAL
     scope = Scope.SITE
     title = "robots.txt 屏蔽了搜索引擎收录全站"

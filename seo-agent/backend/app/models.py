@@ -105,6 +105,14 @@ class Page(BaseModel):
     status_code: int = 0
     content_type: str = ""
     elapsed_ms: Optional[int] = None
+    # 条件请求凭据：增量扫描要靠它们让服务器回 304 而不是重传整份正文。
+    # 107 站全量重扫一轮 40 分钟，成本几乎全在 HTTP 上——不存这两个头，
+    # 增量扫描只能省下规则执行的时间，省不下抓取本身。
+    etag: Optional[str] = None
+    last_modified: Optional[str] = None
+    # 本次取回时服务器回了 304（内容未变），字段来自上次的缓存。
+    # ⚠️ 规则层据此判断「这次没重新检查过」，不能当成「检查过且没问题」。
+    not_modified: bool = False
     depth: int = 0  # 距首页的点击深度
     discovered_from: Optional[str] = None
     fetched_at: Optional[datetime] = None
@@ -180,6 +188,12 @@ class Page(BaseModel):
     # 「这页没内容」和「这页内容我看不见」，必须提取层把事实给它。
     likely_js_rendered: bool = False
     external_link_count: int = 0
+    # 规范化内容的摘要，增量扫描的判定基准。
+    #
+    # ⚠️ 只覆盖**规则会读的语义字段**（标题/描述/正文/链接结构等），
+    # 绝不包含 fetched_at、elapsed_ms 这类每次都变的值——否则每次扫描
+    # 哈希都不同，60+ 条规则会被无限重跑，增量扫描等于没做。
+    content_hash: str = ""
 
 
 # --------------------------------------------------------------------------

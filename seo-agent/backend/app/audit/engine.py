@@ -72,6 +72,13 @@ class Rule(ABC):
     description: str = ""
     fix_hint: str = ""
     fix_example: Optional[str] = None
+    # 本规则是否读取 ctx.site_facts（robots/sitemap/回访结果这类**本次扫描**的事实）。
+    #
+    # ⚠️ 增量扫描的跳过判定靠它：服务器回 304 的页面复用了上一轮解析结果，
+    # 但 site_facts 是本轮重新抓的。这类规则即使页面没变也**必须重跑**——
+    # 跳过就等于让昨天的 robots.txt 结论替今天的文件背书。
+    # 加新规则时读 site_facts 就必须置 True，否则增量模式会静默给过期结论。
+    uses_site_facts: bool = False
 
     @abstractmethod
     def check(self, page: Page, ctx: RuleContext) -> Iterable[Issue]:
@@ -224,20 +231,28 @@ def run_audit(
     domain: str,
     markets: list[Market] | None = None,
     site_facts: dict[str, Any] | None = None,
+    incremental: bool = False,
 ) -> tuple[list[Issue], RuleContext]:
     """执行完整审计，返回去重后的问题列表。
 
     PAGE 级规则逐页跑；SITE 级规则基于全站索引跑一次。
+
+    ``incremental=True`` 时启用增量跳过：服务器回 304（``page.not_modified``）
+    的页面复用上一轮结论。见 ``_skip_page_rules`` 里的两条硬约束——
+    跳过这件事比看起来危险得多，条件写错就是**静默给出过期结论**。
     """
     markets = markets or [Market.BASE]
     ctx = build_context(domain, pages, markets, site_facts)
 
     registry = default_registry()
     issues: list[Issue] = []
+    skip_urls = _skip_page_rules(pages) if incremental else frozenset()
 
     for rule in registry.page_rules_for(markets):
         for page in pages:
             if not page.is_html or page.error:
+                continue
+            if page.url in skip_urls and not rule.uses_site_facts:
                 continue
             try:
                 issues.extend(rule.check(page, ctx))
@@ -273,6 +288,34 @@ def run_audit(
             )
 
     return dedupe(issues), ctx
+
+
+def _skip_page_rules(pages: list[Page]) -> frozenset[str]:
+    """增量模式下，哪些页面的页面级规则可以跳过。返回 URL 集合（空 = 全跑）。
+
+    ⚠️ 两条硬约束，少一条就会**静默给出过期结论**——用户看不出报告是旧的，
+    而这是比误报更坏的一种错：
+
+    1. **只要有任一页面变了，全站页面级规则都得重跑。**
+       跨页规则（``title.duplicate`` 靠全站同名索引、孤岛页靠 inbound_links、
+       全站索引类）的结论由**别的页面**决定。A 页改了标题，B 页的
+       「是否重复」就可能翻转——哪怕 B 页自己是304 未变。
+       只按 B 页自身有没有变来决定跳不跳，结论必然错。
+       所以增量跳过只在「全站零变化」时才允许生效。
+
+    2. ``not_modified`` 只能来自 304。抓取失败页（timeout/429/403）**没有**
+       任何可信结论，绝不能因为「这次也没抓到」就跳过——那等于把
+       「上次抓到的旧结论」当成「本次检查结果」。
+    """
+    if not pages:
+        return frozenset()
+    if any(not p.not_modified for p in pages):
+        return frozenset()  # 约束 1：有变化就全跑
+    return frozenset(
+        p.url
+        for p in pages
+        if p.not_modified and p.status_code == 200 and not p.error
+    )  # 约束 2：只跳过「服务器说没变」且上次确实抓成功了的页
 
 
 _EMPTY_PAGE = Page(url="about:blank", status_code=0, is_html=False)
