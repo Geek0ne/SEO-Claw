@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SEOClaw —— 站点体检</title>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#fff; --ink:#1a1d21; --muted:#6b7280; --line:#e5e7eb;
+  --good:#0f9d58; --ok:#8ab400; --warn:#f29900; --bad:#db4437;
+  --critical:#db4437; --high:#e8710a; --medium:#f29900; --low:#4a90d9; --info:#9aa0a6;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",
+  "Hiragino Sans GB","Microsoft YaHei",sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:40px 20px 80px}
+h1{font-size:26px;margin:0 0 6px}
+.lede{color:var(--muted);margin:0 0 28px}
+form{display:flex;gap:10px;margin-bottom:28px}
+input{flex:1;padding:13px 15px;font-size:15px;border:1px solid var(--line);
+  border-radius:9px;background:#fff;color:var(--ink)}
+input:focus{outline:2px solid #1a73e8;outline-offset:-1px;border-color:transparent}
+button{padding:13px 24px;font-size:15px;font-weight:600;border:0;border-radius:9px;
+  background:var(--ink);color:#fff;cursor:pointer;white-space:nowrap}
+button:disabled{opacity:.5;cursor:not-allowed}
+.card{background:var(--card);border:1px solid var(--line);border-radius:11px;
+  padding:20px 22px;margin-bottom:14px}
+.score{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.score-num{font-size:52px;font-weight:700;line-height:1}
+.good .score-num{color:var(--good)} .ok .score-num{color:var(--ok)}
+.warn .score-num{color:var(--warn)} .bad .score-num{color:var(--bad)}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;
+  flex:1;min-width:200px}
+.bar>i{display:block;height:100%;background:currentColor}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0}
+.chip{font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);
+  background:#fafafa;color:var(--muted)}
+.chip b{color:var(--ink);font-weight:600}
+.meta{color:var(--muted);font-size:13px;margin-top:6px}
+.alert{background:#fff4f4;border:1px solid #f3bcbc;border-left:4px solid var(--bad);
+  border-radius:8px;padding:13px 16px;margin-bottom:14px;font-size:14px}
+.alert.warn{background:#fffbf0;border-color:#f0dca8;border-left-color:var(--warn)}
+.alert.ok{background:#f2fbf6;border-color:#b6e2c6;border-left-color:var(--good)}
+details{border:1px solid var(--line);border-radius:9px;background:var(--card);margin-bottom:9px}
+summary{cursor:pointer;padding:12px 16px;list-style:none;display:flex;
+  align-items:center;gap:10px;flex-wrap:wrap}
+summary::-webkit-details-marker{display:none}
+.sev{font-size:11px;padding:2px 8px;border-radius:99px;color:#fff;font-weight:600;
+  text-transform:uppercase;letter-spacing:.3px}
+.sev.critical{background:var(--critical)} .sev.high{background:var(--high)}
+.sev.medium{background:var(--medium)} .sev.low{background:var(--low)}
+.sev.info{background:var(--info)}
+.ttl{font-weight:500;flex:1;min-width:200px}
+.n{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.body{padding:0 16px 14px;color:var(--muted);font-size:13px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;
+  background:var(--warn);margin-right:8px;animation:p 1.1s infinite}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.25}}
+.spinner-row{display:flex;align-items:center;color:var(--muted);font-size:14px}
+footer{color:var(--muted);font-size:12px;margin-top:36px;text-align:center}
+a{color:#1a73e8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SEOClaw</h1>
+  <p class="lede">输入网址，扫一遍，告诉你<strong>先改哪几件</strong>。</p>
+
+  <form id="f">
+    <input id="url" placeholder="example.com" autocomplete="off" required>
+    <button id="go" type="submit">开始体检</button>
+  </form>
+
+  <div id="out"></div>
+
+  <footer>
+    报告里的每一条都带证据。没把握的它会闭嘴，而不是猜一个结论给你。<br>
+    <a href="https://github.com/Geek0ne/SEOClaw">GitHub</a>
+  </footer>
+</div>
+
+<script>
+const out = document.getElementById('out');
+const go = document.getElementById('go');
+const SEV = ['critical','high','medium','low','info'];
+
+function el(html){ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
+
+document.getElementById('f').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const url = document.getElementById('url').value.trim();
+  if(!url) return;
+  go.disabled = true;
+  out.innerHTML = '';
+  out.appendChild(el(`
+    <div class="card spinner-row">
+      <span class="dot"></span>
+      <span id="msg">正在提交…</span>
+    </div>`));
+
+  let jobId;
+  try {
+    const r = await fetch('/api/v1/web/quick-scan', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({url, max_pages:30})
+    });
+    if(!r.ok) throw new Error((await r.json()).detail || ('HTTP '+r.status));
+    const d = await r.json();
+    jobId = d.job_id;
+    document.getElementById('msg').textContent =
+      '正在扫描 ' + d.domain + '，大约需要十几秒…';
+    poll(jobId);
+  } catch (err) {
+    out.innerHTML = '';
+    out.appendChild(el(`<div class="alert">提交失败：${err.message}</div>`));
+    go.disabled = false;
+  }
+});
+
+async function poll(jobId){
+  const started = Date.now();
+  const tick = async () => {
+    // 5 分钟后停止：无限转圈比报错糟糕得多。
+    if(Date.now()-started > 5*60*1000){
+      out.innerHTML = '';
+      out.appendChild(el(`<div class="alert warn">
+        等太久了，这次没等到结果。站点可能在拦爬虫，或者页面特别多。<br>
+        你可以试试加 /about 这类更轻的页面地址。</div>`));
+      go.disabled = false;
+      return;
+    }
+    try {
+      const r = await fetch('/api/v1/web/jobs/'+jobId);
+      if(!r.ok) throw new Error('任务已失效');
+      const d = await r.json();
+      if(d.status === 'done'){ render(d.report); go.disabled=false; return; }
+      if(d.status === 'failed'){
+        out.innerHTML='';
+        out.appendChild(el(`<div class="alert">扫描失败：${d.error}</div>`));
+        go.disabled=false; return;
+      }
+      setTimeout(tick, 1200);
+    } catch(err){
+      out.innerHTML='';
+      out.appendChild(el(`<div class="alert warn">
+        ${err.message}——服务可能重启了，请重新发起一次。</div>`));
+      go.disabled=false;
+    }
+  };
+  tick();
+}
+
+function render(rep){
+  out.innerHTML = '';
+  if(!rep){ out.appendChild(el('<div class="alert">没有拿到报告。</div>')); return; }
+
+  // ⚠️ 0 页成功时 health_score 是 null，不是 0。
+  // 「一页没抓到」和「抓到了但全是问题」是两回事，不能都显示 0 分。
+  if(rep.health_score == null){
+    out.appendChild(el(`<div class="alert">
+      一页都没抓到，所以<strong>给不出分数</strong>。<br>
+      常见原因：站点屏蔽了自动化访问、需要 JS 渲染，或者 robots.txt 不允许。<br>
+      这不是「你的网站没问题」，只是我们什么都没看到。</div>`));
+    return;
+  }
+
+  const s = rep.health_score;
+  const grade = s>=90?'good': s>=70?'ok': s>=40?'warn':'bad';
+  const counts = rep.counts || {};
+  const chips = SEV.filter(k=>counts[k]).map(k=>
+    `<span class="chip"><b>${counts[k]}</b> ${k}</span>`).join('');
+
+  out.appendChild(el(`
+    <div class="card score ${grade}">
+      <div class="score-num">${Math.round(s)}</div>
+      <div style="flex:1;min-width:200px">
+        <div class="bar"><i style="width:${Math.max(0,Math.min(100,s))}%"></i></div>
+        <div class="meta">${rep.domain} · 扫了 ${rep.pages_crawled} 页</div>
+      </div>
+    </div>`));
+
+  if(chips) out.appendChild(el(`<div class="chips">${chips}</div>`));
+
+  const issues = (rep.issues||[]).slice().sort((a,b)=>
+    SEV.indexOf(a.severity)-SEV.indexOf(b.severity));
+
+  if(!issues.length){
+    out.appendChild(el(`<div class="alert ok">
+      这次没查出问题。<br><span style="color:var(--muted)">
+      但这不等于你的网站一定没问题——只覆盖了这次抓到的 ${rep.pages_crawled} 个页面。</span></div>`));
+    return;
+  }
+
+  out.appendChild(el('<h2 style="font-size:17px;margin:26px 0 10px">按严重程度排</h2>'));
+  issues.forEach(i => {
+    const d = el(`<details>
+      <summary>
+        <span class="sev ${i.severity}">${i.severity}</span>
+        <span class="ttl">${esc(i.title)}</span>
+        <span class="n">${i.occurrences>1 ? i.occurrences+' 处' : ''}</span>
+      </summary>
+      <div class="body">
+        ${i.url ? '<div>'+esc(i.url)+'</div>' : ''}
+        <div>规则：${esc(i.code)}</div>
+      </div>
+    </details>`);
+    out.appendChild(d);
+  });
+}
+
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+</script>
+</body>
+</html>

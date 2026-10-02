@@ -8,12 +8,16 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncIterator
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from .api import router
 from .db.session import create_all, dispose_engine
+from .web import router as web_router
 
 
 @asynccontextmanager
@@ -37,6 +41,19 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     app.include_router(router)
+    app.include_router(web_router)
+
+    # 页面与静态资源放在包内，随 wheel 一起装走。
+    # 用 StaticFiles 挂整个目录而不是只挂 index.html：以后加 favicon、
+    # 埋点脚本、样式拆分都不用改代码。
+    static_dir = Path(__file__).parent / "web" / "static"
+    if static_dir.is_dir():
+        app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+        @app.get("/", include_in_schema=False)
+        def index() -> FileResponse:
+            return FileResponse(static_dir / "index.html")
+
     return app
 
 
