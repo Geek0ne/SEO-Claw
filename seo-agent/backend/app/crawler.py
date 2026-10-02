@@ -488,6 +488,18 @@ class Crawler:
 
         self._save_checkpoint(domain, visited, frontier, pages)
         self.discovered_count = discovered
+        # ★ 为什么必须记这个：站点级规则（尤其孤岛页）靠覆盖率才敢下结论，
+        # 而 CLI 判断 hit_page_limit 的口径是 `len(pages) >= cfg.max_pages`。
+        # 分批跑站时**每一趟都以打满上限收尾**，这个标志就永远是 True，
+        # 于是 has_enough_data() 永远 False —— 孤岛页检测永远不触发，
+        # 「分批跑完整站」这个功能等于白做（2026-10-02 实测三趟 3→6→9 页确认
+        # 分批机制本身没问题，问题出在这个标志上）。
+        #
+        # 真正该区分的是：**frontier 是不是空了**。空了说明该抓的都抓完了，
+        # 哪怕本趟恰好打满上限，覆盖率也是完整的，站点级规则该发话。
+        # 没空说明还有没抓的（撞上限 / 深度上限 / robots 拦了），
+        # 「没发现指向它的内链」就只是「还没抓到」，必须保持沉默。
+        self.frontier_drained = not frontier
         return pages
 
     def verify_canonical_targets(self, pages: list[Page], limit: int = 60) -> dict[str, int]:

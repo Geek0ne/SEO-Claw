@@ -88,8 +88,14 @@ def cmd_scan(args: argparse.Namespace) -> int:
 
     # 抓取覆盖情况：孤岛页/重复页这类全局结论必须知道覆盖率才敢下结论
     site_facts["discovered_count"] = discovered
+    # ★ 口径必须是「frontier 还有没有剩」，不是「本趟有没有打满上限」。
+    # 分批跑站时每一趟都以打满上限收尾，旧口径会让 hit_page_limit 永远为 True
+    # → has_enough_data() 永远 False → 孤岛页/重复页这类站点级结论永远不出现，
+    # 「分批跑完整站」等于白做（2026-10-02 实测 3→6→9 页确认分批本身没问题）。
+    # frontier 空 = 该抓的都抓完了，覆盖率是完整的，站点级规则该发话。
     site_facts["hit_page_limit"] = bool(
-        getattr(crawler, "aborted_reason", None) or len(pages) >= cfg.max_pages
+        getattr(crawler, "aborted_reason", None)
+        or not getattr(crawler, "frontier_drained", False)
     )
     # ⚠️ 分子只数**抓成功**的页。pages 里混着失败页（429/403/超时/连接错误），
     # 它们进 pages 列表但一行内容都没有——算进分子就成了「抓到了」。
