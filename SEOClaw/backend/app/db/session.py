@@ -36,17 +36,21 @@ from .models import Base
 
 # 默认库：本地开发用文件型 SQLite，零配置可跑。
 # 生产通过 DATABASE_URL 覆盖成 postgresql+asyncpg://...
-DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///./seo_agent.db"
+DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///./seoclaw.db"
 
 
 def get_database_url() -> str:
     """读取数据库连接串。
 
-    优先用 ``DATABASE_URL``；同时兼容 ``SEO_AGENT_DATABASE_URL``，
-    因为部署环境里 DATABASE_URL 常被平台预占给别的服务。
+    优先用 ``DATABASE_URL``；同时兼容 ``SEO_CLAW_DATABASE_URL``（改名前的
+    旧名 ``SEO_AGENT_DATABASE_URL`` 保留为后门，删掉会让已有部署静默
+    指向另一个库 —— 不报错，只是数据看不见）。
+
+    ``SEO_CLAW_DATABASE_URL`` 排在 ``SEO_AGENT_DATABASE_URL`` 之前。
     """
     return (
-        os.getenv("SEO_AGENT_DATABASE_URL")
+        os.getenv("SEO_CLAW_DATABASE_URL")
+        or os.getenv("SEO_AGENT_DATABASE_URL")
         or os.getenv("DATABASE_URL")
         or DEFAULT_DATABASE_URL
     )

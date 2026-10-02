@@ -9,7 +9,7 @@
 #
 # 输出两栏：可达清单（进抓取）与不可达清单（写进报告的排除说明，不进分母）
 set -u
-ROOT=/root/.openclaw/workspace/seo-agent
+ROOT=/root/.openclaw/workspace/SEOClaw
 POOL="$ROOT/tools/fp_pool.txt"
 OUT_OK=/tmp/pool_ok.txt
 OUT_NO=/tmp/pool_fail.txt

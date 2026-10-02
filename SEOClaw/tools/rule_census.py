@@ -31,8 +31,8 @@ import json
 import pathlib
 import sys
 
-BACKEND = pathlib.Path("/root/.openclaw/workspace/seo-agent/backend")
-CORPUS = pathlib.Path("/root/.openclaw/workspace/seo-agent/reports/fp_json_v4")
+BACKEND = pathlib.Path("/root/.openclaw/workspace/SEOClaw/backend")
+CORPUS = pathlib.Path("/root/.openclaw/workspace/SEOClaw/reports/fp_json_v4")
 
 
 def registered_codes() -> dict[str, set[str]]:

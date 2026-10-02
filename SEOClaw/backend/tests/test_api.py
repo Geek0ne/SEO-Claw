@@ -14,7 +14,7 @@ import tempfile
 # ⚠️ 必须在 import app.* 之前设：`get_session_factory()` 会缓存引擎，
 # 环境变量设晚了会连到别的库上去，表现为「测试之间互相污染」。
 _TMP_DB = os.path.join(tempfile.mkdtemp(), "api_test.db")
-os.environ["SEO_AGENT_DATABASE_URL"] = f"sqlite+aiosqlite:///{_TMP_DB}"
+os.environ["SEO_CLAW_DATABASE_URL"] = f"sqlite+aiosqlite:///{_TMP_DB}"
 
 import pytest
 from fastapi.testclient import TestClient

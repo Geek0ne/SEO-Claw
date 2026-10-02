@@ -1,4 +1,4 @@
-# seo-agent
+# SEOClaw
 
 一个**开源的站点 SEO 体检工具**：抓一遍站点，跑规则，出一份能照着改的报告。
 
@@ -137,7 +137,7 @@ PYTHONPATH=.. alembic -c migrations/alembic.ini upgrade head
 ## API
 
 ```bash
-PYTHONPATH=.deps:backend DATABASE_URL=sqlite+aiosqlite:///./seo_agent.db \
+PYTHONPATH=.deps:backend DATABASE_URL=sqlite+aiosqlite:///./seoclaw.db \
   python3 -m uvicorn app.main:app --port 8000
 ```
 

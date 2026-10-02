@@ -49,10 +49,11 @@ def get_url() -> str:
     """
     return (
         os.getenv("MIGRATION_DATABASE_URL")
+        or os.getenv("SEO_CLAW_DATABASE_URL")
         or os.getenv("SEO_AGENT_DATABASE_URL")
         or os.getenv("DATABASE_URL")
         or config.get_main_option("sqlalchemy.url")
-        or "sqlite:///./seo_agent.db"
+        or "sqlite:///./seoclaw.db"
     )
 
 

@@ -2,7 +2,7 @@
 # 等批次抓取结束后，自动跑独立核对器并把结果落盘。
 # 用途：别再用「状态查询刷屏」换进度——让结果自己到齐。
 set -u
-cd /root/.openclaw/workspace/seo-agent || exit 1
+cd /root/.openclaw/workspace/SEOClaw || exit 1
 
 # 等批次结束（最多等 25 分钟）
 for _ in $(seq 1 150); do

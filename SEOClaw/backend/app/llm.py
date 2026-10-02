@@ -58,11 +58,16 @@ DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
 # 已排除的解释：缩进/换行（紧凑 JSON 同样失败）、
 # max_tokens（900/250/100 三档全 0/3）、长度本身（同长度的散文能过）。
 # 结论是这个模型当前扛不住本工具的输入规模，**不能用它做默认值**。
-# 想换模型设 SEO_AGENT_LLM_MODEL 即可。
+# 想换模型设 SEO_CLAW_LLM_MODEL 即可。
 DEFAULT_MODEL = "openrouter/free"
 
 # 凭据按这个顺序找。都不设就抛 LLMNotConfigured。
+# ⚠️ SEO_CLAW_* 是当前名字，SEO_AGENT_* 是改名之前的老名字。
+# 老名字保留在列表里当后门：直接删掉会让**已有部署静默失效**
+# —— 不报错，只是读不到 key，表现为「AI 总结突然全失败」，极难归因。
+# 老名字排在后面，新的优先。
 _KEY_ENV = (
+    "SEO_CLAW_LLM_API_KEY",
     "SEO_AGENT_LLM_API_KEY",
     "OPENROUTER_API_KEY",
     "OPENAI_API_KEY",
@@ -98,8 +103,16 @@ class LLMConfig:
                 break
         return cls(
             api_key=key,
-            base_url=os.getenv("SEO_AGENT_LLM_BASE_URL", DEFAULT_BASE_URL),
-            model=os.getenv("SEO_AGENT_LLM_MODEL", DEFAULT_MODEL),
+            base_url=os.getenv(
+            "SEO_CLAW_LLM_BASE_URL"
+            or os.getenv("SEO_AGENT_LLM_BASE_URL")
+            or DEFAULT_BASE_URL,
+        ),
+            model=os.getenv(
+                "SEO_CLAW_LLM_MODEL"
+                or os.getenv("SEO_AGENT_LLM_MODEL")
+                or DEFAULT_MODEL,
+            ),
             **kw,
         )
 

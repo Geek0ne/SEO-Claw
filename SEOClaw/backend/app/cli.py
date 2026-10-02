@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SEO Agent CLI —— M0 入口。
+SEOClaw CLI —— M0 入口。
 
 用法：
     python -m app.cli scan https://example.com --max-pages 200
@@ -344,7 +344,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
         else:
             print(
                 "⚠️ 未生成 AI 总结"
-                + ("：缺少 API key（SEO_AGENT_LLM_API_KEY / OPENROUTER_API_KEY / OPENAI_API_KEY）"
+                + ("：缺少 API key（SEO_CLAW_LLM_API_KEY / OPENROUTER_API_KEY / OPENAI_API_KEY）"
                    if not cfg.api_key else "：调用失败，详见上。")
                 + "。报告其余部分完整，不受影响。",
                 file=sys.stderr,
@@ -499,7 +499,7 @@ def build_parser() -> argparse.ArgumentParser:
     刻意独立成函数而不是内联在 ``main()``：``--db`` 这类参数要能被
     单测直接断言（默认关闭、不给时不落库），不必跑整条命令。
     """
-    parser = argparse.ArgumentParser(prog="seo-agent", description="AI SEO Agent")
+    parser = argparse.ArgumentParser(prog="seoclaw", description="SEOClaw —— 站点 SEO 体检")
     sub = parser.add_subparsers(dest="command", required=True)
 
     scan = sub.add_parser("scan", help="扫描站点并生成报告")

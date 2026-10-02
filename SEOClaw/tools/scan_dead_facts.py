@@ -25,7 +25,7 @@ import re
 import sys
 from collections import defaultdict
 
-ROOT = pathlib.Path("/root/.openclaw/workspace/seo-agent/backend/app")
+ROOT = pathlib.Path("/root/.openclaw/workspace/SEOClaw/backend/app")
 
 # facts / site_facts / evidence 里被**读**的键
 READ_SITES = re.compile(r'(?:site_facts|facts|ctx\.site_facts)\s*(?:\.get\(|\[)\s*["\'](\w+)["\']')

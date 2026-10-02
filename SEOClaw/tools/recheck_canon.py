@@ -18,11 +18,11 @@ import json
 import sys
 from concurrent.futures import ThreadPoolExecutor
 
-sys.path.insert(0, "/root/.openclaw/workspace/seo-agent/tools")
+sys.path.insert(0, "/root/.openclaw/workspace/SEOClaw/tools")
 from verify_findings import fetch, verify  # noqa: E402
 
 rows = []
-for f in glob.glob("/root/.openclaw/workspace/seo-agent/reports/fp_json_v4/*.json"):
+for f in glob.glob("/root/.openclaw/workspace/SEOClaw/reports/fp_json_v4/*.json"):
     d = json.load(open(f, encoding="utf-8"))
     for iss in d.get("issues", []):
         if iss.get("code") == "canonical.conflict":

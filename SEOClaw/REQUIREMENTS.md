@@ -1,4 +1,4 @@
-# AI SEO Agent — 产品需求与设计规划书
+# SEOClaw — 产品需求与设计规划书
 
 版本：v0.1（初稿）
 日期：2026-09-29
@@ -186,7 +186,7 @@ Orchestrator（任务编排器）
 ### 4.3 目录结构建议
 
 ```
-seo-agent/
+SEOClaw/
 ├── backend/
 │   ├── app/
 │   │   ├── main.py            # FastAPI 入口

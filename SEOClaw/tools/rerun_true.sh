@@ -9,7 +9,7 @@
 # 这个坑的性质很恶劣：**它不报错，输出还很好看**（"完成：成功 19 站"），
 # 我差点拿一个「什么都没重做」的结果当修复后数据汇报给你。
 set -u
-cd /root/.openclaw/workspace/seo-agent || exit 1
+cd /root/.openclaw/workspace/SEOClaw || exit 1
 
 pkill -f run_fp_batch 2>/dev/null
 pkill -f finalize_fp 2>/dev/null

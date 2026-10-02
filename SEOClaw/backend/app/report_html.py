@@ -380,7 +380,7 @@ def render_html(
         A('<div class="alert warn" style="background:#f6fdf6;border-color:#b7e0b7;'
           'border-left-color:#0f9d58">没有命中任何规则。</div>')
 
-    A(f'<div class="footer">由 SEO Agent 生成 · '
+    A(f'<div class="footer">由 SEOClaw 生成 · '
       f"{_e(report.started_at.strftime('%Y-%m-%d %H:%M')) if report.started_at else ''} UTC</div>")
     A("</div></body></html>")
     return "".join(parts)

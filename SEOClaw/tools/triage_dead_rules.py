@@ -25,7 +25,7 @@ import pathlib
 import re
 import sys
 
-BACKEND = pathlib.Path("/root/.openclaw/workspace/seo-agent/backend/app")
+BACKEND = pathlib.Path("/root/.openclaw/workspace/SEOClaw/backend/app")
 
 NEVER_FIRED = [
     "depth.excessive", "hreflang.inconsistent_with_lang", "hreflang.self_reference_missing",

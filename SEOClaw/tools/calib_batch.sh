@@ -12,7 +12,7 @@
 # ⚠️ 与 rerun_true.sh 同一个坑：见那个文件顶部说明。
 #    「文件已存在就跳过」不报错、输出还很好看。这里同样先归档。
 set -u
-ROOT=/root/.openclaw/workspace/seo-agent
+ROOT=/root/.openclaw/workspace/SEOClaw
 cd "$ROOT" || exit 1
 
 PAGES="${PAGES:-25}"

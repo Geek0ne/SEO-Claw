@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="SEO Agent",
+        title="SEOClaw",
         version="0.1.0",
         description="站点 SEO 健康审计服务",
         lifespan=lifespan,
