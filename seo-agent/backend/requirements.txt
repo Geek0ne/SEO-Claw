@@ -1,0 +1,38 @@
+# 运行期与测试依赖。
+#
+# ⚠️ 这份文件以前不存在 —— 依赖全靠手工 `pip install --target .deps` 装到
+# .deps/ 里，而 .deps/ 是 gitignore 的。后果是：**换台机器 clone 下来，
+# 一半 import 直接失败**，而且没有任何地方记录过该装什么。
+# 版本号按本机实测可用的版本钉住（2026-10-02）。
+
+# --- 抓取 ---
+httpx==0.28.1          # HTTP 客户端
+lxml==6.1.3            # HTML 解析
+trafilatura==2.2.0     # 正文抽取（去掉导航/页脚/广告）
+
+# --- 提取 ---
+playwright==1.63.0     # JS 渲染兜底（只对疑似 JS 站启用）
+
+# --- 中文分词 ---
+jieba==0.42.1          # 关键词扩展的中文切词。缺失时 tokenize() 退回
+                       # 正则字符切分，不会崩，但共现质量明显下降。
+
+# --- 持久化 ---
+# ⚠️ 这三个不是「import 到了才发现」的类型：aiosqlite / asyncpg 只出现在
+# 连接串里（DEFAULT_DATABASE_URL = "sqlite+aiosqlite:///..."，
+# 生产换成 postgresql+asyncpg），alembic 只在 migrations/env.py 里 import。
+# 所以扫源码 import 语句会漏掉它们 —— 我第一版 requirements.txt 就漏了，
+# 换台机器跑迁移才炸。
+sqlalchemy==2.1.1      # ORM
+alembic==1.20.0         # 迁移
+aiosqlite==0.22.1       # 默认库（本地/测试）
+asyncpg==0.31.0         # 生产 PostgreSQL 驱动
+
+# --- 模型与校验 ---
+pydantic==2.13.5       # 数据模型（Page / Issue / SiteReport）
+
+# --- 服务层 ---
+fastapi==0.142.2       # API（P1 #6 起）
+
+# --- 测试 ---
+pytest==9.1.1
