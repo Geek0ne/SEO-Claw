@@ -1,0 +1,11 @@
+# 运行时产物：扫描报告、checkpoint、临时库
+reports/
+*.db
+*.sqlite3
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# 批量脚本生成的一次性站点清单
+tools/fp_sites_*.txt
+tools/run_fp_*.sh
