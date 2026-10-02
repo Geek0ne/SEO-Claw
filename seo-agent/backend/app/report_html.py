@@ -264,8 +264,17 @@ def _actions_html(report: SiteReport, max_urls: int) -> str:
     return "".join(out)
 
 
-def render_html(report: SiteReport, pages: list[Page], max_issue_urls: int = 3) -> str:
-    """生成单文件 HTML 报告。"""
+def render_html(
+    report: SiteReport,
+    pages: list[Page],
+    max_issue_urls: int = 3,
+    ai_summary: Optional[str] = None,
+) -> str:
+    """生成单文件 HTML 报告。
+
+    ``ai_summary`` 是可选的 AI 总结段落。**它缺失时报告必须依然完整**
+    ——AI 总结是锦上添花，删掉它不能影响任何一条结论。
+    """
     parts: list[str] = []
     A = parts.append
 
@@ -286,6 +295,16 @@ def render_html(report: SiteReport, pages: list[Page], max_issue_urls: int = 3) 
     A(f'<div class="sub">{" · ".join(bits)}</div>')
 
     by_sev = report.issues_by_severity
+
+    # ---- AI 总结（可选）----
+    # 位置在健康分**之前**：用户先看结论，再看数据。
+    if ai_summary:
+        A(
+            '<div class="card" style="border-left:3px solid #1a73e8">'
+            '<div class="meta" style="margin-bottom:6px">AI 总结</div>'
+            f'<div style="font-size:15.5px;line-height:1.75">{_e(ai_summary)}</div>'
+            "</div>"
+        )
 
     # ---- 健康分 / 未评估 ----
     if report.health_score is None:

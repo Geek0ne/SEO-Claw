@@ -167,11 +167,37 @@ def cmd_scan(args: argparse.Namespace) -> int:
         issues=issues,
     )
 
+    # AI 总结：可选增强，**任何失败都不能让报告消失**。
+    # 但「用户配了却没生成」必须说出来——静默失败会被当成
+    # 「总结就是这个结论」，那等于给了一个不完整的答案。
+    ai_summary = None
+    if args.llm_summary:
+        from .llm import LLMConfig, summarize
+
+        cfg = LLMConfig.from_env()
+        ai_summary = summarize(report, config=cfg)
+        if ai_summary:
+            print(f"→ 已生成 AI 总结（{cfg.model}）", file=sys.stderr)
+        else:
+            print(
+                "⚠️ 未生成 AI 总结"
+                + ("：缺少 API key（SEO_AGENT_LLM_API_KEY / OPENROUTER_API_KEY / OPENAI_API_KEY）"
+                   if not cfg.api_key else "：调用失败，详见上。")
+                + "。报告其余部分完整，不受影响。",
+                file=sys.stderr,
+            )
+
     if args.json:
         payload = report.model_dump(mode="json")
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     elif not args.html:
         md = render_markdown(report, pages)
+        if ai_summary:
+            md = md.replace(
+                "## 最该先做的 5 件事",
+                f"## AI 总结\n\n{ai_summary}\n\n## 最该先做的 5 件事",
+                1,
+            )
         if args.output:
             _write(Path(args.output), md)
         if not args.quiet:
@@ -182,7 +208,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
     if args.html:
         from .report_html import render_html
 
-        _write(Path(args.html), render_html(report, pages))
+        _write(Path(args.html), render_html(report, pages, ai_summary=ai_summary))
         if not args.quiet and not args.json:
             print(
                 "→ HTML 报告已写入 "
@@ -333,6 +359,8 @@ def main(argv: list[str] | None = None) -> int:
                       help="单页渲染超时秒数（默认 20，仅在开启 --render-js 时生效）")
     scan.add_argument("--quiet", "-q", action="store_true")
     scan.add_argument("--html", help="HTML 报告输出路径（单文件、无外链、可离线打开）")
+    scan.add_argument("--llm-summary", action="store_true",
+                      help="用 LLM 生成报告的 AI 总结段落（需配置 API key；失败不影响报告本身）")
     scan.add_argument("--proxy", action="append", default=[], metavar="URL",
                       help="代理池条目，可重复（http://user:pass@host:port）。"
                            "被 403/429 封禁时自动轮换到下一个")
