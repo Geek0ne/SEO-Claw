@@ -11,6 +11,7 @@ SEO Agent CLI —— M0 入口。
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import sys
 import time
@@ -26,6 +27,52 @@ from .models import Market, SiteReport
 from .report import render_markdown, summarize_console
 from .scoring import score
 from .util import same_site_scope
+
+
+def _persist_scan(
+    db_spec: str,
+    *,
+    url: str,
+    pages,
+    issues,
+    markets,
+    discovered: int,
+    elapsed: float,
+) -> dict:
+    """把扫描结果写进库，返回落库摘要。
+
+    ``db_spec`` 既可以是 SQLite 文件路径（``seo.db``），也可以是完整
+    ``DATABASE_URL``。判断方式：**含 ``://`` 就当 URL，否则当文件路径**。
+
+    ⚠️ 表结构一律走 **Alembic**，不在这里 create_all——
+    create_all 不做 schema 版本管理，将来加了列会造出
+    「库里缺列但代码以为是新的」这种静默故障。
+    """
+    import asyncio
+
+    from .db.session import get_engine, get_session_factory, session_scope
+    from .persist import get_or_create_site, persist_scan
+
+    db_url = db_spec if "://" in db_spec else f"sqlite+aiosqlite:///{db_spec}"
+
+    async def _run() -> dict:
+        engine = get_engine(db_url)
+        factory = get_session_factory(db_url)
+        async with factory() as session:
+            async with session_scope(session):
+                site_id = await get_or_create_site(
+                    session, url, markets=[m.value for m in markets]
+                )
+                return await persist_scan(
+                    session,
+                    site_id=site_id,
+                    pages=pages,
+                    issues=issues,
+                    url_count=discovered,
+                    elapsed=elapsed,
+                )
+
+    return asyncio.run(_run())
 
 
 def cmd_scan(args: argparse.Namespace) -> int:
@@ -172,6 +219,30 @@ def cmd_scan(args: argparse.Namespace) -> int:
         score_breakdown=breakdown,
         issues=issues,
     )
+
+    # 落库：可选。**必须放在 report 构造之后** —— 只有 issues/pages 都定稿了
+    # 才写，否则库里会留下一份与报告对不上的半成品。
+    #
+    # ⚠️ 落库失败绝不能让扫描失败：报告已经生成了，用户拿不到报告才是真损失。
+    # 失败只告警，退出码仍按报告可用性给。
+    if args.db:
+        try:
+            info = _persist_scan(
+                args.db,
+                url=args.url,
+                pages=pages,
+                issues=issues,
+                markets=markets,
+                discovered=discovered,
+                elapsed=time.monotonic() - started,
+            )
+            print(
+                f"→ 已落库：site #{info['site_id']} · job #{info['job_id']} · "
+                f"{info['pages_written']} 页 / {info['issues_written']} 条问题",
+                file=sys.stderr,
+            )
+        except Exception as exc:  # noqa: BLE001
+            print(f"⚠️ 落库失败（报告不受影响）：{type(exc).__name__}: {exc}", file=sys.stderr)
 
     # AI 总结：可选增强，**任何失败都不能让报告消失**。
     # 但「用户配了却没生成」必须说出来——静默失败会被当成
@@ -336,7 +407,12 @@ def cmd_rules(args: argparse.Namespace) -> int:
     return 0
 
 
-def main(argv: list[str] | None = None) -> int:
+def build_parser() -> argparse.ArgumentParser:
+    """构造参数解析器。
+
+    刻意独立成函数而不是内联在 ``main()``：``--db`` 这类参数要能被
+    单测直接断言（默认关闭、不给时不落库），不必跑整条命令。
+    """
     parser = argparse.ArgumentParser(prog="seo-agent", description="AI SEO Agent")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -374,12 +450,20 @@ def main(argv: list[str] | None = None) -> int:
     scan.add_argument("--incremental", action="store_true",
                       help="增量扫描：带 ETag/Last-Modified 条件请求，服务器回 304 的页面跳过规则重跑"
                            "（需要 --checkpoint 提供上一轮快照）")
+    scan.add_argument("--db", metavar="PATH_OR_URL",
+                      help="把本次扫描结果落库。给 SQLite 文件路径（如 seo.db）"
+                           "或直接给 DATABASE_URL（如 postgresql+asyncpg://...）；"
+                           "不给则只出报告、不写库")
     scan.set_defaults(func=cmd_scan)
 
     rules = sub.add_parser("rules", help="列出已加载的检查项")
     rules.set_defaults(func=cmd_rules)
 
-    args = parser.parse_args(argv)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
     return args.func(args)
 
 

@@ -127,11 +127,33 @@ def _enable_sqlite_foreign_keys(engine: AsyncEngine) -> None:
             cursor.close()
 
 
+def _dispose_engine_sync() -> None:
+    """在**同步**上下文里关掉连接池并清空单例。
+
+    ⚠️ 之前 ``get_engine()`` 直接调 async 的 ``dispose_engine()``，
+    协程对象从没被 await：旧连接池**根本没关**，只是把全局引用置空。
+    现象是运行时报
+    ``RuntimeWarning: coroutine 'dispose_engine' was never awaited``——
+    实测 2026-10-02 跑 ``scan --db`` 才暴露出来。
+
+    这里走 ``engine.sync_engine.dispose()``：SQLAlchemy 为此专门保留了
+    同步侧的 dispose，正是给「在同步代码里关 async 引擎」用的。
+    """
+    global _engine, _session_factory
+    if _engine is not None:
+        try:
+            _engine.sync_engine.dispose()
+        except Exception:  # noqa: BLE001 — 关不掉也不该阻断重建引擎
+            pass
+    _engine = None
+    _session_factory = None
+
+
 def get_engine(url: Optional[str] = None, *, echo: bool = False) -> AsyncEngine:
     """取全局单例引擎；传了 url 则重建（测试隔离用）。"""
     global _engine, _session_factory
     if url is not None:
-        dispose_engine()
+        _dispose_engine_sync()
         _engine = create_engine_from_url(url, echo=echo)
     elif _engine is None:
         _engine = create_engine_from_url(get_database_url(), echo=echo)
@@ -236,4 +258,5 @@ __all__ = [
     "create_all",
     "drop_all",
     "dispose_engine",
+    "_dispose_engine_sync",
 ]
