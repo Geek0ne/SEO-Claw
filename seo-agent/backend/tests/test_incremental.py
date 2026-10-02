@@ -13,6 +13,8 @@
 
 from __future__ import annotations
 
+import json
+
 from app.audit.engine import default_registry, run_audit
 from app.extract import extract_page
 from app.models import Market
@@ -170,3 +172,75 @@ def test_duplicate_title_detected_in_incremental_mode():
     ]
     issues, _ = run_audit(pages, "x.test", [Market.BASE], incremental=True)
     assert codes(issues, "title.duplicate"), "增量模式不能漏掉跨页重复标题"
+
+# --------------------------------------------------------------------------
+# 与 checkpoint 续跑的冲突（实测踩过）
+# --------------------------------------------------------------------------
+
+
+def test_incremental_sends_conditional_request_and_skips_rescan(tmp_path):
+    """回归：增量模式必须真的发条件请求，并因 304 跳过规则重跑。
+
+    ⚠️ 第一版回归测试挂在**测试自己**身上：用 https://x.test/ 真抓，
+    域名解析不了（stderr 里的 `被限流（HTTP 0）`），落盘 status_code=0，
+    prior 被判「上次没抓成功」→ 不发条件请求。代码是对的，测试是错的。
+    这里用 MockTransport，两轮的响应完全可控。
+
+    实测现象（真站点上先撞到的）：第二轮 5s→1s、覆盖率 2.6%→80%，
+    而 `条件请求 0 次` —— 那是 checkpoint 续跑的 visited 短路把 URL 全跳了，
+    增量扫描等于没上线。修了之后 iana.org 实跑 4 次条件请求 / 4 个 304。
+    """
+    import httpx
+
+    from app.crawler import CrawlConfig, Crawler
+
+    seen_headers: list[dict] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_headers.append(dict(request.headers))
+        if request.headers.get("if-modified-since"):
+            return httpx.Response(304)  # 内容没变
+        # ⚠️ content-type 必须给：_fetch 里
+        # `raw = resp.text if "text/" in ct or "html" in ct else ""`
+        # 拿不到就当非 HTML、压根不解析，title 会是 None。
+        # 我第一版 mock 漏了这个头，测试挂在「304 没复用上一轮解析结果」上——
+        # 看着像复用坏了，其实是第一轮就没解析。真实站点都会带这个头。
+        return httpx.Response(
+            200,
+            content=html("Incremental Page", lang="").encode(),
+            headers={
+                "content-type": "text/html; charset=utf-8",
+                "last-modified": "Wed, 01 Oct 2026 00:00:00 GMT",
+            },
+        )
+
+    cfg = CrawlConfig(max_pages=1, per_domain_rps=100.0, total_rps=100.0,
+                      respect_robots=False)
+
+    def run(incremental: bool):
+        c = Crawler(cfg, checkpoint_dir=tmp_path)
+        c.client = httpx.Client(transport=httpx.MockTransport(handler))
+        try:
+            c.incremental = incremental
+            pages = c.crawl("https://x.test/")
+            return c, pages
+        finally:
+            pass
+
+    c1, _ = run(False)
+    assert not seen_headers[0].get("if-modified-since"), "第一轮不该带条件请求头"
+    assert c1.not_modified_count == 0
+
+    c2, pages2 = run(True)
+    assert c2.conditional_sent == 1, (
+        "增量模式一个条件请求都没发 —— visited 短路把 URL 全跳了，"
+        f"增量扫描等于没上线（发过的请求头：{seen_headers}）"
+    )
+    assert seen_headers[-1].get("if-modified-since"), "第二轮必须带 If-Modified-Since"
+    assert c2.not_modified_count == 1, "服务器回 304 却没复用缓存"
+    assert pages2 and pages2[0].not_modified, "304 页必须标 not_modified"
+    assert pages2[0].title == "Incremental Page", "304 页应复用上一轮的解析结果"
+
+    # 规则层：全站零变化时页面级规则被跳过，但读 site_facts 的仍要跑
+    issues, _ = run_audit(pages2, "x.test", [Market.BASE, Market.GOOGLE], incremental=True)
+    assert not codes(issues, "lang.missing"), "全站未变时应跳过页面级规则"

@@ -296,12 +296,27 @@ class Crawler:
 
         frontier: list[tuple[str, int, Optional[str]]] = []
         pages: list[Page] = []
-        if ckpt:
+        # ⚠️ 增量模式下**故意不回填 visited**。
+        #
+        # 实测踩过：续跑把上次所有 URL 灌进 visited，主循环开头
+        # `if key in visited: continue` 就会把每个 URL 直接跳过——
+        # 页面一个都不重抓，条件请求自然发出 0 次，增量扫描等于没上线
+        # （快照里的 etag/last_modified 派不上用场）。
+        #
+        # 增量要的是「重新发一次请求、让服务器回 304」，
+        # 续跑要的是「别再发请求」。两者目的相反，所以不能共用 visited。
+        # 页面结果由 _fetch 的 304 分支从 prior 取回，不依赖这里预填。
+        if ckpt and not self.incremental:
             visited.update(ckpt["visited"])
             for item in ckpt["frontier"]:
                 if len(item) >= 2:
                     frontier.append((item[0], int(item[1]), item[2] if len(item) > 2 else None))
             for raw in ckpt["pages"]:
+                if self.incremental:
+                    # 增量模式不预填旧页面：本轮每个 URL 都会重抓一次，
+                    # 304 的由 _fetch 从 prior 取回。预填会造成报告里
+                    # 同时出现「上轮旧页」和「本轮新页」，同一 URL 算两次。
+                    continue
                 try:
                     pages.append(Page.model_validate(raw))
                 except Exception:  # noqa: BLE001 — 单条坏数据不该毁掉整份续跑
