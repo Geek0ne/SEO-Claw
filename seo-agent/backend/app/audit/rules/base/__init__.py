@@ -7,7 +7,7 @@ from typing import Iterable
 from urllib.parse import unquote, urlsplit
 
 from ....models import Issue, Market, Page, Scope, Severity
-from ....util import normalize_url, same_url_ignoring_path_case
+from ....util import contains_cjk, normalize_url, same_url_ignoring_path_case
 from ...engine import Rule, RuleContext, default_registry
 
 reg = default_registry()
@@ -924,6 +924,11 @@ class RobotsBlocksBots(Rule):
 # --------------------------------------------------------------------------
 
 
+# ⚠️ 技术债 #3：原先此处是独立抄写的一份 `_is_cjk`，只看汉字。
+# 现在统一走 util。语义按本函数原 docstring 的意图取**全 CJK**
+# （阈值是按「全角 vs 半角」切换的，假名/谚文同样是全角）。
+# ⚠️ 这是本次重构里**唯一**有行为变化的地方：纯假名/纯谚文的标题，
+# 此前按半角 60 字阈值算，现在按全角 30 字。2026-10-02 全量 490 passed。
 def _is_cjk(text: str) -> bool:
-    """判断是否包含中日韩字符——用于切换中英文长度阈值。"""
-    return any("一" <= ch <= "鿿" for ch in text)
+    """是否包含任一 CJK（全角）字符——用于切换中英文长度阈值。"""
+    return contains_cjk(text)

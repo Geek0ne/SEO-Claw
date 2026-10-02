@@ -24,6 +24,7 @@ from __future__ import annotations
 from typing import Iterable
 
 from ....models import Issue, Market, Page, Scope, Severity
+from ....util import is_cjk_char
 from ...engine import Rule, RuleContext, default_registry
 
 reg = default_registry()
@@ -369,18 +370,11 @@ class TitlePixelOverflow(Rule):
 # --------------------------------------------------------------------------
 
 
+# ⚠️ 技术债 #3：这原本是五份重复里**最完整**的一份（全 CJK），
+# 现在上提到 util.is_cjk_char，此处只留别名保持调用点不变。
 def _is_cjk(ch: str) -> bool:
-    """CJK 统一表意文字 / 假名 / 谚文 / 全角标点。"""
-    cp = ord(ch)
-    return (
-        0x4E00 <= cp <= 0x9FFF
-        or 0x3400 <= cp <= 0x4DBF
-        or 0x3040 <= cp <= 0x30FF  # 假名
-        or 0xAC00 <= cp <= 0xD7AF  # 谚文
-        or 0x3000 <= cp <= 0x303F  # CJK 标点
-        or 0xFF00 <= cp <= 0xFF60  # 全角形式
-        or 0xF900 <= cp <= 0xFAFF
-    )
+    """CJK 统一表意文字 / 假名 / 谚文 / CJK 标点 / 全角形式。"""
+    return is_cjk_char(ch)
 
 
 def _is_latin(ch: str) -> bool:

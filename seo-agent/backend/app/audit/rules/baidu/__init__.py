@@ -23,6 +23,7 @@ from typing import Any, Iterable, Optional
 from urllib.parse import urlparse
 
 from ....models import Issue, Market, Page, Scope, Severity
+from ....util import cjk_ratio, contains_han
 from ...engine import Rule, RuleContext, default_registry
 
 reg = default_registry()
@@ -33,14 +34,17 @@ BEIAN_HOSTS = ("beian.miit.gov.cn", "beian.gov.cn", "gaj.mps.gov.cn")
 _ICP_TEXT_RE = re.compile(r"[京沪粤津渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵青藏琼宁]\w{0,3}ICP备\d{4,}号?")
 
 
+# ⚠️ 技术债 #3：原先是独立抄写的一份 `_is_cjk`，与 base / google /
+# cnh_eco / i18n 四处重复且语义不一致。现在统一走 util。
+# 这里**保持只看汉字**（用 contains_han，不用 contains_cjk）：
+# 本包判的是「这是不是中文内容」，若收进谚文/假名，日语站与韩语站会
+# 进入百度规则——那是凭空多出来的误报，不是修复。
 def _is_cjk(text: str) -> bool:
-    return any("一" <= ch <= "鿿" for ch in text or "")
+    return contains_han(text)
 
 
 def _cjk_ratio(text: str) -> float:
-    if not text:
-        return 0.0
-    return sum(1 for ch in text if "一" <= ch <= "鿿") / len(text)
+    return cjk_ratio(text)
 
 
 def _is_japanese(page: Page, extra_text: str = "") -> bool:

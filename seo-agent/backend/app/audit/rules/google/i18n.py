@@ -20,14 +20,16 @@ from typing import Iterable
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 from ....models import Issue, Market, Page, Scope, Severity
-from ....util import normalize_url
+from ....util import contains_han, normalize_url
 from ...engine import Rule, RuleContext, default_registry
 
 reg = default_registry()
 
 
+# ⚠️ 技术债 #3：原先是第五份重复实现。这里判的是「URL 里有没有汉字」，
+# 保持 contains_han——URL 里的非 ASCII 汉字才是 hreflang 需要编码注意的部分。
 def _is_cjk_url(text: str) -> bool:
-    return any("一" <= ch <= "鿿" for ch in text)
+    return contains_han(text)
 
 
 # 站点自建的「首页别名」末段。真实样本：www.edx.org/ 的 hreflang en 指向

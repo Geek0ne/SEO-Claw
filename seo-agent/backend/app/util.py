@@ -120,3 +120,67 @@ def same_site_scope(url: str | None, base_domain: str) -> bool:
     if not host or not base:
         return False
     return _strip_www(host) == _strip_www(base)
+
+
+# --------------------------------------------------------------------------
+# CJK 字符判定（技术债 #3：原先有 4 份重复实现，语义还不一致）
+#
+# ⚠️ 刻意拆成**两个**函数而不是一个大开关。
+# 重复的根因不是「写得不好」，而是**调用点要的本来就不是同一件事**：
+#
+#   contains_han()  —— 只要汉字。用于「这是不是中文内容」
+#                       （百度规则包、微信生态规则包）。
+#                       ⚠️ 这里**不能**收谚文：谚文命中会让韩语站
+#                       进入中文生态规则，产生一批新误报。
+#
+#   contains_cjk()  —— 全 CJK 书写体系（汉字/扩展A/假名/谚文/
+#                       CJK 标点/全角）。用于「这标题是不是全角排版」
+#                       （base 的 30 vs 60 阈值）、语言构成比、URL 判定。
+#
+# 早先 base/baidu/cnh_eco/google 各自抄了一份 `_is_cjk`，
+# 其中只有 google 那份是全范围 —— 于是同一份「CJK 判定」在库里
+# 有四种行为。合并时若统一成宽版，上面三个语义窄的调用点会被改变行为；
+# 统一成窄版，全角标题又会被按半角阈值判。
+# --------------------------------------------------------------------------
+
+#: 汉字（含扩展 A 与兼容表意文字）
+_HAN_RANGES = ((0x4E00, 0x9FFF), (0x3400, 0x4DBF), (0xF900, 0xFAFF))
+
+#: 全 CJK 书写体系 = 汉字 + 假名 + 谚文 + CJK 标点 + 全角形式
+_CJK_RANGES = _HAN_RANGES + (
+    (0x3040, 0x30FF),  # 平假名 / 片假名
+    (0xAC00, 0xD7AF),  # 谚文音节
+    (0x3000, 0x303F),  # CJK 标点（含全角句读）
+    (0xFF00, 0xFF60),  # 全角形式
+)
+
+
+def _in_ranges(ch: str, ranges: tuple[tuple[int, int], ...]) -> bool:
+    cp = ord(ch)
+    return any(lo <= cp <= hi for lo, hi in ranges)
+
+
+def contains_han(text: str) -> bool:
+    """是否含**汉字**。用于判定「是不是中文内容」。
+
+    刻意不收假名与谚文：日文/韩文内容不该被中文生态规则接管
+    （baidu 包另有 ``_is_japanese`` 守卫，但根上就不该进来）。
+    """
+    return any(_in_ranges(ch, _HAN_RANGES) for ch in (text or ""))
+
+
+def cjk_ratio(text: str) -> float:
+    """汉字占比（0~1）。空串返回 0.0。"""
+    if not text:
+        return 0.0
+    return sum(1 for ch in text if _in_ranges(ch, _HAN_RANGES)) / len(text)
+
+
+def contains_cjk(text: str) -> bool:
+    """是否含任一 CJK 字符（含假名、谚文、全角）。用于排版/语言构成判定。"""
+    return any(_in_ranges(ch, _CJK_RANGES) for ch in (text or ""))
+
+
+def is_cjk_char(ch: str) -> bool:
+    """单字符版（google 包的字符构成比按字符逐个判断，用这个）。"""
+    return bool(ch) and _in_ranges(ch, _CJK_RANGES)

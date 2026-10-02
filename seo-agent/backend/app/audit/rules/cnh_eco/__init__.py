@@ -21,6 +21,7 @@ from typing import Any, Iterable
 from urllib.parse import urlparse
 
 from ....models import Issue, Market, Page, Scope, Severity
+from ....util import cjk_ratio, contains_han
 from ...engine import Rule, RuleContext, default_registry
 
 reg = default_registry()
@@ -29,8 +30,10 @@ reg = default_registry()
 WECHAT_HOSTS = ("mp.weixin.qq.com", "weixin.qq.com", "channels.weixin.qq.com")
 
 
+# ⚠️ 技术债 #3：同上，此处只看汉字（contains_han）。
+# 收进谚文会让韩语站被判成「中文站」，进而触发微信生态规则。
 def _is_cjk(text: str) -> bool:
-    return any("一" <= ch <= "鿿" for ch in text or "")
+    return contains_han(text)
 
 
 def _chinese_page_ratio(pages: list[Page]) -> tuple[float, int]:
@@ -42,7 +45,7 @@ def _chinese_page_ratio(pages: list[Page]) -> tuple[float, int]:
         total += 1
         text = p.text or p.title or ""
         if (p.lang or "").lower().startswith("zh") or (
-            text and sum(1 for ch in text if "一" <= ch <= "鿿") / len(text) > 0.2
+            text and cjk_ratio(text) > 0.2
         ):
             scored += 1
     if not total:
