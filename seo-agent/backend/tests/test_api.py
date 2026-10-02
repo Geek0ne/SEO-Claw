@@ -166,6 +166,32 @@ def test_failed_scan_marks_job_failed(client, monkeypatch):
     assert jobs and jobs[0]["status"] == "failed", f"job 应标记 failed，实际 {jobs}"
 
 
+def test_scan_incremental_requires_checkpoint(client):
+    """⚠️ 开了增量却不给 checkpoint_dir → 400，不是静默退化成全量扫描。
+
+    没有基准就没有 prior，服务器收不到任何条件请求，这次「增量扫描」
+    一个字节都省不下。用户从响应里看不出来——他以为自己开了增量。
+    CLI 那边有 stderr 告警，API 这边原来一句提示都没有，
+    于是「看起来成功了」比「明确失败」更糟。
+    """
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    r = client.post(
+        f"/api/v1/sites/{site['id']}/scan", json={"incremental": True}
+    )
+    assert r.status_code == 400, r.text
+    assert "checkpoint_dir" in r.json()["detail"]
+
+
+def test_scan_incremental_with_checkpoint_ok(client, tmp_path):
+    """给了 checkpoint_dir 就放行 —— 上面的 400 不能误伤正常用法。"""
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    r = client.post(
+        f"/api/v1/sites/{site['id']}/scan",
+        json={"incremental": True, "checkpoint_dir": str(tmp_path)},
+    )
+    assert r.status_code == 201, r.text
+
+
 # --------------------------------------------------------------------------
 # 报告查询
 # --------------------------------------------------------------------------

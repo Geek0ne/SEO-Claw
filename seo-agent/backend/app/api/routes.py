@@ -90,6 +90,15 @@ async def scan(site_id: int, body: ScanRequest, uow=__import__("fastapi").Depend
     site = await _require_site(uow, site_id)
     url = body.url or f"https://{site.domain}"
     markets = body.markets or list(site.markets or ["base"])
+    # ⚠️ 开了增量却没给 checkpoint_dir → prior 为空 → 一个条件请求都不发，
+    # 静默退化成全量扫描。CLI 那边有告警，API 这边原本没有：
+    # 用户从接口看不出这次「增量」其实是全量，会误以为已经省钱。
+    if body.incremental and not body.checkpoint_dir:
+        raise HTTPException(
+            status_code=400,
+            detail="incremental=true 需要同时提供 checkpoint_dir（上一轮快照所在目录）。"
+            "没有基准时不会发出任何条件请求，只会退化成一次全量扫描。",
+        )
     summary = await run_scan(
         uow.session,
         site_id=site_id,
