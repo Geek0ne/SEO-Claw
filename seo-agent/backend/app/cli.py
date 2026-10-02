@@ -170,20 +170,39 @@ def cmd_scan(args: argparse.Namespace) -> int:
     if args.json:
         payload = report.model_dump(mode="json")
         print(json.dumps(payload, ensure_ascii=False, indent=2))
-    else:
+    elif not args.html:
         md = render_markdown(report, pages)
         if args.output:
-            out_path = Path(args.output)
-            # 输出目录可能不存在（第一次就踩过：扫描跑完 60 页却因目录不存在丢结果）
-            out_path.parent.mkdir(parents=True, exist_ok=True)
-            out_path.write_text(md, encoding="utf-8")
-            print(f"→ 报告已写入 {args.output}", file=sys.stderr)
+            _write(Path(args.output), md)
         if not args.quiet:
             print(md)
+
+    # HTML 独立于 markdown 输出：--html 可以和 -o 同时给，
+    # 也可以单独给（那样就不往 stdout 灌 Markdown）。
+    if args.html:
+        from .report_html import render_html
+
+        _write(Path(args.html), render_html(report, pages))
+        if not args.quiet and not args.json:
+            print(
+                "→ HTML 报告已写入 "
+                f"{args.html}（单文件、无外链，可直接发给客户）",
+                file=sys.stderr,
+            )
 
     if not args.json and not args.quiet:
         print(summarize_console(report))
     return 0
+
+
+def _write(out_path: Path, content: str) -> None:
+    """写报告文件。
+
+    ⚠️ 输出目录可能不存在——第一次就踩过：扫描跑完 60 页，
+    结果因为目录不存在直接丢。所以每次写之前都建。
+    """
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(content, encoding="utf-8")
 
 
 def _collect_site_facts(crawler: Crawler) -> dict:
@@ -313,6 +332,7 @@ def main(argv: list[str] | None = None) -> int:
     scan.add_argument("--render-timeout", type=float, default=20.0,
                       help="单页渲染超时秒数（默认 20，仅在开启 --render-js 时生效）")
     scan.add_argument("--quiet", "-q", action="store_true")
+    scan.add_argument("--html", help="HTML 报告输出路径（单文件、无外链、可离线打开）")
     scan.add_argument("--proxy", action="append", default=[], metavar="URL",
                       help="代理池条目，可重复（http://user:pass@host:port）。"
                            "被 403/429 封禁时自动轮换到下一个")
