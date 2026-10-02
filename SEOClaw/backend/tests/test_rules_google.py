@@ -16,9 +16,9 @@ from __future__ import annotations
 
 import pytest
 
-from app.audit.engine import run_audit
-from app.extract import extract_page
-from app.models import Market, Severity
+from seoclaw.audit.engine import run_audit
+from seoclaw.extract import extract_page
+from seoclaw.models import Market, Severity
 
 
 # --------------------------------------------------------------------------
@@ -207,7 +207,7 @@ def test_lang_mismatch_silent_on_mixed_content_page():
     page = extract_page("https://demo.test/m", html(lang="zh-CN", body=mixed))
 
     # 先证明这个样本确实「中英均衡」，否则本测试的「不触发」毫无意义
-    from app.audit.rules.google import _script_counts
+    from seoclaw.audit.rules.google import _script_counts
     cjk, latin = _script_counts(page.text)
     assert cjk > 0 and latin > 0
     assert latin < cjk * 2, f"样本应中英均衡，实际 cjk={cjk} latin={latin}"

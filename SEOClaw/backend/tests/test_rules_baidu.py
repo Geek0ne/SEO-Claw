@@ -10,9 +10,9 @@
 
 from __future__ import annotations
 
-from app.audit.engine import run_audit
-from app.extract import extract_page
-from app.models import LinkKind, LinkRef, Market, Severity
+from seoclaw.audit.engine import run_audit
+from seoclaw.extract import extract_page
+from seoclaw.models import LinkKind, LinkRef, Market, Severity
 
 BAIDU = [Market.BASE, Market.BAIDU]
 CNH = [Market.BASE, Market.CNH_ECO]

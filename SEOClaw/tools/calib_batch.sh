@@ -47,7 +47,7 @@ while read -r host; do
     # 第一版把 cwd 设成仓库根，29 站全 FAIL，报 ModuleNotFoundError: No
     # module named 'app'——而且脚本照常打印「FAIL（超时/被封/非 HTML）」，
     # 跟站点挂了长得一模一样。又一次「不报错、输出好看」的坑。
-    ( cd "$ROOT/backend" && PYTHONPATH="$ROOT/.deps:." timeout 300 python3 -m app.cli scan \
+    ( cd "$ROOT/backend" && PYTHONPATH="$ROOT/.deps:." timeout 300 python3 -m seoclaw.cli scan \
         "https://$host/" --max-pages "$PAGES" --rps 1.5 \
         --no-verify-canonical --json ) > "$out.tmp" 2>>/tmp/calib_err.log
 

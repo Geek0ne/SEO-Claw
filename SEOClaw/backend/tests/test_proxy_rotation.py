@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import httpx
 
-from app.crawler import CrawlConfig, Crawler
+from seoclaw.crawler import CrawlConfig, Crawler
 
 
 def _cfg(**kw) -> CrawlConfig:

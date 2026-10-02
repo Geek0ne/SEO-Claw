@@ -15,9 +15,9 @@ from __future__ import annotations
 
 import pytest
 
-from app.crawler import CrawlConfig, Crawler
-from app.models import Page
-from app.render import RenderConfig, RenderUnavailable, Renderer
+from seoclaw.crawler import CrawlConfig, Crawler
+from seoclaw.models import Page
+from seoclaw.render import RenderConfig, RenderUnavailable, Renderer
 
 
 # --------------------------------------------------------------------------

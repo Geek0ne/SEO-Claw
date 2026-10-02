@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.audit.rules.base import (
+from seoclaw.audit.rules.base import (
     _BENIGN_VARIANT_REASONS,
     _benign_canonical_variant,
 )

@@ -11,7 +11,7 @@
 为什么判定逻辑要独立写
 --------------------
 拿规则自己的代码去「验证」规则等于自己给自己判卷：规则错了，复现出来的也是错的。
-这里**完全不 import app.audit 下的任何代码**，只用原始正则读 live HTML。
+这里**完全不 import seoclaw.audit 下的任何代码**，只用原始正则读 live HTML。
 
 三档判定，不只有对/错：
 - true_positive  属实，且确实是用户该管的问题
@@ -340,7 +340,7 @@ class Verdict:
     note: str = ""
 
 
-# 每条规则的独立判定。刻意不复用 app.audit 的任何代码。
+# 每条规则的独立判定。刻意不复用 seoclaw.audit 的任何代码。
 def verify(code: str, url: str, h: str | None, ev: dict[str, Any]) -> Verdict:
     if h is None:
         return Verdict("unknown", "取不到页面")

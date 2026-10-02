@@ -10,9 +10,9 @@ Page 没有 hreflang 字段、extract 不采集，写出来就是永不触发的
 
 from __future__ import annotations
 
-from app.audit.engine import run_audit
-from app.extract import extract_page
-from app.models import Market, Severity
+from seoclaw.audit.engine import run_audit
+from seoclaw.extract import extract_page
+from seoclaw.models import Market, Severity
 
 
 def html(head_extra: str = "", *, lang: str = "en", body: str = "<p>content</p>") -> str:

@@ -17,10 +17,10 @@ from __future__ import annotations
 
 import pytest
 
-from app.audit.engine import run_audit
-from app.extract import extract_page
-from app.models import Market, Severity
-from app.util import same_url_ignoring_path_case
+from seoclaw.audit.engine import run_audit
+from seoclaw.extract import extract_page
+from seoclaw.models import Market, Severity
+from seoclaw.util import same_url_ignoring_path_case
 
 
 # --------------------------------------------------------------------------
@@ -756,7 +756,7 @@ def test_robots_allowing_everything_is_fine():
 
 def test_rule_error_does_not_abort_scan():
     """单条规则抛异常时，其它规则仍要继续跑完。"""
-    from app.audit import engine as eng
+    from seoclaw.audit import engine as eng
 
     class Boom(eng.Rule):
         code = "test.boom"
@@ -778,8 +778,8 @@ def test_rule_error_does_not_abort_scan():
 
 
 def test_issue_dedup_keeps_most_severe():
-    from app.audit.engine import dedupe
-    from app.models import Issue
+    from seoclaw.audit.engine import dedupe
+    from seoclaw.models import Issue
 
     issues = [
         Issue(code="x.y", severity=Severity.LOW, url="u"),

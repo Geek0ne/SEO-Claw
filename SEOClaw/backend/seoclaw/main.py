@@ -2,7 +2,7 @@
 
 启动：
     PYTHONPATH=.deps:backend DATABASE_URL=sqlite+aiosqlite:///./seo_agent.db \
-      python3 -m uvicorn app.main:app --port 8000
+      python3 -m uvicorn seoclaw.main:app --port 8000
 """
 
 from __future__ import annotations

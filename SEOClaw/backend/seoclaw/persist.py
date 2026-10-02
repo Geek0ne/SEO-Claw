@@ -168,8 +168,8 @@ async def persist_keywords(
 ) -> dict[str, Any]:
     """把关键词扩展 + 聚类结果写进 ``keywords`` 表。
 
-    :param candidates: :func:`app.keywords.expand.expand` 的候选列表。
-    :param clusters: :func:`app.keywords.cluster.cluster` 的簇列表。
+    :param candidates: :func:`seoclaw.keywords.expand.expand` 的候选列表。
+    :param clusters: :func:`seoclaw.keywords.cluster.cluster` 的簇列表。
     :param title_tokens: 全站 title/h1 的 token 集合，用来判定
         ``is_tracked``（我方是否已有页面在竞争这个词）。
 

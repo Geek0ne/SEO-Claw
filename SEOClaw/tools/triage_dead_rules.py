@@ -122,7 +122,7 @@ def main() -> int:
     print()
     print("结论：注册表列着但结构性不可能触发的规则，应该")
     print("      （a）在注册时挡掉，或（b）显式标注「数据层不支持」。")
-    print("      否则用户看 app.cli rules 会以为这些在查——与 og:image 同类。")
+    print("      否则用户看 seoclaw.cli rules 会以为这些在查——与 og:image 同类。")
     return 0
 
 

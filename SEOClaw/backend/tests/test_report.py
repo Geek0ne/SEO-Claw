@@ -8,8 +8,8 @@ verdict 字段排在证据第 7 位，被「只显示前 3 个字段」的逻辑
 
 from __future__ import annotations
 
-from app.models import Issue, Page, Severity, SiteReport
-from app.report import (
+from seoclaw.models import Issue, Page, Severity, SiteReport
+from seoclaw.report import (
     _ordered_evidence,
     _render_evidence,
     _render_issue_line,
@@ -97,7 +97,7 @@ def test_site_scope_issue_shows_sample_urls():
 
 
 def _issues_same_code(n: int, code: str = "title.too_short", sev=None):
-    from app.models import Issue
+    from seoclaw.models import Issue
 
     return [
         Issue(
@@ -112,7 +112,7 @@ def _issues_same_code(n: int, code: str = "title.too_short", sev=None):
 
 def test_same_code_issues_collapse_to_one_group():
     """10 条同 code 问题必须合并成 1 组，而不是刷屏 10 行。"""
-    from app.report import aggregate_by_root_cause
+    from seoclaw.report import aggregate_by_root_cause
 
     grouped = aggregate_by_root_cause(_issues_same_code(10))
     groups = grouped[Severity.MEDIUM]
@@ -123,7 +123,7 @@ def test_same_code_issues_collapse_to_one_group():
 
 def test_aggregation_preserves_total_affected_count():
     """合并不能丢信息：总影响数必须守恒。"""
-    from app.report import aggregate_by_root_cause
+    from seoclaw.report import aggregate_by_root_cause
 
     issues = _issues_same_code(6) + _issues_same_code(3, code="schema.missing")
     grouped = aggregate_by_root_cause(issues)
@@ -132,8 +132,8 @@ def test_aggregation_preserves_total_affected_count():
 
 
 def test_aggregation_groups_by_severity_separately():
-    from app.models import Issue
-    from app.report import aggregate_by_root_cause
+    from seoclaw.models import Issue
+    from seoclaw.report import aggregate_by_root_cause
 
     issues = [
         Issue(code="x.y", severity=Severity.HIGH, url="https://x.test/a"),
@@ -145,7 +145,7 @@ def test_aggregation_groups_by_severity_separately():
 
 
 def test_aggregated_line_shows_affected_count_not_single_url():
-    from app.report import aggregate_by_root_cause
+    from seoclaw.report import aggregate_by_root_cause
 
     grouped = aggregate_by_root_cause(_issues_same_code(10))
     agg = grouped[Severity.MEDIUM][0]
@@ -156,7 +156,7 @@ def test_aggregated_line_shows_affected_count_not_single_url():
 def test_root_cause_hint_surfaced_for_title_problem():
     """title.duplicate / title.too_short 指向同一根因时要提示，
     否则用户会去「把 title 加长」这种表面动作上打转。"""
-    from app.report import aggregate_by_root_cause
+    from seoclaw.report import aggregate_by_root_cause
 
     grouped = aggregate_by_root_cause(_issues_same_code(10))
     agg = grouped[Severity.MEDIUM][0]
@@ -166,8 +166,8 @@ def test_root_cause_hint_surfaced_for_title_problem():
 
 
 def test_no_root_cause_hint_for_unrelated_code():
-    from app.models import Issue
-    from app.report import aggregate_by_root_cause
+    from seoclaw.models import Issue
+    from seoclaw.report import aggregate_by_root_cause
 
     issues = [Issue(code="soft404", severity=Severity.MEDIUM, url=f"https://x.test/{i}") for i in range(3)]
     grouped = aggregate_by_root_cause(issues)
@@ -178,7 +178,7 @@ def test_no_root_cause_hint_for_unrelated_code():
 
 def test_aggregation_is_stable_across_input_order():
     """同 code 问题的输出顺序不能因为扫描顺序不同而抖动。"""
-    from app.report import aggregate_by_root_cause
+    from seoclaw.report import aggregate_by_root_cause
 
     a = _issues_same_code(5)
     b = list(reversed(a))
@@ -260,7 +260,7 @@ def test_unaudited_truncates_long_lists():
 
 def test_unaudited_wired_into_markdown_report():
     """必须真的出现在报告里，而不是只有一个没人调用的函数。"""
-    from app.models import SiteReport
+    from seoclaw.models import SiteReport
     rep = SiteReport(domain="x.test", pages_crawled=1, pages_discovered=1,
                      issues=[])
     md = render_markdown(rep, [Page(url="https://x.test/a", error="timeout",
@@ -274,7 +274,7 @@ def test_unaudited_not_counted_as_issue():
     混进去会让人以为「这是站点的一个问题」，而它其实是「本次抓取的一个
     缺口」——处置方式完全不同（前者改站，后者改抓取配置/网络）。
     """
-    from app.models import SiteReport
+    from seoclaw.models import SiteReport
     rep = SiteReport(domain="x.test", pages_crawled=0, pages_discovered=1,
                      issues=[])
     md = render_markdown(rep, [Page(url="https://x.test/a", error="timeout",

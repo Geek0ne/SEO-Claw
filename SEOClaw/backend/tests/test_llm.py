@@ -16,9 +16,9 @@ import json
 import httpx
 import pytest
 
-from app.audit.engine import run_audit
-from app.extract import extract_page
-from app.llm import (
+from seoclaw.audit.engine import run_audit
+from seoclaw.extract import extract_page
+from seoclaw.llm import (
     LLMConfig,
     LLMError,
     LLMNotConfigured,
@@ -27,8 +27,8 @@ from app.llm import (
     chat,
     summarize,
 )
-from app.models import Market, SiteReport
-from app.scoring import score
+from seoclaw.models import Market, SiteReport
+from seoclaw.scoring import score
 
 
 def _report() -> tuple[SiteReport, list]:
@@ -276,7 +276,7 @@ def test_prompt_forbids_inventing_facts():
 
     模型很爱说「服务器响应偏慢」「收录量不足」——这些本次全都没检查，
     说出来就是纯幻觉，而用户会当成体检结论。"""
-    from app.llm import SYSTEM_PROMPT
+    from seoclaw.llm import SYSTEM_PROMPT
 
     assert "禁止" in SYSTEM_PROMPT
     for kw in ("服务器", "收录", "排名", "外链"):

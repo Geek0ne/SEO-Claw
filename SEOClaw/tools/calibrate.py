@@ -36,8 +36,8 @@ _ROOT = os.path.dirname(_HERE)
 # 否则 ModuleNotFoundError: No module named 'pydantic'。
 sys.path.insert(0, os.path.join(_ROOT, ".deps"))
 sys.path.insert(0, os.path.join(_ROOT, "backend"))
-from app.models import Scope, Severity  # noqa: E402
-from app.scoring import SEVERITY_WEIGHT, score  # noqa: E402
+from seoclaw.models import Scope, Severity  # noqa: E402
+from seoclaw.scoring import SEVERITY_WEIGHT, score  # noqa: E402
 
 
 def host_of(u: str | None) -> str:

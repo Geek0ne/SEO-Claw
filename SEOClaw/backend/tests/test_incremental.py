@@ -15,9 +15,9 @@ from __future__ import annotations
 
 import json
 
-from app.audit.engine import default_registry, run_audit
-from app.extract import extract_page
-from app.models import Market
+from seoclaw.audit.engine import default_registry, run_audit
+from seoclaw.extract import extract_page
+from seoclaw.models import Market
 
 
 def html(title: str = "A Reasonable Page Title", *, lang: str = "en", extra: str = "") -> str:
@@ -192,7 +192,7 @@ def test_incremental_sends_conditional_request_and_skips_rescan(tmp_path):
     """
     import httpx
 
-    from app.crawler import CrawlConfig, Crawler
+    from seoclaw.crawler import CrawlConfig, Crawler
 
     seen_headers: list[dict] = []
 

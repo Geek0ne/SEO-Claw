@@ -11,9 +11,9 @@ from __future__ import annotations
 
 import pytest
 
-from app.audit.engine import run_audit
-from app.extract import extract_page
-from app.models import Market, Severity
+from seoclaw.audit.engine import run_audit
+from seoclaw.extract import extract_page
+from seoclaw.models import Market, Severity
 
 
 # --------------------------------------------------------------------------

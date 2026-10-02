@@ -20,11 +20,11 @@ import threading
 faulthandler.dump_traceback_later(35, repeat=True, exit=False)
 
 sys.argv = [
-    "app.cli", "scan", "https://www.energy.gov/",
+    "seoclaw.cli", "scan", "https://www.energy.gov/",
     "--max-pages", "5", "--rps", "1.5", "--no-verify-canonical", "--json",
 ]
 
-from app.cli import main  # noqa: E402
+from seoclaw.cli import main  # noqa: E402
 
 threading.Thread(target=lambda: None, daemon=True).start()
 main()

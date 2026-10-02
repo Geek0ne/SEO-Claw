@@ -31,7 +31,7 @@ while read -r host; do
     out="$OUT/${host//\//_}.json"
     if [ -s "$out" ]; then ok=$((ok+1)); continue; fi
     echo "=== $host"
-    ( cd "$ROOT/backend" && PYTHONPATH="$ROOT/.deps:." timeout 120 python3 -m app.cli scan \
+    ( cd "$ROOT/backend" && PYTHONPATH="$ROOT/.deps:." timeout 120 python3 -m seoclaw.cli scan \
         "https://$host/" --max-pages 5 --rps 1.5 \
         --no-verify-canonical --json ) > "$out.tmp" 2>>/tmp/fp_v2_err.log
     if python3 -c "

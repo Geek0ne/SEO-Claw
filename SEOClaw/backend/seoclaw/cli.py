@@ -3,9 +3,9 @@
 SEOClaw CLI —— M0 入口。
 
 用法：
-    python -m app.cli scan https://example.com --max-pages 200
-    python -m app.cli scan example.com --max-pages 50 --market google --json
-    python -m app.cli rules          # 列出已加载的检查项
+    python -m seoclaw.cli scan https://example.com --max-pages 200
+    python -m seoclaw.cli scan example.com --max-pages 50 --market google --json
+    python -m seoclaw.cli rules          # 列出已加载的检查项
 """
 
 from __future__ import annotations

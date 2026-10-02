@@ -20,10 +20,10 @@ import pytest
 
 sys.path[:0] = [str(Path(__file__).resolve().parents[2]), str(Path(__file__).resolve().parents[1])]
 
-from app.audit.engine import RuleContext  # noqa: E402
-from app.audit.rules.base import LinkNoAnchor  # noqa: E402
-from app.extract import _is_decorative  # noqa: E402
-from app.models import LinkKind, LinkRef, Page  # noqa: E402
+from seoclaw.audit.engine import RuleContext  # noqa: E402
+from seoclaw.audit.rules.base import LinkNoAnchor  # noqa: E402
+from seoclaw.extract import _is_decorative  # noqa: E402
+from seoclaw.models import LinkKind, LinkRef, Page  # noqa: E402
 
 RULE = LinkNoAnchor()
 CTX = RuleContext(domain="ocw.mit.edu")
@@ -33,7 +33,7 @@ def _mk(html: str, base_url: str = "https://ocw.mit.edu/") -> Page:
     """把一段 HTML 片段喂给真实提取层，不手工构造 LinkRef。"""
     import lxml.html
 
-    from app.extract import _extract_links
+    from seoclaw.extract import _extract_links
 
     doc = lxml.html.fromstring(f"<html><body>{html}</body></html>")
     page = Page(url=base_url, final_url=base_url, status_code=200, domain="ocw.mit.edu")

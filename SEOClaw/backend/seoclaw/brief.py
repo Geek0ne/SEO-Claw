@@ -21,7 +21,7 @@
 
 ## 不做的事
 
-- 不编搜索量（``volume`` 缺失就是缺失，见 :mod:`app.keywords.expand`）
+- 不编搜索量（``volume`` 缺失就是缺失，见 :mod:`seoclaw.keywords.expand`）
 - 不猜「还差几篇」（缺 content gap 的定量依据就说缺）
 - 差异化机会只从**能看到的证据**推：Top10 缺什么维度、snippet 都在讲什么
 """

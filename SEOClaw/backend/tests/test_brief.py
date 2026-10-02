@@ -10,7 +10,7 @@ Brief 是给用户**照着做**的，所以这里的断言主线是「不许把�
 
 from __future__ import annotations
 
-from app.brief import (
+from seoclaw.brief import (
     PageSignal,
     SerpEntry,
     analyze_serp_titles,
@@ -19,7 +19,7 @@ from app.brief import (
     kw_in_page,
     own_length_baseline,
 )
-from app.db.models import Intent, Market
+from seoclaw.db.models import Intent, Market
 
 
 def _serp():

@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "seoclaw"
+version = "0.1.0"
+description = "只说实话的 SEO 体检工具：抓站、审计、出可照着改的报告"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "SEOClaw" }]
+keywords = ["seo", "audit", "crawler", "lighthouse", "网站体检"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP :: Site Management :: Link Checking",
+]
+
+dependencies = [
+    "httpx>=0.27",
+    "trafilatura>=2.0",
+    "lxml>=5.0",
+    "pydantic>=2.0",
+    "SQLAlchemy>=2.0",
+    "alembic>=1.13",
+    "aiosqlite>=0.20",
+    "jieba>=0.42",
+]
+
+[project.optional-dependencies]
+# API 层与持久化不是 CLI 必需的：只扫站的话这几十 MB 一个都不用装。
+api = ["fastapi>=0.110", "uvicorn>=0.29"]
+postgres = ["asyncpg>=0.29"]
+dev = ["pytest>=8.0"]
+
+[project.urls]
+Homepage = "https://github.com/Geek0ne/SEOClaw"
+Source = "https://github.com/Geek0ne/SEOClaw"
+
+[project.scripts]
+seoclaw = "seoclaw.cli:main"
+
+[tool.setuptools]
+# ⚠️ 包根是 backend/：源码目录叫 backend，里面才是真正的包 seoclaw。
+# 不写这一行，setuptools 会去仓库根找 seoclaw/，直接构建失败。
+package-dir = { "" = "backend" }
+
+[tool.setuptools.packages.find]
+where = ["backend"]
+include = ["seoclaw*"]
+
+[tool.pytest.ini_options]
+# 测试全用相对导入跑，包根必须先进 path，否则收集阶段就 ImportError。
+pythonpath = [".", "../.deps"]
+testpaths = ["tests"]

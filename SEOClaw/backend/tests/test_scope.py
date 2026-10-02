@@ -13,9 +13,9 @@
 
 from __future__ import annotations
 
-from app.models import Issue, Severity
-from app.scoring import score
-from app.util import same_site_scope
+from seoclaw.models import Issue, Severity
+from seoclaw.scoring import score
+from seoclaw.util import same_site_scope
 
 
 def _issue(url: str, code: str = "title.missing", sev: Severity = Severity.HIGH) -> Issue:

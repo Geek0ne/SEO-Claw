@@ -29,8 +29,8 @@ from __future__ import annotations
 
 import pytest
 
-from app.audit.engine import RuleContext
-from app.models import Market, Page
+from seoclaw.audit.engine import RuleContext
+from seoclaw.models import Market, Page
 
 
 def _ctx(**kw) -> RuleContext:
@@ -149,12 +149,12 @@ def test_missing_attribute_fails_safe():
 
 def test_orphan_rule_fires_after_complete_batched_scan():
     """完整跑完后，有真孤岛就必须报出来。"""
-    from app.audit.engine import run_audit
+    from seoclaw.audit.engine import run_audit
     from tests.test_rules import html  # 复用现成样本构造
 
     pages = [
         Page.model_validate(
-            __import__("app.extract", fromlist=["extract_page"]).extract_page(
+            __import__("seoclaw.extract", fromlist=["extract_page"]).extract_page(
                 f"https://demo.test/p{i}", html(title=f"标题{i}")
             ).model_dump()
         )
@@ -173,9 +173,9 @@ def test_orphan_rule_fires_after_complete_batched_scan():
 
 def test_orphan_rule_still_silent_on_truncated_scan():
     """反向用例：截断了就闭嘴。防止这个改动变成「永远开火」。"""
-    from app.audit.engine import run_audit
+    from seoclaw.audit.engine import run_audit
     from tests.test_rules import html
-    from app.extract import extract_page
+    from seoclaw.extract import extract_page
 
     pages = [extract_page(f"https://demo.test/p{i}", html(title=f"标题{i}"))
              for i in range(40)]

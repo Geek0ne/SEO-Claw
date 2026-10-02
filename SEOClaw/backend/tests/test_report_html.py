@@ -10,11 +10,11 @@ from __future__ import annotations
 
 import re
 
-from app.audit.engine import run_audit
-from app.extract import extract_page
-from app.models import Market, SiteReport, Severity
-from app.report_html import render_html
-from app.scoring import score
+from seoclaw.audit.engine import run_audit
+from seoclaw.extract import extract_page
+from seoclaw.models import Market, SiteReport, Severity
+from seoclaw.report_html import render_html
+from seoclaw.scoring import score
 
 
 def _page(url: str, *, good: bool = False) -> str:
@@ -230,7 +230,7 @@ def test_escapes_html_injected_via_title():
     于是「转义了」和「没渲染」两种情况都能通过断言 —— 假阳性。
     现在直接构造一条 title 带恶意标签的 Issue，验证的是渲染层本身。
     """
-    from app.models import Issue, Scope
+    from seoclaw.models import Issue, Scope
 
     evil = Issue(
         code="title.too_long",

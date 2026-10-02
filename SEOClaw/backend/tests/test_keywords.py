@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.keywords import (
+from seoclaw.keywords import (
     cluster,
     cosine,
     expand,

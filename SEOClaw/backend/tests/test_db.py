@@ -23,13 +23,13 @@ from typing import Any, Callable, Coroutine
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.db import models as m
-from app.db.repository import (
+from seoclaw.db import models as m
+from seoclaw.db.repository import (
     UnitOfWork,
     compute_fingerprint,
     normalize_root_cause,
 )
-from app.db.session import (
+from seoclaw.db.session import (
     create_engine_from_url,
     session_scope,
     to_async_url,

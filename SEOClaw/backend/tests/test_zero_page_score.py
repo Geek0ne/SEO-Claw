@@ -22,9 +22,9 @@
 而实际上一页都没抓到。lobste.rs 的 robots.txt 是
 `User-agent: * / Disallow: /`（全站禁抓），守规矩的结果就是 0 页。
 """
-from app.models import Issue, Severity
-from app.report import render_markdown, summarize_console
-from app.scoring import score
+from seoclaw.models import Issue, Severity
+from seoclaw.report import render_markdown, summarize_console
+from seoclaw.scoring import score
 
 
 def _mk(code: str, url: str = "https://example.com/") -> Issue:

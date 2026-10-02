@@ -17,14 +17,14 @@ from __future__ import annotations
 
 import pytest
 
-from app.audit.engine import RuleContext, RuleRegistry, _import_rules, default_registry
-from app.audit.rules.geo import (
+from seoclaw.audit.engine import RuleContext, RuleRegistry, _import_rules, default_registry
+from seoclaw.audit.rules.geo import (
     FaqStructureMismatch,
     FlatStructure,
     NoOutboundReferences,
     NoQuestionHeadings,
 )
-from app.models import Page
+from seoclaw.models import Page
 
 GEO_CODES = {
     "geo.no_question_headings",

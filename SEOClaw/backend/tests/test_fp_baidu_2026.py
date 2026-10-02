@@ -31,9 +31,9 @@ baidu 包 2026 回源核对的 7 条真误报回归测试。
 
 from __future__ import annotations
 
-from app.audit.engine import run_audit
-from app.audit.rules.baidu import _title_px
-from app.models import Market, Page
+from seoclaw.audit.engine import run_audit
+from seoclaw.audit.rules.baidu import _title_px
+from seoclaw.models import Market, Page
 
 BAIDU = [Market.BASE, Market.BAIDU]
 

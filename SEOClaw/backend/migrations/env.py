@@ -8,7 +8,7 @@
    直接挂在建连接上。绝不能在迁移里另配一个连接串（会漂移，且明文密码
    会进版本库）。
 
-2. **metadata 从 `app.db.models` 导入，不重复定义。**
+2. **metadata 从 `seoclaw.db.models` 导入，不重复定义。**
    迁移文件是"历史快照"（生成后不再随模型改动），但 env.py 不是：
    它必须永远指向当前模型，否则 autogenerate 出来的差异会骗人。
 """
@@ -23,15 +23,15 @@ from pathlib import Path
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-# 让 `import app.db` 在任意 CWD 下都能工作（pytest 可能从仓库根启动）。
+# 让 `import seoclaw.db` 在任意 CWD 下都能工作（pytest 可能从仓库根启动）。
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = BACKEND_ROOT.parent
 for candidate in (BACKEND_ROOT, REPO_ROOT / ".deps"):
     if str(candidate) not in sys.path:
         sys.path.insert(0, str(candidate))
 
-from app.db.models import Base  # noqa: E402
-from app.db.session import to_sync_url  # noqa: E402
+from seoclaw.db.models import Base  # noqa: E402
+from seoclaw.db.session import to_sync_url  # noqa: E402
 
 config = context.config
 

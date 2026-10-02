@@ -18,11 +18,11 @@ self_url），不改写成比真实情况更温和的形式。
 
 from __future__ import annotations
 
-from app.audit.engine import run_audit
-from app.extract import extract_page
-from app.models import Market, Page, Severity
-from app.audit.rules.google.i18n import HreflangMismatchesLang, HreflangSelfMissing
-from app.audit.rules.google import TitlePixelOverflow
+from seoclaw.audit.engine import run_audit
+from seoclaw.extract import extract_page
+from seoclaw.models import Market, Page, Severity
+from seoclaw.audit.rules.google.i18n import HreflangMismatchesLang, HreflangSelfMissing
+from seoclaw.audit.rules.google import TitlePixelOverflow
 
 
 def page(**kw) -> Page:
@@ -286,7 +286,7 @@ def test_pixel_overflow_still_fires_just_outside_band():
 
 def test_pixel_overflow_error_band_scales_with_uncertainty():
     """全是拉丁字母的标题误差带最大；汉字定宽所以误差带为 0。"""
-    from app.audit.rules.google import _estimate_title_px
+    from seoclaw.audit.rules.google import _estimate_title_px
 
     assert _estimate_title_px("标" * 10)["variable_share"] == 0.0
     assert _estimate_title_px("abc def")["variable_share"] == 1.0
@@ -305,7 +305,7 @@ def test_pixel_overflow_evidence_reports_uncertainty_band():
 
 def test_estimator_counts_emoji_as_full_width():
     """估算器缺陷修复：emoji 按 1em 而不是标点宽度计入。"""
-    from app.audit.rules.google import _estimate_title_px
+    from seoclaw.audit.rules.google import _estimate_title_px
 
     plain = _estimate_title_px("ab")
     with_emoji = _estimate_title_px("a\U0001F399b")
@@ -315,7 +315,7 @@ def test_estimator_counts_emoji_as_full_width():
 
 def test_estimator_counts_cjk_curly_quotes_as_full_width():
     """估算器缺陷修复：中文标题里的 “” 是全角；英文标题里的 ' 仍是窄的。"""
-    from app.audit.rules.google import _estimate_title_px
+    from seoclaw.audit.rules.google import _estimate_title_px
 
     cjk_q = _estimate_title_px("标“字”")
     assert round(cjk_q["estimated_px"] - _estimate_title_px("标字")["estimated_px"], 1) == 32.0

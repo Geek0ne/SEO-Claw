@@ -24,9 +24,9 @@ from typing import Any, Callable, Coroutine
 
 import pytest
 
-from app.db import models as m
-from app.db.session import create_engine_from_url
-from app.models import Issue, Market, Page, Severity
+from seoclaw.db import models as m
+from seoclaw.db.session import create_engine_from_url
+from seoclaw.models import Issue, Market, Page, Severity
 
 
 @pytest.fixture
@@ -109,7 +109,7 @@ def _issues() -> list[Issue]:
 
 
 def test_persist_scan_writes_pages_and_issues(acall, session):
-    from app.persist import get_or_create_site, persist_scan
+    from seoclaw.persist import get_or_create_site, persist_scan
 
     async def _run():
         site_id = await get_or_create_site(
@@ -141,8 +141,8 @@ async def _run_count(session, model) -> int:
 def test_job_reaches_succeeded(acall, session):
     """job 必须落到终态。卡在 running 的 job 是最恶心的状态：
     报告早就出了，库里却显示「还在跑」，查问题的人会一直等。"""
-    from app.db.models import JobStatus
-    from app.persist import get_or_create_site, persist_scan
+    from seoclaw.db.models import JobStatus
+    from seoclaw.persist import get_or_create_site, persist_scan
 
     async def _run():
         site_id = await get_or_create_site(session, "https://demo.test/a")
@@ -167,7 +167,7 @@ def test_site_reused_across_scans(acall, session):
     而 rank_history 会按不同 site_id 分裂成互不相干的几条历史 ——
     「排名监控」这个功能直接失效。
     """
-    from app.persist import get_or_create_site
+    from seoclaw.persist import get_or_create_site
 
     async def _run():
         a = await get_or_create_site(session, "https://demo.test/a")
@@ -182,7 +182,7 @@ def test_site_reused_across_scans(acall, session):
 
 def test_page_level_issue_gets_page_id(acall, session):
     """页面级问题必须能回溯到具体页面，否则「按页聚合」做不了。"""
-    from app.persist import get_or_create_site, persist_scan
+    from seoclaw.persist import get_or_create_site, persist_scan
 
     async def _run():
         site_id = await get_or_create_site(session, "https://demo.test/a")
@@ -218,7 +218,7 @@ def test_get_engine_does_not_leak_await_warning(acall):
     """
     import warnings
 
-    from app.db import session as sess_mod
+    from seoclaw.db import session as sess_mod
 
     async def _run():
         eng1 = sess_mod.get_engine("sqlite+aiosqlite:///:memory:")
@@ -246,7 +246,7 @@ def test_db_flag_exists_and_defaults_to_off():
     悄悄给用户建一个 db 文件是侵入行为：报告能出、文件却多出来一个，
     而用户从没要求过。
     """
-    from app.cli import build_parser
+    from seoclaw.cli import build_parser
 
     parser = build_parser()
     args = parser.parse_args(["scan", "https://demo.test/"])

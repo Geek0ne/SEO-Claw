@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 import tempfile
 
-# ⚠️ 必须在 import app.* 之前设：`get_session_factory()` 会缓存引擎，
+# ⚠️ 必须在 import seoclaw.* 之前设：`get_session_factory()` 会缓存引擎，
 # 环境变量设晚了会连到别的库上去，表现为「测试之间互相污染」。
 _TMP_DB = os.path.join(tempfile.mkdtemp(), "api_test.db")
 os.environ["SEO_CLAW_DATABASE_URL"] = f"sqlite+aiosqlite:///{_TMP_DB}"
@@ -19,11 +19,11 @@ os.environ["SEO_CLAW_DATABASE_URL"] = f"sqlite+aiosqlite:///{_TMP_DB}"
 import pytest
 from fastapi.testclient import TestClient
 
-from app.api import scan_service
-from app.audit.engine import run_audit
-from app.extract import extract_page
-from app.main import app
-from app.models import Market, Page, SiteReport
+from seoclaw.api import scan_service
+from seoclaw.audit.engine import run_audit
+from seoclaw.extract import extract_page
+from seoclaw.main import app
+from seoclaw.models import Market, Page, SiteReport
 
 
 def _site_name() -> str:

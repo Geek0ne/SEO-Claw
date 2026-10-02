@@ -33,8 +33,8 @@ from __future__ import annotations
 
 import pytest
 
-from app.extract import _looks_client_render_failure, extract_page
-from app.models import Page
+from seoclaw.extract import _looks_client_render_failure, extract_page
+from seoclaw.models import Page
 
 # pypi 现场抓到的真实报错壳（正文 209 词）
 PYPI_SHELL = """<!DOCTYPE html>

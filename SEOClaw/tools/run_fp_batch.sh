@@ -25,7 +25,7 @@ while read -r host; do
     [ -s "$OUT/$name.json" ] && { ok=$((ok+1)); continue; }
 
     echo "=== $host"
-    PYTHONPATH=../.deps:. timeout 90 python3 -m app.cli scan \
+    PYTHONPATH=../.deps:. timeout 90 python3 -m seoclaw.cli scan \
         "https://$host/" --max-pages 5 --rps 1.5 \
         --no-verify-canonical --json > "$OUT/$name.json.tmp" 2>/dev/null
 

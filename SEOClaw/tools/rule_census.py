@@ -4,7 +4,7 @@
 ## 为什么查这个
 
 `og:image.broken` 被发现是条死规则：`og_image_status` 全库零写入，
-规则永远拿不到数据 → 永不触发。但 `app.cli rules` 照样列出它，
+规则永远拿不到数据 → 永不触发。但 `seoclaw.cli rules` 照样列出它，
 测试手塞值照样绿。**注册 ≠ 活着。**
 
 我那次是写完 tried_paths 后才意识到「死字段是靠肉眼 grep 偶然发现的」，
@@ -47,10 +47,10 @@ def registered_codes() -> dict[str, set[str]]:
     """
     sys.path.insert(0, str(BACKEND.parent / ".deps"))
     sys.path.insert(0, str(BACKEND))
-    # ⚠️ registry 不在 app.audit 命名空间里，实际是 app.audit.engine.default_registry
-    # （第一次写 from app.audit import registry 直接 ImportError——别照 __init__.py 猜。）
-    from app.audit.engine import default_registry  # noqa: PLC0415
-    from app.models import Market  # noqa: PLC0415
+    # ⚠️ registry 不在 seoclaw.audit 命名空间里，实际是 seoclaw.audit.engine.default_registry
+    # （第一次写 from seoclaw.audit import registry 直接 ImportError——别照 __init__.py 猜。）
+    from seoclaw.audit.engine import default_registry  # noqa: PLC0415
+    from seoclaw.models import Market  # noqa: PLC0415
 
     registry = default_registry()
 
