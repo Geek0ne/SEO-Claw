@@ -43,6 +43,22 @@ import httpx
 # 默认走 OpenRouter：它同时挂着闭源与免费模型，
 # 拿来做「验证链路是否通」够用，不必绑死任何一家。
 DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
+# ⚠️ 这里要写**裸模型 ID**，不能写配置文件里的完整路径。
+# OpenRouter 的 API 用 `stealth/space-bunny-alpha`，
+# 写成 `openrouter/stealth/space-bunny-alpha` 会得到
+#   HTTP 400 "openrouter/stealth/space-bunny-alpha is not a valid model ID"
+# 这个 400 看着像「key 没权限」，极易误判成凭据问题；
+# 实际凭据是好的（400 而非 401）。查真实 ID：
+#   GET https://openrouter.ai/api/v1/models
+#
+# ⚠️ 默认值**不是** space-bunny-alpha：实测它在本项目的真实 prompt
+# （约 900~1300 字符的事实 JSON）上 13 次全失败，全是
+#   502 provider_unavailable / "Provider returned an empty response"，
+# 而 40 字的短 prompt 6/6 成功。
+# 已排除的解释：缩进/换行（紧凑 JSON 同样失败）、
+# max_tokens（900/250/100 三档全 0/3）、长度本身（同长度的散文能过）。
+# 结论是这个模型当前扛不住本工具的输入规模，**不能用它做默认值**。
+# 想换模型设 SEO_AGENT_LLM_MODEL 即可。
 DEFAULT_MODEL = "openrouter/free"
 
 # 凭据按这个顺序找。都不设就抛 LLMNotConfigured。
