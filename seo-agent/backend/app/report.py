@@ -105,6 +105,55 @@ def aggregate_by_root_cause(issues: list[Issue]) -> dict[Severity, list[IssueGro
     return out
 
 
+def _render_unaudited(pages: list[Page], max_urls: int = 3) -> list[str]:
+    """列出**没参与规则审计**的页面。
+
+    ⚠️ 这些页面被审计引擎 ``if not page.is_html or page.error: continue``
+    整页跳过 —— 标题、描述、H1 全都没查过。而它们又**不会**出现在
+    问题清单里（因为根本没跑规则）。所以以前用户看到的是一份
+    「全站都没问题」的报告，而实际上有若干页压根没审。
+
+    这跟 0 页场景是同一类错：**「没审成」不能长成「没问题」的样��**。
+
+    刻意不混进问题清单：混进去会让人以为「这是站点的一个问题」，
+    而它其实是「本次抓取的一个缺口」，处置方式完全不同
+    （前者改站，后者改抓取配置/网络）。
+    """
+    unaudited = [p for p in pages if not p.is_html or p.error]
+    if not unaudited:
+        return []
+
+    def _why(p: Page) -> str:
+        if p.error:
+            if p.error.startswith("http_error"):
+                return p.error.split(":", 1)[1].strip()[:80] or "请求失败"
+            return {
+                "timeout": "请求超时",
+                "too_large": "页面超过体积上限，未下载",
+            }.get(p.error, p.error)
+        ct = (p.content_type or "").split(";")[0].strip() or "未知类型"
+        return f"非 HTML 内容（{ct}），无 SEO 元数据可审"
+
+    lines = [
+        f"## 没审到的页面（{len(unaudited)} 个）",
+        "",
+        f"> 这些页面**没有参与任何规则检查**。上面的问题清单不覆盖它们 —— "
+        f"「没审到」不等于「没问题」。",
+        "",
+    ]
+    for p in unaudited[:max_urls]:
+        lines.append(f"- `{p.url}` — {_why(p)}")
+    if len(unaudited) > max_urls:
+        lines.append(f"- …另有 {len(unaudited) - max_urls} 个")
+    lines.append("")
+    lines.append(
+        "常见成因：目标页体积超限、非 HTML 内容、请求超时/失败。"
+        "若是站点真实存在的 HTML 页面，请检查抓取是否被限流。"
+    )
+    lines.append("")
+    return lines
+
+
 def render_markdown(
     report: SiteReport,
     pages: list[Page],
@@ -206,6 +255,9 @@ def render_markdown(
         else:
             lines.append("本次扫描没有发现问题。保持现有做法，继续关注内容质量与外链。")
         lines.append("")
+
+    # ---- 没审成的页面（单独成节，不混进问题清单）----
+    lines.extend(_render_unaudited(pages, max_issue_urls))
 
     # ---- 全部问题（按根因聚合）----
     lines.append("## 全部问题明细")

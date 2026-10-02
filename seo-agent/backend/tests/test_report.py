@@ -8,8 +8,14 @@ verdict 字段排在证据第 7 位，被「只显示前 3 个字段」的逻辑
 
 from __future__ import annotations
 
-from app.models import Issue, Severity
-from app.report import _ordered_evidence, _render_evidence, _render_issue_line
+from app.models import Issue, Page, Severity, SiteReport
+from app.report import (
+    _ordered_evidence,
+    _render_evidence,
+    _render_issue_line,
+    _render_unaudited,
+    render_markdown,
+)
 
 _EVIDENCE = {
     "word_count": 28,
@@ -186,3 +192,92 @@ def test_long_evidence_value_is_truncated_not_dropped():
     out = "\n".join(_render_issue_line(issue, 3))
     assert "..." in out
     assert "text_preview" in out
+
+
+# --------------------------------------------------------------------------
+# 没审到的页面（技术债 #4）
+#
+# ⚠️ 这组测试守的是「没审成」不能长成「没问题」的样��。
+# 引擎 `if not page.is_html or page.error: continue` 会整页跳过全部规则，
+# 而这些页又不会进问题清单（根本没跑规则）——所以以前用户拿到的是一份
+# 「全站都没问题」的报告，实际有若干页压根没被审过。
+# --------------------------------------------------------------------------
+
+
+def test_unaudited_section_absent_when_all_pages_audited():
+    """全部页面都审过时，不该多出一个空章节。"""
+    pages = [Page(url=f"https://x.test/{i}") for i in range(3)]
+    assert _render_unaudited(pages) == []
+
+
+def test_unaudited_section_lists_failed_pages():
+    pages = [
+        Page(url="https://x.test/ok"),
+        Page(url="https://x.test/slow", error="timeout", is_html=False),
+    ]
+    out = "\n".join(_render_unaudited(pages))
+    assert "没审到" in out
+    assert "https://x.test/slow" in out
+    assert "请求超时" in out
+
+
+def test_unaudited_says_missing_is_not_clean():
+    """⚠️ 必须明说「没审到 ≠ 没问题」——这是整段存在的理由。"""
+    pages = [Page(url="https://x.test/a", error="timeout", is_html=False)]
+    out = "\n".join(_render_unaudited(pages))
+    assert "不等于" in out and "没问题" in out
+
+
+def test_unaudited_explains_each_error_kind():
+    pages = [
+        Page(url="https://x.test/1", error="timeout", is_html=False),
+        Page(url="https://x.test/2", error="too_large", is_html=False),
+        Page(url="https://x.test/3", error="http_error: ReadTimeout: x", is_html=False),
+    ]
+    out = "\n".join(_render_unaudited(pages))
+    assert "请求超时" in out
+    assert "体积上限" in out
+    assert "ReadTimeout" in out
+
+
+def test_unaudited_handles_non_html_content():
+    """非 HTML（PDF/图片）同样没审 —— 不是抓取失败，是没有 SEO 元数据可审。"""
+    pages = [Page(url="https://x.test/a.pdf", is_html=False,
+                  content_type="application/pdf")]
+    out = "\n".join(_render_unaudited(pages))
+    assert "非 HTML" in out
+
+
+def test_unaudited_truncates_long_lists():
+    pages = [Page(url=f"https://x.test/{i}", error="timeout", is_html=False)
+             for i in range(10)]
+    out = "\n".join(_render_unaudited(pages, max_urls=3))
+    assert "10 个" in out
+    assert "另有 7 个" in out
+    # 只列 3 条明细
+    assert out.count("- `https://") == 3
+
+
+def test_unaudited_wired_into_markdown_report():
+    """必须真的出现在报告里，而不是只有一个没人调用的函数。"""
+    from app.models import SiteReport
+    rep = SiteReport(domain="x.test", pages_crawled=1, pages_discovered=1,
+                     issues=[])
+    md = render_markdown(rep, [Page(url="https://x.test/a", error="timeout",
+                                    is_html=False)])
+    assert "没审到" in md
+
+
+def test_unaudited_not_counted_as_issue():
+    """⚠️ 没审到的页不该混进问题清单。
+
+    混进去会让人以为「这是站点的一个问题」，而它其实是「本次抓取的一个
+    缺口」——处置方式完全不同（前者改站，后者改抓取配置/网络）。
+    """
+    from app.models import SiteReport
+    rep = SiteReport(domain="x.test", pages_crawled=0, pages_discovered=1,
+                     issues=[])
+    md = render_markdown(rep, [Page(url="https://x.test/a", error="timeout",
+                                    is_html=False)])
+    assert rep.issues == []
+    assert "## 全部问题明细" in md
