@@ -57,6 +57,12 @@ class CrawlConfig:
     backoff_base_seconds: float = 2.0
     backoff_max_seconds: float = 60.0
     max_html_bytes: int = 5 * 1024 * 1024  # 单页最大 5MB，防止超大文件
+    # 代理池（httpx 代理 URL，形如 http://user:pass@host:port）。
+    #
+    # ⚠️ httpx 0.28 已移除 `proxies=` 字典参数，只剩单数 `proxy=`，
+    # 所以轮换代理**必须重建 Client**，不能原地改（见 _build_client）。
+    # 空元组 = 不走代理，行为与之前逐字一致。
+    proxies: tuple[str, ...] = ()
     include_www_variants: bool = False
 
     # --- JS 渲染 ---
@@ -226,14 +232,58 @@ class Crawler:
         self.robots = RobotsCache(self.config.user_agent, self.config.timeout)
         self.sitemap_result = None  # 由 crawl() 填充
         self.aborted_reason: Optional[str] = None  # 熔断中止时的原因
-        self.client = httpx.Client(
+        # 当前代理下标；-1 = 直连（不挂代理）。轮换时自增取模。
+        self._proxy_index = -1
+        # 每个 URL 因换代理重试过几次，防止活锁（见 crawl() 的 blocked 分支）
+        self._proxy_retries: dict[str, int] = {}
+        self.proxy_rotations = 0  # 实际换过几次，供 CLI 如实汇报
+        self.client = self._build_client()
+
+    def _build_client(self) -> httpx.Client:
+        """按当前代理下标建 Client。
+
+        ⚠️ 代理只能在建Client 时传入：httpx 0.28 的 ``proxies=`` 字典
+        已被移除，只剩单数 ``proxy=``。所以「换 IP」在实现上等于
+        **关掉旧 Client、重建一个新的**——这也是为什么必须把
+        close() 收在这里，否则旧连接池泄漏。
+        """
+        proxy = self._current_proxy()
+        return httpx.Client(
             timeout=self.config.timeout,
             follow_redirects=True,
             headers={
                 "User-Agent": self.config.user_agent,
                 "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
             },
+            proxy=proxy,
         )
+
+    def _current_proxy(self) -> Optional[str]:
+        if not self.config.proxies or self._proxy_index < 0:
+            return None
+        return self.config.proxies[self._proxy_index % len(self.config.proxies)]
+
+    @property
+    def current_proxy(self) -> Optional[str]:
+        return self._current_proxy()
+
+    def rotate_proxy(self) -> bool:
+        """换到下一个代理并重建 Client。返回是否真的换了。
+
+        没有代理池时返回 False（调用方据此决定要不要重试）。
+        轮换后**不重置限速档位**：对方按 IP 封禁，换 IP 不等于可以提速，
+        继续按当前档位走才是对的。
+        """
+        if not self.config.proxies:
+            return False
+        old = self.current_proxy
+        self._proxy_index = self._proxy_index + 1 if self._proxy_index >= 0 else 0
+        if self.current_proxy == old:
+            return False  # 只有一个代理，等于没换
+        self.proxy_rotations += 1
+        self.client.close()
+        self.client = self._build_client()
+        return True
 
     def close(self) -> None:
         self.client.close()
@@ -353,23 +403,53 @@ class Crawler:
             self.limiter.wait(domain)
             page = self._fetch(url, depth=depth, discovered_from=parent)
 
-            if page is not None and self.config.adaptive_backoff:
-                # 被限流的表现：429 / 403，或直接连接被拒
-                blocked = page.status_code in (403, 429) or (
-                    page.error and page.error.startswith("http_error")
+            # 被限流的表现：429 / 403，或直接连接被拒
+            blocked = page is not None and (
+                page.status_code in (403, 429)
+                or bool(page.error and page.error.startswith("http_error"))
+            )
+
+            if blocked and self.config.adaptive_backoff:
+                self.limiter.slow_down()
+                retry_after = 0.0
+                if page.status_code == 429:
+                    retry_after = 10.0  # 保守起见，不猜对方的 Retry-After
+                if retry_after:
+                    self.limiter.penalize(retry_after)
+                print(
+                    f"⚡ 被限流（HTTP {page.status_code}），单域速率已降至 "
+                    f"{self.limiter.per_domain_rps:.2f} req/s",
+                    file=sys.stderr,
                 )
-                if blocked:
-                    self.limiter.slow_down()
-                    retry_after = 0.0
-                    if page.status_code == 429:
-                        retry_after = 10.0  # 保守起见，不猜对方的 Retry-After
-                    if retry_after:
-                        self.limiter.penalize(retry_after)
-                    print(
-                        f"⚡ 被限流（HTTP {page.status_code}），单域速率已降至 "
-                        f"{self.limiter.per_domain_rps:.2f} req/s",
-                        file=sys.stderr,
-                    )
+
+            if blocked:
+                # 换 IP 重试本页。
+                #
+                # ⚠️ 这一段刻意**不**放在 adaptive_backoff 分支里：
+                # 降速和换 IP 是两件独立的事。把轮换塞进降速分支，等于
+                # 「用户关了自适应降速 → 代理池也一起失效」——而关降速
+                # 的人通常正是因为目标站限流得厉害，正需要换 IP。
+                #
+                # ⚠️ 必须把 URL 从 visited 里摘掉再放回 frontier：
+                # `visited.add(key)` 发生在 _fetch **之前**，不摘的话这个
+                # URL 在主循环里已被标记「抓过」，下一次直接被跳过——
+                # 代理池配得再大也白配，这个页面永远拿不到 200。
+                #
+                # 重试次数按 URL 计（_proxy_retries），上限 = 代理数。
+                # 不设上限就是活锁：每个代理都被封一次，无限循环，
+                # 扫描永远跑不完——这比直接中止更糟。
+                if self.rotate_proxy():
+                    retries = self._proxy_retries.get(key, 0)
+                    if retries < len(self.config.proxies):
+                        self._proxy_retries[key] = retries + 1
+                        visited.discard(key)
+                        frontier.append((url, depth, parent))
+                        print(
+                            f"↻ 已切换代理重试（{retries + 1}/{len(self.config.proxies)}）："
+                            f"{url[:70]}",
+                            file=sys.stderr,
+                        )
+                        continue  # 这次的失败页不入报告，等重试结果
 
             if page is None:
                 continue

@@ -40,6 +40,18 @@ def cmd_scan(args: argparse.Namespace) -> int:
     )
     markets = [Market(m) for m in args.market]
 
+    proxies = list(args.proxy or [])
+    if args.proxy_file:
+        try:
+            for ln in Path(args.proxy_file).read_text(encoding="utf-8").splitlines():
+                t = ln.strip()
+                if t and not t.startswith("#"):
+                    proxies.append(t)
+        except OSError as exc:
+            print(f"❌ 读取代理文件失败：{exc}", file=sys.stderr)
+            return 2
+    cfg.proxies = tuple(proxies)
+
     print(f"→ 扫描 {args.url}", file=sys.stderr)
     print(f"  上限 {cfg.max_pages} 页 · 单域 {cfg.per_domain_rps} req/s · 市场 {[m.value for m in markets]}", file=sys.stderr)
 
@@ -65,6 +77,13 @@ def cmd_scan(args: argparse.Namespace) -> int:
         discovered = getattr(crawler, "discovered_count", len(pages))
         site_facts = _collect_site_facts(crawler)
 
+    rot = getattr(crawler, "proxy_rotations", 0)
+    if proxies:
+        print(
+            f"→ 代理池 {len(proxies)} 个 · 实际轮换 {rot} 次"
+            + (f"（当前出口 {crawler.current_proxy}）" if rot else "（未触发轮换）"),
+            file=sys.stderr,
+        )
     print(f"→ 抓取完成：{len(pages)} 页，耗时 {time.monotonic() - started:.0f}s", file=sys.stderr)
 
     # 抓取覆盖情况：孤岛页/重复页这类全局结论必须知道覆盖率才敢下结论
@@ -294,6 +313,10 @@ def main(argv: list[str] | None = None) -> int:
     scan.add_argument("--render-timeout", type=float, default=20.0,
                       help="单页渲染超时秒数（默认 20，仅在开启 --render-js 时生效）")
     scan.add_argument("--quiet", "-q", action="store_true")
+    scan.add_argument("--proxy", action="append", default=[], metavar="URL",
+                      help="代理池条目，可重复（http://user:pass@host:port）。"
+                           "被 403/429 封禁时自动轮换到下一个")
+    scan.add_argument("--proxy-file", help="代理列表文件，每行一个（# 开头为注释）")
     scan.add_argument("--incremental", action="store_true",
                       help="增量扫描：带 ETag/Last-Modified 条件请求，服务器回 304 的页面跳过规则重跑"
                            "（需要 --checkpoint 提供上一轮快照）")
