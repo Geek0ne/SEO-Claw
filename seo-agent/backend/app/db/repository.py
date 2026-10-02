@@ -727,7 +727,11 @@ class KeywordRepository:
         """词库导入幂等：已存在的（站点,市场,词）更新指标，不新增行。"""
         out: list[m.Keyword] = []
         for payload in terms:
-            market = payload.get("market", "google")
+            # ⚠️ 必须 pop，不能只用 get：`create(..., market=market, **payload)`
+            # 里 payload 若仍带 market 键，就是「multiple values for keyword
+            # 'market'」。我第一版在调用方绕开这个键，其实是把 bug 藏起来——
+            # 正确做法是修根因，否则下一个传 market 的调用方照样炸。
+            market = payload.pop("market", "google")
             existing = await self.get_by_term(
                 site_id, payload["term"], market=market
             )

@@ -32,7 +32,7 @@ from urllib.parse import urlsplit
 
 from .db import repository as repo
 from .db.models import JobStatus
-from .db.repository import SiteRepository
+from .db.repository import KeywordRepository, SiteRepository
 from .models import Issue, Page
 
 
@@ -157,10 +157,66 @@ async def persist_scan(
     }
 
 
+async def persist_keywords(
+    session,
+    *,
+    site_id: int,
+    candidates: "list",
+    clusters: "list",
+    market: str = "base",
+    title_tokens: Optional[set[str]] = None,
+) -> dict[str, Any]:
+    """把关键词扩展 + 聚类结果写进 ``keywords`` 表。
+
+    :param candidates: :func:`app.keywords.expand.expand` 的候选列表。
+    :param clusters: :func:`app.keywords.cluster.cluster` 的簇列表。
+    :param title_tokens: 全站 title/h1 的 token 集合，用来判定
+        ``is_tracked``（我方是否已有页面在竞争这个词）。
+
+    ⚠️ **volume 一律留 None。** 没有付费数据源就是不知道；
+    填 0 等于宣称「这个词搜索量真的是 0」，会让用户放弃一个其实有量的词。
+
+    ⚠️ ``is_tracked`` 的判据是「**有没有页面标题/H1 命中这个词的任一 token**」，
+    刻意保守：词出现在正文里不算——正文提一次的页面并没有在跟这个词竞争。
+    误判成 True 会把一个内容缺口伪装成「已在做」，用户就永远不会去补它。
+    """
+    term_to_cluster: dict[str, int] = {}
+    for c in clusters:
+        for t in c.terms:
+            term_to_cluster[t] = c.cluster_id
+
+    from .keywords.expand import tokenize as _tokenize
+
+    rows = []
+    for cand in candidates:
+        tracked = False
+        if title_tokens:
+            tracked = bool(set(_tokenize(cand.term)) & title_tokens)
+        rows.append(
+            {
+                "term": cand.term,
+                # market 由 bulk_upsert 自己 pop 消费（它内部有 create 的 market 形参），
+                # 这里**必须**逐行带上：那是它决定查重与建行用哪个市场的唯一依据。
+                "market": market,
+                "cluster_id": term_to_cluster.get(cand.term),
+                "is_tracked": tracked,
+                # volume/difficulty/cpc 一律不填，见上方说明
+            }
+        )
+
+    saved = await KeywordRepository(session).bulk_upsert(site_id, rows)
+    return {
+        "keywords_written": len(saved),
+        "clusters_written": len(clusters),
+        "tracked": sum(1 for r in rows if r["is_tracked"]),
+    }
+
+
 __all__ = [
     "domain_of",
     "page_to_row",
     "issue_to_row",
     "get_or_create_site",
     "persist_scan",
+    "persist_keywords",
 ]

@@ -29,6 +29,67 @@ from .scoring import score
 from .util import same_site_scope
 
 
+async def _persist_keywords_for_session(
+    session, *, site_id: int, pages, market: str
+) -> dict:
+    """在已有 session 里跑关键词扩展 + 聚类并落库。
+
+    为什么单独一个函数（且**不与 persist_scan 共用异常处理**）：
+    关键词算不出来不该让页面与问题一起回滚 —— 前者是增强，后者是主结果。
+
+    ⚠️ 两道门槛都会「诚实地说不出结论」，而不是硬凑一个结果：
+    可用语料不足 2 页 → 跳过（共现挖掘需要跨页证据）；
+    没有种子词 → 跳过（无种子的共现等于把全站词两两配对，噪声大于信号）。
+    """
+    from collections import Counter
+
+    from .db.repository import KeywordRepository
+    from .keywords import cluster, expand, tokenize
+    from .persist import persist_keywords
+
+    # 语料：标题 + H1 + 正文。正文截断 —— 共现统计不需要全文，
+    # 而全文会让 1000 页的 tokenize 慢上一个数量级。
+    corpus: list[tuple[str, str]] = []
+    title_tokens: set[str] = set()
+    title_tf: Counter = Counter()
+    for p in pages:
+        if p.status_code != 200 or p.error or not p.is_html:
+            continue
+        h1 = " ".join(p.h1)
+        head = (p.title or "") + " " + h1
+        head_toks = tokenize(head)
+        title_tokens.update(head_toks)
+        title_tf.update(head_toks)
+        corpus.append((p.url, f"{head} {(p.text or '')[:2000]}"))
+
+    if len(corpus) < 2:
+        return {"skipped": f"可用语料仅 {len(corpus)} 页，共现挖掘需要跨页证据"}
+
+    # 种子：优先用库里已跟踪的词。空库则退回「标题里最高频的 5 个 token」。
+    # ⚠️ KeywordRepository.list() 返回的是**分页对象** Page(items=...)，不是列表。
+    # 直接迭代会报 `TypeError: 'Page' object is not iterable` —— 第一次实跑就撞上了。
+    known = await KeywordRepository(session).list(site_id, limit=50)
+    seeds = [k.term for k in known.items]
+    if not seeds:
+        seeds = [t for t, _ in title_tf.most_common(5)]
+    if not seeds:
+        return {"skipped": "没有任何种子词（title/h1 全为空），无法做共现挖掘"}
+
+    candidates = expand(seeds, corpus, min_pages=2)
+    if not candidates:
+        return {"skipped": "共现挖掘没有产出候选词"}
+
+    clusters, _evidence = cluster([c.term for c in candidates])
+    return await persist_keywords(
+        session,
+        site_id=site_id,
+        candidates=candidates,
+        clusters=clusters,
+        market=market,
+        title_tokens=title_tokens,
+    )
+
+
 def _persist_scan(
     db_spec: str,
     *,
@@ -63,7 +124,7 @@ def _persist_scan(
                 site_id = await get_or_create_site(
                     session, url, markets=[m.value for m in markets]
                 )
-                return await persist_scan(
+                info = await persist_scan(
                     session,
                     site_id=site_id,
                     pages=pages,
@@ -71,6 +132,17 @@ def _persist_scan(
                     url_count=discovered,
                     elapsed=elapsed,
                 )
+                # 关键词扩展 + 聚类（纯离线，见 app/keywords/）。
+                # 单独 try：关键词算不出来不该让页面/问题落库一起回滚。
+                try:
+                    info["keywords"] = await _persist_keywords_for_session(
+                        session, site_id=site_id, pages=pages,
+                        market=markets[0].value if markets else "base",
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    info["keywords"] = {"error": f"{type(exc).__name__}: {exc}"}
+                return info
+
 
     return asyncio.run(_run())
 
@@ -241,6 +313,20 @@ def cmd_scan(args: argparse.Namespace) -> int:
                 f"{info['pages_written']} 页 / {info['issues_written']} 条问题",
                 file=sys.stderr,
             )
+            # ⚠️ 关键词结果必须显式说出来。「主结果落库成功、关键词悄悄为 0」
+            # 看起来跟「这个站没关键词机会」一模一样 —— 而后者是结论，前者是故障。
+            kw = info.get("keywords") or {}
+            if "error" in kw:
+                print(f"⚠️ 关键词扩展失败：{kw['error']}", file=sys.stderr)
+            elif "skipped" in kw:
+                print(f"→ 关键词扩展跳过：{kw['skipped']}", file=sys.stderr)
+            elif kw:
+                print(
+                    f"→ 关键词：{kw.get('keywords_written', 0)} 个词 / "
+                    f"{kw.get('clusters_written', 0)} 个簇"
+                    + (f"（其中 {kw['tracked']} 个已有页面在竞争）" if kw.get("tracked") else ""),
+                    file=sys.stderr,
+                )
         except Exception as exc:  # noqa: BLE001
             print(f"⚠️ 落库失败（报告不受影响）：{type(exc).__name__}: {exc}", file=sys.stderr)
 
