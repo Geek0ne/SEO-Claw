@@ -1,0 +1,54 @@
+# Render 部署配置 —— https://render.com
+#
+# 用法：在 Render 控制台 New → Blueprint，选这个仓库，会自动读本文件。
+#
+# ⚠️ 免费版跑这个服务有**三处真限制**，不是配置问题，是产品形态冲突：
+#
+# 1. **15 分钟空闲自动休眠**，冷启动要 1~2 分钟。共享链接发给别人，
+#    对方第一次打开大概率白屏等 —— 得刷新一次。
+# 2. **文件系统是临时的**：本地 SQLite 活不过一次重启。要留住数据必须
+#    用 Render 的 Persistent Disk，或者干脆换 PostgreSQL（本文件已默认 PG）。
+# 3. **免费版请求超时会杀掉正在跑的扫描**。SEOClaw 扫 100 页要 5 分半，
+#    必然中途被杀 —— 所以默认 max_pages 压到 30（约 90 秒）。
+#    真要扫大站，只能等哪天升级付费版。
+#
+# 换句话说：免费版够当**演示**，不够当**生产**。
+
+services:
+  - type: web
+    name: seoclaw
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/v1/health
+    # ⚠️ 免费版是 0.5GB 内存。爬虫同时抓几十页时 lxml 正文抽取会吃到几百 MB，
+    # 留 300M 给系统。宁可慢，不能 OOM 被平台杀掉。
+    dockerCommand: >
+      uvicorn seoclaw.main:app --host 0.0.0.0 --port ${PORT:-8000}
+      --workers 1 --limit-concurrency 32
+
+    envVars:
+      - key: PYTHONPATH
+        value: /srv/backend
+
+      # ⚠️ 必须用 PostgreSQL，不能用 SQLite。免费版的容器文件系统是临时的，
+      # 重启就丢——而 Render 的免费容器**会**重启（空闲休眠、每周重部署）。
+      - key: DATABASE_URL
+        fromDatabase:
+          name: seoclaw-db
+          property: connectionString
+
+      # 礼貌度。免费实例 IP 是共享的，被目标站拉黑的概率比自建机器高，
+      # 所以压得比默认还低一点。
+      - key: SEO_CLAW_RPS
+        value: "2"
+
+    # 索引要 https，混合内容会被浏览器拦掉
+    autoDeploy: true
+
+databases:
+  - name: seoclaw-db
+    databaseName: seoclaw
+    # ⚠️ **免费 PostgreSQL 只活 30 天**，到期自动删、库一起没。
+    # 要长期留住数据就得换付费的（或外部托管的 PG）。
+    plan: free
