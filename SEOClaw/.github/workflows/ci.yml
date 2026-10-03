@@ -24,15 +24,21 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      - name: 装依赖（含 dev extra）
-        # ⚠️ **必须是 `.[dev]`，不能只装 requirements.txt。**
-        # pytest 在 pyproject 的 dev extra 里、不在 requirements.txt 里，
-        # 而我第一版 CI 只写了 `pip install -r requirements.txt`——
-        # 于是第一次跑就 `pytest: command not found`，直接红。
+      - name: 装依赖
+        # ⚠️ **两版都错过，这里是两次翻车换来的结论：**
         #
-        # 挺讽刺：我在这个文件里写的第一条规矩就是「依赖要真实装一遍，
-        # 只有真装才能照出漏 extra 那类 bug」，结果自己漏了。
-        run: pip install -e ".[dev]"
+        #   1. `pip install -r requirements.txt` → `pytest: command not found`
+        #      pytest 在 pyproject 的 dev extra 里，不在 requirements.txt 里。
+        #
+        #   2. `pip install -e ".[dev]"` → `No module named 'fastapi'`
+        #      dev extra 里**只有 pytest**，fastapi/uvicorn 在 api extra 里。
+        #      为了补一个洞把另一个踹开了。
+        #
+        # **测试要覆盖全部三层**（rules / db / web），所以 api + dev 都要装。
+        # 这两条教训写在 extra 名称旁边比记在脑子里靠谱——
+        # 我在这个文件的第一条注释里写过「依赖要真实装一遍」，
+        # 结果写完 40 分钟就自己用同一种方式犯了一遍。
+        run: pip install -e ".[api,dev]"
 
       - name: 全量测试
         run: pytest backend/tests -q
