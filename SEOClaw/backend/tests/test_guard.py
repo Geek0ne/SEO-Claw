@@ -259,3 +259,95 @@ def test_client_ip_handles_missing_peer():
         headers: dict = {}
 
     assert client_ip(_NoClient()) == "unknown"
+
+
+# --------------------------------------------------------------------------
+# 域名黑名单
+# --------------------------------------------------------------------------
+#
+# ⚠️ 这一道挡的不是技术滥用，是「拿我当打手」：
+# 有人嫌自己抓得慢，在我们的页面填上竞争对手的域名，
+# 让**我们的服务器**去反复抓它。被投诉的是我们的 IP，
+# 被目标站封的也是我们的 IP，责任算运营方的。
+
+
+def test_denylist_from_env(monkeypatch):
+    """手法 14：对手发投诉邮件，运维当场加进环境变量。"""
+    import seoclaw.web.guard as guard
+    monkeypatch.setenv("SEO_DENYLIST", "competitor.test, other.test")
+    monkeypatch.setenv("SEO_DENYLIST_FILE", "/nonexistent/denylist.txt")
+    with pytest.raises(BlockedTarget):
+        guard.check_denied("competitor.test")
+
+
+def test_denylist_blocks_subdomains(monkeypatch):
+    """⚠️ 必须连子域一起挡。
+
+    只挡 ``evil.com`` 的话 ``www.evil.com`` / ``a.b.evil.com`` 全部绕过
+    —— 而攻击者只要多打两个字符就逃出去了。
+    """
+    import seoclaw.web.guard as guard
+    monkeypatch.setenv("SEO_DENYLIST", "evil.test")
+    monkeypatch.setenv("SEO_DENYLIST_FILE", "/nonexistent/denylist.txt")
+    for host in ("evil.test", "www.evil.test", "a.b.evil.test"):
+        with pytest.raises(BlockedTarget):
+            guard.check_denied(host)
+
+
+def test_denylist_from_file(tmp_path, monkeypatch):
+    """手法 15：改文件不用重启——出事时最看重这一点。
+
+    黑名单的意义就是「立刻能加」，等重启就晚了。
+    """
+    import seoclaw.web.guard as guard
+    f = tmp_path / "denylist.txt"
+    f.write_text(
+        "# 对方 2026-10-03 发投诉邮件要求停止\n"
+        "spammer.test\n"
+        "\n"
+        "  spaced.test  # 行内注释也要能剥\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("SEO_DENYLIST", "")
+    monkeypatch.setenv("SEO_DENYLIST_FILE", str(f))
+
+    for host in ("spammer.test", "spaced.test"):
+        with pytest.raises(BlockedTarget):
+            guard.check_denied(host)
+
+
+def test_denylist_case_and_dot_insensitive(monkeypatch):
+    """大小写 / 前导点 / 结尾点都要归一，否则白名单式绕过。"""
+    import seoclaw.web.guard as guard
+    monkeypatch.setenv("SEO_DENYLIST", ".EVIL.test")
+    monkeypatch.setenv("SEO_DENYLIST_FILE", "/nonexistent/denylist.txt")
+    with pytest.raises(BlockedTarget):
+        guard.check_denied("Evil.Test")
+
+
+def test_denylist_does_not_block_lookalikes(monkeypatch):
+    """⚠️ 不能误伤：挡的是 evil.test，不能连 notevil.test 也挡了。
+
+    用 ``endswith(entry)`` 而不是 ``endswith("." + entry)`` 就会误伤。
+    """
+    import seoclaw.web.guard as guard
+    monkeypatch.setenv("SEO_DENYLIST", "evil.test")
+    monkeypatch.setenv("SEO_DENYLIST_FILE", "/nonexistent/denylist.txt")
+    for ok in ("notevil.test", "evil.test.other.com", "example.test"):
+        guard.check_denied(ok)  # 不该抛
+
+
+def test_missing_denylist_file_is_not_an_error(monkeypatch):
+    """首次部署没有这个文件是正常的，不能因此 500。"""
+    import seoclaw.web.guard as guard
+    monkeypatch.setenv("SEO_DENYLIST", "")
+    monkeypatch.setenv("SEO_DENYLIST_FILE", "/nonexistent/denylist.txt")
+    guard.check_denied("anything.test")  # 不该抛
+
+
+def test_empty_denylist_allows_everything(monkeypatch):
+    """没有配置时不能变成「全部拒绝」——那等于服务直接不可用。"""
+    import seoclaw.web.guard as guard
+    monkeypatch.setenv("SEO_DENYLIST", "   ,  ,")
+    monkeypatch.setenv("SEO_DENYLIST_FILE", "/nonexistent/denylist.txt")
+    guard.check_denied("example.test")

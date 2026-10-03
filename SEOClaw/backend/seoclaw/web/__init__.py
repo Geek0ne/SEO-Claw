@@ -31,7 +31,13 @@ from pydantic import BaseModel, Field
 
 from ..db import repository as repo
 from ..db.session import get_session_factory
-from .guard import BlockedTarget, client_ip, public_limiter, resolve_and_check
+from .guard import (
+    BlockedTarget,
+    check_denied,
+    client_ip,
+    public_limiter,
+    resolve_and_check,
+)
 
 router = APIRouter(prefix="/api/v1/web")
 
@@ -142,6 +148,13 @@ async def quick_scan(body: QuickScanRequest, request: Request) -> QuickScanAccep
         url = resolve_and_check(url)
     except BlockedTarget as exc:
         raise HTTPException(status_code=400, detail=f"不能扫这个目标：{exc}") from None
+
+    # ⚠️ 黑名单在 SSRF 之后：先确认这是不是一个能安全访问的目标，
+    # 再确认「这个目标允不允许被扫」。反过来就是拿黑名单当探测工具了。
+    try:
+        check_denied(urlparse(url).hostname or "")
+    except BlockedTarget as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from None
 
     domain = urlparse(url).netloc
 

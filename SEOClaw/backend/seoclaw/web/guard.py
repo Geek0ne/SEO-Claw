@@ -33,8 +33,10 @@ Render 上把出网限制到必要目的地，或者干脆给个 egress allowlis
 from __future__ import annotations
 
 import ipaddress
+import os
 import socket
 import time
+from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional
 from urllib.parse import urlparse
@@ -238,10 +240,62 @@ def client_ip(request) -> str:
 public_limiter = RateLimiter(rate=0.2, burst=3.0)
 
 
+# --------------------------------------------------------------------------
+# 域名黑名单
+# --------------------------------------------------------------------------
+# ⚠️ 前三道闸挡的都是「技术滥用」，这一道挡的是「拿我当打手」。
+#
+# 场景很具体：有人嫌自己抓得慢，在我们的页面填上竞争对手的域名，
+# 让**我们的服务器**去反复抓它。被投诉的是我们的 IP，
+# 被 target站封的是我们的 IP，责任算运营方的。
+#
+# 三种来源，都落到同一个集合：
+#   1. 环境变量 SEO_DENYLIST —— 运维手动加（对方发投诉邮件时最常用）
+#   2. denylist.txt —— 一个域名一行，改完不用重启（每请求读一次）
+#   3. 代码内置 —— 已知的高风险目标
+#
+# ⚠️ 每请求读文件是有意的：黑名单的意义就是「出事了立刻能加」，
+# 等重启就晚了。文件不存在不是错误（首次部署没有这个文件）。
+def _load_denylist() -> frozenset[str]:
+    items: set[str] = set()
+
+    raw = os.environ.get("SEO_DENYLIST", "")
+    for part in raw.split(","):
+        part = part.strip().lower().lstrip(".")
+        if part:
+            items.add(part)
+
+    path = Path(os.environ.get("SEO_DENYLIST_FILE", "denylist.txt"))
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            # 支持 `example.com  # 理由` 的写法——三个月后你自己都忘了
+            # 为什么加这条，注释是唯一的线索。
+            line = line.split("#", 1)[0].strip().lower().lstrip(".")
+            if line:
+                items.add(line)
+    except (OSError, UnicodeDecodeError):
+        pass  # 文件不存在是正常的
+
+    return frozenset(items)
+
+
+def check_denied(host: str) -> None:
+    """域名在黑名单里就抛 :class:`BlockedTarget`。
+
+    ⚠️ 匹配必须**包含子域**：只挡 ``evil.com`` 的话，
+    ``a.evil.com`` / ``www.evil.com`` 全部绕过。
+    """
+    host = host.lower().rstrip(".")
+    for entry in _load_denylist():
+        if host == entry or host.endswith("." + entry):
+            raise BlockedTarget(f"{host} 在黑名单里")
+
+
 __all__ = [
     "BlockedTarget",
     "resolve_and_check",
     "RateLimiter",
     "client_ip",
     "public_limiter",
+    "check_denied",
 ]
