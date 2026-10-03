@@ -86,4 +86,22 @@ jobs:
         #
         # 曾经真踩过：用 .example 当黑名单测试目标，拿回 400 就当通过，
         # 实际那 400 是前面 SSRF 的 DNS 校验给的，请求压根没走到黑名单。
-        run: ./tools/guard_smoke.sh
+        #
+        # ⚠️ `| tee` + `set -o pipefail`：没有 pipefail 的话，脚本失败会被
+        # tee 的成功退出码吃掉，CI 照样绿 —— 那这道门就成了摆设。
+        # 我第一次写就漏了 pipefail，正好是这个脚本自己教我的：
+        # **测试没测到目标，和目标真通过，长得一模一样。**
+        run: |
+          set -o pipefail
+          ./tools/guard_smoke.sh 2>&1 | tee guard-smoke.log
+
+      - name: 存下闸的日志
+        # ⚠️ `if: always()`：闸挂了才最需要看日志。默认只在成功时上传，
+        # 那就等于「只在没事的时候留证据」。
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: guard-smoke-log
+          path: guard-smoke.log
+          if-no-files-found: ignore
+          retention-days: 14
