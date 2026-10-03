@@ -192,9 +192,35 @@ class SitemapFinder:
             return False
 
         # 区分 sitemap index（子文件里装 <sitemap><loc>）与普通 urlset
-        is_index = "<sitemapindex" in content.lower() or (
-            depth == 0 and all(not loc.endswith((".html", "/")) for loc in locs[:5])
-        )
+        #
+        # ⚠️ 2026-10-03 修：原来的启发式是
+        #     "<sitemapindex" in content or (
+        #         depth == 0 and all(not loc.endswith((".html", "/")) for loc in locs[:5])
+        #     )
+        # 拿「前 5 条 loc 都不以 / 或 .html 结尾」当「这是索引」的证据。
+        # 实测 bellroy.com 直接被打脸：它有 91KB 的真 urlset，loc 长这样
+        #     /collection/colorway/navy
+        #     /products/venture-sling
+        # —— 现代站点的 URL 普遍不带 .html 也不带尾斜杠，于是这段启发式
+        # 把它误判成索引，接着去把**产品页当子 sitemap 逐个加载**，全失败，
+        # 最终 ok=False → 报「缺 sitemap」。
+        #
+        # 58 条 sitemap.missing 里有 19 条是这个 bug 造成的（vercel、
+        # nodejs.org、docusaurus.io、hex.pm、shopify… 全是现代 URL 风格）。
+        #
+        # 判据改成**看根元素**：<urlset> 和 <sitemapindex> 是两个互斥的根标签，
+        # 规范上不会混。实测取文本前 8KB 足够——根元素总在开头，
+        # 而 <urlset> 出现在 <sitemapindex> 之前的写法本身就不合法。
+        head = content[:8192].lower()
+        if "<sitemapindex" in head:
+            is_index = True
+        elif "<urlset" in head:
+            is_index = False
+        else:
+            # 根元素被截掉/非法/HTML 伪装：宁可当 urlset 也不要当成索引。
+            # 反过来判会重演上面那个 bug——把几百个页面 URL 挨个当子 sitemap
+            # 加载，撞死 MAX_CHILD_ATTEMPTS 还什么都拿不到。
+            is_index = False
 
         if is_index:
             child_any = False
