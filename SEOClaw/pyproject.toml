@@ -36,7 +36,7 @@ dependencies = [
 # API 层与持久化不是 CLI 必需的：只扫站的话这几十 MB 一个都不用装。
 api = ["fastapi>=0.110", "uvicorn>=0.29"]
 postgres = ["asyncpg>=0.29"]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "pytest-cov>=5.0"]
 
 [project.urls]
 Homepage = "https://github.com/Geek0ne/SEOClaw"

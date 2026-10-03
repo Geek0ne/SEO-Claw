@@ -40,8 +40,19 @@ jobs:
         # 结果写完 40 分钟就自己用同一种方式犯了一遍。
         run: pip install -e ".[api,dev]"
 
-      - name: 全量测试
-        run: pytest backend/tests -q
+      - name: 全量测试 + 覆盖率
+        # ⚠️ --cov-fail-under 是**及格线，不是目标**。
+        # 实测当前 82%。定 78 是留一点余量：覆盖率会因为加了几行
+        # 胶水代码就轻微波动，卡死在 82 只会天天红，而天天红的门
+        # 等于没门。真正的目标是往上推，不是守住一条线。
+        run: |
+          cd backend
+          pytest tests -q \
+            --cov=seoclaw \
+            --cov-report=term-missing:skip-covered \
+            --cov-fail-under=78
+        env:
+          COVERAGE_FILE: .coverage
 
       - name: CLI 冒烟（规则清单必须能列出来）
         # ⚠️ 别省这步。规则注册表加载失败时，pytest 可能因为
