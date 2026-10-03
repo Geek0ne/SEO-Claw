@@ -59,8 +59,18 @@ def fetch_title(url, timeout=15):
     tm = _TITLE_RE.search(body)
     if not tm:
         return None, "no_title", final_url
-    return (html_mod.unescape(re.sub(r"\s+", " ", tm.group(1))).strip(),
-            "ok", final_url)
+    title = html_mod.unescape(re.sub(r"\s+", " ", tm.group(1))).strip()
+
+    # ⚠️ 域名切换壳：curl 停在原域，页面却是个 POST 表单壳。
+    # 实测 airbnb.com → 返回 <title>重定向到zh.airbnb.com</title> +
+    # <body onload="document.forms[0].submit()">，表单 POST 到
+    # zh.airbnb.com/v2/domain_switch/handoff。curl -L 跟不动 POST，
+    # 所以「最终 URL 换域了才存疑」这个守卫拦不住它 —— 域没变。
+    # 判据：title 以「重定向/Redirect」开头，或 body 里有 domain_switch。
+    if (re.match(r"(?i)^(重定向|redirect)", title)
+            or "domain_switch" in body):
+        return title, "domain_shell", final_url
+    return title, "ok", final_url
 
 
 def main():
@@ -98,6 +108,11 @@ def main():
                     redirected += 1
                     notes.append(f"{u.split('/', 3)[-1][:18] or '根'}:跳去{fh}")
                     continue
+            if st == "domain_shell":
+                # 这是个跳转壳，不是我抓到的那个页面 —— 没测到，不是规则错
+                redirected += 1
+                notes.append(f"{u.split('/', 3)[-1][:18] or '根'}:域名切换壳({t[:12]})")
+                continue
             if st != "ok" or t is None:
                 blocked += 1
                 notes.append(f"{u.split('/', 3)[-1][:18] or '根'}:{st}")

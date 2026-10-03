@@ -67,6 +67,20 @@ def fetch_desc(url, timeout=15):
     return html_mod.unescape(m.group(1)).strip(), "ok"
 
 
+def norm(text):
+    """比对前把实体和空白归一化。
+
+    这轮又栽在这上：`PagerDuty&#x27;s` 解出来带实体、`&nbsp;` 是不换行空格。
+    crawler 那边（lxml）解实体、规则里 `desc[:200]` 截断，
+    我这边用 curl 正则裸抓，不归一化就对不上。
+    """
+    if not text:
+        return ""
+    t = html_mod.unescape(text)
+    t = t.replace("\xa0", " ").replace("\u200b", "")
+    return re.sub(r"\s+", " ", t).strip()
+
+
 def main():
     limit = int(sys.argv[1]) if len(sys.argv) > 1 else 10
     targets = []
@@ -90,20 +104,40 @@ def main():
             continue
 
         # 回访 sample_urls，看有几个真的带着同一个 description
-        matched, detail = 0, []
+        matched, empty, detail = 0, 0, []
         for u in urls[:4]:
             desc, status = fetch_desc(u)
             if status != "ok":
                 detail.append(f"{u.split('/', 3)[-1][:20]}:{status}")
+                empty += 1
                 continue
-            same = desc is not None and desc.strip() == claimed
+            if desc is None:
+                # 这一页回访时**没有 description**。分两种：
+                #  - 页面是 JS 壳（airbnb 只回 539 字节）／回访被挡 → 我根本没看到
+                #  - 页面真有 description 但和规则记的不一样 → 页面变了
+                # 两种都**不能判误报**。实测 airbnb.com 回源 539 字节、
+                # kubernetes.io 的 releases 页面内容全变。
+                empty += 1
+                detail.append(f"{u.split('/', 3)[-1][:20]}:空")
+                continue
+                # ⚠️ 规则存的是 **200 字截断版**（base/__init__.py:229 `desc[:200]`），
+            # 拿它跟现在原文的完整 description 全量比，比不上就是必然的。
+            # 实测 www.automattic.com：规则记 199 字，原文 361 字，前缀完全相同。
+            # 所以只能判「原文以规则记的内容开头」，不能判相等。
+            same = (norm(desc) or "").startswith(norm(claimed) or "")
             matched += 1 if same else 0
             detail.append(f"{u.split('/', 3)[-1][:20]}:"
-                          f"{'同' if same else ('空' if desc is None else '不同')}")
+                          f"{'同' if same else '不同'}")
 
         if matched >= 2:
             tally[TRUE] += 1
             print(f"  真问题 {domain:<22} {matched} 个页面确实共用同一 description"
+                  f"（规则称 {count} 页）", flush=True)
+            print(f"          {' | '.join(detail)}", flush=True)
+        elif empty >= len(urls[:4]):
+            # 一个都没回访到 description → 我没测到，不是规则错
+            tally[UNSURE] += 1
+            print(f"  存疑   {domain:<22} {empty} 页回访没拿到 description，判不了"
                   f"（规则称 {count} 页）", flush=True)
             print(f"          {' | '.join(detail)}", flush=True)
         elif matched == 1:
@@ -113,7 +147,8 @@ def main():
             print(f"          {' | '.join(detail)}", flush=True)
         else:
             tally[FALSE] += 1
-            print(f"  误报   {domain:<22} 回访的页面都没有这个 description", flush=True)
+            print(f"  误报   {domain:<22} 回访的页面都有 description 但都不是这个"
+                  f"（规则称 {count} 页）", flush=True)
             print(f"          {' | '.join(detail)}", flush=True)
 
     print(f"\n=== 小结：真问题 {tally[TRUE]} · 误报 {tally[FALSE]} · 存疑 {tally[UNSURE]}",
