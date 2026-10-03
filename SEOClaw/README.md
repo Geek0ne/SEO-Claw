@@ -53,6 +53,36 @@ SEOClaw 反过来：**宁可漏，不报假的。**
 | `robots.baiduspider_not_allowed` | 一个纯英文站屏蔽百度被判危险 | 那是站方自己选的。降成 INFO，标 `possibly_intentional` |
 | `title.chinese_too_long` | Discourse 中文标题过长 | crawler 带 `Accept-Language: zh-CN` 请求，接了翻译的站会把整页机器翻译了再发回来。那些中文不是作者写的，改了也没用——识别翻译视图 |
 
+### 第二次重测：184 个站，挖出一个我自己的真 bug
+
+上面那轮之后又跑了一次更大的：184 个站，成功 150 个，报出 483 条问题。然后逐条 curl 回原站核对——**这回挖出的不是规则的错，是我的错**。
+
+`sitemap.missing` 报出 58 条，我抽样回源一看，有 19 条是**工具自己坏了**：
+
+```python
+# 原来的判定
+is_index = "<sitemapindex" in content or (
+    depth == 0 and all(not loc.endswith((".html", "/")) for loc in locs[:5])
+)
+```
+
+意思是「前 5 条 URL 都不以 `/` 或 `.html` 结尾，就认为这是子 sitemap 列表」。可现代站点的 URL 普遍就不带这些后缀——`bellroy.com` 的 sitemap 里长这样：
+
+```
+/collection/colorway/navy
+/products/venture-sling
+```
+
+于是它那 91KB、512 条 URL 的**真 sitemap** 被当成索引，跑去把**产品页当子 sitemap 逐个加载**，全部失败，最后报「缺 sitemap」。
+
+判据改成看根元素（`<urlset>` 和 `<sitemapindex>` 是两个互斥的根标签）。修完拿 12 个真站复验：改之前 12 个全报错，改之后 12 个全闭嘴。4 条回归测试跟着一起上。
+
+**这一条我记在这儿，是因为它比准确率数字重要**：58 条里错了 19 条，而我自己一开始还以为是规则误报。是回原站 curl 才看出来的。
+
+顺便说个更难看的事：我第一版核对器把这条误报的原因归给了「两条可能真误报、待查」——其实那是我核对器自己的 bug。「误报」这个词，我从一开始就不该用得那么理直气壮。
+
+---
+
 另有两条，agent 当初说是我误判的，实跑之后发现**规则是对的**：
 
 - `h1.missing`：直接 grep 原始 HTML，arxiv.org 和 bellroy.com 确实一个 h1 都没有，而且是服务端渲染的静态页。规则没冤枉它。
