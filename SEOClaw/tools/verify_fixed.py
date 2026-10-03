@@ -76,8 +76,18 @@ def check_img_alt_missing(html, iss):
     detail = f"img 共 {len(imgs)}：无 alt 属性 {len(none_attr)}，alt=\"\" {len(empty_attr)}"
     if want is None:
         return detail + "（报告没带计数）", UNSURE
-    return detail + f"（规则报 {want}）", \
-        (TRUE if int(want) == len(none_attr) else FALSE)
+    # ⚠️ 判据：**不能要求两者相等**，只能要求「规则报的都被原文证实」。
+    #
+    # 提取层的 page.images 永远比原始 HTML 里的 <img> 少（懒加载、
+    # noscript 里的图、未进入当前 DOM 的图都不算），实测 slashdot
+    # 提取层看到 1 张、我 grep 到 21 张；meta.discourse.org 88 vs 101。
+    # 我上一版写的是 want == len(none_attr)，5 vs 15 直接判误报——
+    # 方向反了：规则是**少报**，不是报错。
+    #
+    # 正向证据：原文里确实存在 >= want 个完全没有 alt 属性的图，
+    # 而规则报的每一条都出自这个集合 → 真问题。
+    ok = 0 < int(want) <= len(none_attr)
+    return detail + f"（规则报 {want}）", (TRUE if ok else FALSE)
 
 
 def check_link_noanchor(html, iss):
