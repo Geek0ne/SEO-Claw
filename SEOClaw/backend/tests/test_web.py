@@ -87,10 +87,38 @@ def client(monkeypatch):
     「job 已被标记 failed」——而那正是这组测试最想钉住的东西。
     """
     monkeypatch.setattr("seoclaw.api.scan_service.run_scan", _fake_scan)
+
+    # ⚠️ 限流器是**全进程共用**的（production 里就该如此）。
+    # 本文件有 8 处 quick-scan 提交，burst 只有 3 —— 不清空的话
+    # 后面的用例会收到 429，然后我花半天去查「为什么测试顺序会互相影响」。
+    # 这不是生产问题，是测试隔离问题：生产里每个 IP 各自一个桶。
+    from seoclaw.web import guard
+    guard.public_limiter._buckets.clear()
+
+    # ⚠️ 假域名也要过 SSRF 校验，而 ``.test`` 是 RFC 保留 TLD，本就解析不出来。
+    # 于是我自己加的守卫把 6 个用例全拒了——报「域名解析失败」。
+    #
+    # 修法是**让假域名解析到一个公网 IP**，不是放宽守卫：
+    # 守卫在生产里拒绝不可解析域名是对的（那是 DNS rebinding 的一环），
+    # 改它等于为了测试通过而打开一个洞。
+    import socket
+    _real_gai = socket.getaddrinfo
+
+    def _fake_gai(host, port, *a, **kw):
+        if host.endswith((".test", ".invalid")):
+            return [
+                (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+                 ("93.184.216.34", port)),
+            ]
+        return _real_gai(host, port, *a, **kw)
+
+    monkeypatch.setattr(socket, "getaddrinfo", _fake_gai)
+
     _TASKS.clear()
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
     _TASKS.clear()
+    guard.public_limiter._buckets.clear()
 
 
 def _submit(c: TestClient, url: str = "demo.test") -> int:

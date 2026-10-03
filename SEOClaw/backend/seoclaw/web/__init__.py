@@ -26,11 +26,12 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from ..db import repository as repo
 from ..db.session import get_session_factory
+from .guard import BlockedTarget, client_ip, public_limiter, resolve_and_check
 
 router = APIRouter(prefix="/api/v1/web")
 
@@ -92,11 +93,34 @@ def _normalize_url(raw: str) -> str:
 
 
 @router.post("/quick-scan", response_model=QuickScanAccepted, status_code=202)
-async def quick_scan(body: QuickScanRequest) -> QuickScanAccepted:
+async def quick_scan(body: QuickScanRequest, request: Request) -> QuickScanAccepted:
     """登记一次体检并**立即返回**，不等待爬取完成。"""
     from ..persist import get_or_create_site
 
+    # ⚠️ 限流必须在**任何**昂贵动作之前。本地跑无所谓，公网上这是
+    # 唯一的防线：不限流的话别人 for 循环就能把服务器 IP 当爬虫使，
+    # 被目标站按 IP 拉黑后整台机器的对外访问都废了。
+    ip = client_ip(request)
+    allowed, retry_after = public_limiter.allow(ip)
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail=f"提交太频繁了，{retry_after:.0f} 秒后再试。"
+            "每个 IP 每分钟最多 12 次。",
+            headers={"Retry-After": str(max(1, int(retry_after)))},
+        )
+
     url = _normalize_url(body.url)
+
+    # ⚠️ SSRF 校验必须在落库之前。Web 端的本质是「用户给个网址，
+    # 我们去访问它」——放到公网上等于把出网能力交给陌生人。
+    # 少了这一步，`http://169.254.169.254/latest/meta-data/iam/...`
+    # 会把该容器的 IAM 凭据原文吐出来。
+    try:
+        url = resolve_and_check(url)
+    except BlockedTarget as exc:
+        raise HTTPException(status_code=400, detail=f"不能扫这个目标：{exc}") from None
+
     domain = urlparse(url).netloc
     # ⚠️ `async with session:` **不等于提交**——它只负责关闭连接。
     # 我第一版写成这样，站点压根没落库，后台建任务时立刻
