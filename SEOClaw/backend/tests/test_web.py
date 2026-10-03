@@ -114,11 +114,18 @@ def client(monkeypatch):
 
     monkeypatch.setattr(socket, "getaddrinfo", _fake_gai)
 
+    # ⚠️ 并发计数器同样是**全局**的。上一条用例若泄漏了计数，
+    # 这一条就会莫名其妙收到 503 —— 而且症状是「测试之间互相影响」，
+    # 极难定位。跟限流桶一样，每个用例进来先清干净。
+    import seoclaw.web as _webmod
+    _webmod._INFLIGHT[0] = 0
+
     _TASKS.clear()
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
     _TASKS.clear()
     guard.public_limiter._buckets.clear()
+    _webmod._INFLIGHT[0] = 0
 
 
 def _submit(c: TestClient, url: str = "demo.test") -> int:
@@ -282,3 +289,94 @@ def test_task_level_exception_still_becomes_failed(client, monkeypatch):
 
     st = _wait_job(client, _submit(client))
     assert st["status"] == "failed", "任务级异常没被兜住，会永远转圈"
+
+# --------------------------------------------------------------------------
+# 并发闸
+# --------------------------------------------------------------------------
+#
+# ⚠️ 这道闸最阴的坑是「计数器忘了减」：症状是「刚才还好好的，
+# 突然全站 503」，而且**极难定位**——日志里没有异常，没有报错，
+# 只有一个慢慢涨上去再也降不下来的整数。我自己写第一版就漏了释放，
+# 所以这里必须钉死。
+
+
+def test_inflight_released_after_success(client):
+    """跑完之后计数器必须回到 0。"""
+    import seoclaw.web as webmod
+
+    _wait_job(client, _submit(client))
+    # done_callback 在事件循环里跑，轮询终态后可能还没执行完
+    for _ in range(100):
+        if webmod._INFLIGHT[0] == 0:
+            break
+        time.sleep(0.02)
+    assert webmod._INFLIGHT[0] == 0, (
+        f"计数器没释放：{webmod._INFLIGHT[0]}。"
+        "再跑几次之后这个服务就永久 503 了"
+    )
+
+
+def test_inflight_released_after_failure(client, monkeypatch):
+    """⚠️ 失败也必须释放。只在成功路径 release 的话，
+    「爬虫一挂就永久 503」——比不设闸还糟。"""
+
+    async def _boom(session, **kw):
+        raise RuntimeError("炸了")
+
+    monkeypatch.setattr("seoclaw.api.scan_service.run_scan", _boom)
+
+    import seoclaw.web as webmod
+    _wait_job(client, _submit(client))
+    for _ in range(100):
+        if webmod._INFLIGHT[0] == 0:
+            break
+        time.sleep(0.02)
+    assert webmod._INFLIGHT[0] == 0, "任务失败后计数器没释放"
+
+
+def test_inflight_released_when_task_never_starts(client, monkeypatch):
+    """⚠️ 任务级异常（import 失败那种）也必须释放。
+
+    `from ..api.scan_service import run_scan` 在 try **上面**，
+    所以 _run 自己的 finally 覆盖不到那条路——我第一版就把释放
+    写在 finally 里，结果这条路径漏了。
+    """
+    import seoclaw.web as webmod
+
+    async def _dead(*a, **kw):
+        raise ModuleNotFoundError("No module named 'seoclaw.web.api'")
+
+    monkeypatch.setattr(webmod, "_run", _dead)
+    _wait_job(client, _submit(client))
+    for _ in range(100):
+        if webmod._INFLIGHT[0] == 0:
+            break
+        time.sleep(0.02)
+    assert webmod._INFLIGHT[0] == 0, "任务级异常路径没释放计数器"
+
+
+def test_concurrency_limit_rejects_extra(client, monkeypatch):
+    """超过上限要当场 503，而不是默默排队。
+
+    排队等比拒绝更糟：用户等 5 分钟才知道要排 8 个人，
+    不如当场告诉他「现在忙」。
+    """
+    import seoclaw.web as webmod
+
+    release = None
+
+    async def _slow(session, **kw):
+        # 卡住不返回，让前两个任务一直占着并发位
+        import asyncio as _a
+        await _a.sleep(30)
+
+    monkeypatch.setattr("seoclaw.api.scan_service.run_scan", _slow)
+
+    first = client.post("/api/v1/web/quick-scan", json={"url": "a.test"})
+    second = client.post("/api/v1/web/quick-scan", json={"url": "b.test"})
+    assert first.status_code == 202
+    assert second.status_code == 202
+
+    third = client.post("/api/v1/web/quick-scan", json={"url": "c.test"})
+    assert third.status_code == 503, "超过并发上限却放行了"
+    assert "Retry-After" in third.headers, "503 必须带 Retry-After"

@@ -52,6 +52,28 @@ def _next_id() -> int:
     return _NEXT_ID[0]
 _MAX_TASKS = 500  # 内存上限：超过就丢最老的，防止长期运行被撑爆
 
+# --------------------------------------------------------------------------
+# 并发闸
+# --------------------------------------------------------------------------
+# ⚠️ 限流挡的是「一个人狂刷」，挡不住「一群人各刷一次」。
+# 10 个不同 IP 各提交一次 = 10 个爬虫同时跑：内存被吃掉十倍，
+# 而更要命的是**服务器 IP 被 10 个目标站同时扫**——被按 IP 拉黑之后，
+# 整台机器的对外访问都废了，不只这个服务。
+#
+# 为什么是 2：一次体检 100MB 峰值内存（实测 15 页），2 并发留足余量；
+# 再多对 512MB 的免费实例就是自杀。
+#: 同时在跑的上限。⚠️ 这里**没有队列**——`create_task` 是提交即开跑，
+#: 所以要么现在跑，要么当场拒。上一版我写了个「队列上限」纯属虚构：
+#: 用户的体感是「我等 5 分钟轮到我」，而实际上没人给他排队。
+#: 与其给一个兑现不了的承诺，不如直接说「现在忙，一分钟后再来」。
+_MAX_CONCURRENT = 2
+
+#: 当前在跑的数量。用**单个整数**而不是 Semaphore：
+# 这里要的只是「计数 + 超阈值就拒」，不需要真的阻塞等待；
+# 而 asyncio.Semaphore 在多 event loop 下会跨 loop 出问题
+# （测试里 TestClient 每个用例一个新 loop，正是这么炸的）。
+_INFLIGHT = [0]
+
 
 def _remember(job_id: int, payload: dict[str, Any]) -> None:
     if len(_TASKS) >= _MAX_TASKS:
@@ -122,6 +144,18 @@ async def quick_scan(body: QuickScanRequest, request: Request) -> QuickScanAccep
         raise HTTPException(status_code=400, detail=f"不能扫这个目标：{exc}") from None
 
     domain = urlparse(url).netloc
+
+    # ⚠️ 并发闸必须在**建站落库之前**。否则被拒的请求已经在库里留了
+    # 一个孤儿 site——攻击者可以靠「提交即被拒」白刷一堆垃圾站点。
+    if _INFLIGHT[0] >= _MAX_CONCURRENT:
+        raise HTTPException(
+            status_code=503,
+            detail=f"现在有 {_INFLIGHT[0]} 个体检正在跑（一台机器同时只能跑 "
+            f"{_MAX_CONCURRENT} 个）。过一两分钟再来试。",
+            headers={"Retry-After": "60"},
+        )
+    _INFLIGHT[0] += 1
+
     # ⚠️ `async with session:` **不等于提交**——它只负责关闭连接。
     # 我第一版写成这样，站点压根没落库，后台建任务时立刻
     # `FOREIGN KEY constraint failed`。这跟 API 层 deps.py 里
@@ -193,13 +227,20 @@ async def _run(job_id: int, site_id: int, url: str, max_pages: int, market: str)
         })
 
 
+
 def _on_task_done(task: "asyncio.Task") -> None:
     """任务整体的兜底异常处理。
 
     :func:`_run` 内部已经try 了业务异常，但**它自己 import 失败**时
     那一行就会在 try 之前炸掉 —— 那种异常没人接，任务永远停在 running。
     这里统一收口。
+
+    并发计数的释放也放这里，而不是 ``_run`` 的 finally——因为
+    ``from ..api.scan_service import run_scan`` 那行在 ``try`` **上面**，
+    import 失败时 finally 根本不会执行，计数器就永远减不掉。
+    done_callback 是保证「恰好一次」的唯一钩子。
     """
+    _INFLIGHT[0] = max(0, _INFLIGHT[0] - 1)
     if task.cancelled():
         return
     exc = task.exception()
