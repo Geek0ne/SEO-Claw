@@ -28,8 +28,8 @@ python3 ../tools/verify_sitemap2.py       # sitemap.missing
 | `h1.multiple` | 5 | 5 | 0 | 0 | |
 | `canonical.conflict` | 7 | 7 | 0 | 0 | 修正判据后 |
 | `img.alt.missing` | 14 | 14 | 0 | 0 | 修正判据后 |
-| `meta.duplicate` | 10 | 8 | 0 | 2 | 补语言头+实体解码后 |
-| `title.duplicate` | 8 | 6 | 0 | 2 | 2 条页面跳去了别的域 |
+| `meta.duplicate` | 25 | 23 | **0** | 2 | 全量跑的，补前缀比对后 |
+| `title.duplicate` | 16 | 12 | **0** | 4 | 全量跑的，补壳检测后 |
 | `title.too_short` | 4 | 4 | 0 | 0 | 逐条跑，不抽样 |
 | `soft404` | 6 | 4 | 0 | 2 | 2 条页面内容已变 |
 | `http.mixed_content` | 2 | 2 | 0 | 0 | 逐条跑 |
@@ -79,16 +79,23 @@ is_index = "<sitemapindex" in content or (
 8. **页面上看不见的 `<a>` 不算。** 我 regex 到 slashdot 的 270 个 `<a>`，
    6 个藏在 `<script>`/`<noscript>` 里。不去掉就会把 JS 模板里的字符串
    当成页面上的空锚。
+9. **规则存的是截断值，我拿它跟全量比。** `automattic` 那条 evidence 里是
+   `desc[:200]`（199 字），原文 361 字，**前缀完全相同**。只能比前缀。
+10. **回访可能拿到「跳转壳」而不是页面。** airbnb 回访返回的是
+    `<title>重定向到zh.airbnb.com</title>` + `onload` 提交 POST 表单，
+    curl `-L` 停在 `www.airbnb.com`，域没变——我那道「换域才存疑」的
+    守卫拦不住它。
+11. **实体和空白要归一化。** `PagerDuty&#x27;s`、`&nbsp;`（不换行空格 `\xa0`）
+    解出来跟规则那边对不上。要先把实体解开、把所有空白折叠成普通空格。
 
 5. **规则源码先读。** 不知道 `link.noanchor` 有 6 层锚文本兜底、
    `img.alt.missing` 只算「完全没有 alt 属性」，就写不出对的核对器。
 
 ## 还没核的
 
-- `link.noanchor` 剩余 24 条未跑（6 层兜底已对齐，抽 10 条先看结果）
-- `meta.duplicate` / `title.duplicate` 剩余样本未跑
 - `robots.blocks_own_site` 那 1 条判据没查实
-- `soft404` 2 条存疑：页面内容已变，判不了
+- 若干「存疑」：页面这几天变了，或跳去了别的域，我抓到的不是当初那份，判不了
+- 其余规则的样本仍是抽样，不是全量
 
 ## 所以 README 里没有准确率数字
 
