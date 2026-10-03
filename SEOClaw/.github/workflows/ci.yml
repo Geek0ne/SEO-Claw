@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+# ⚠️ 同一分支的新提交会取消在跑的旧 run。
+# 这个项目的测试 12 秒就完事，并发跑纯属浪费额度。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: 测试 + 四道闸验收
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: 装依赖
+        run: pip install -r requirements.txt
+
+      - name: 装项目本身（可编辑模式）
+        # ⚠️ 必须 `pip install -e .` 而不是只把 backend/ 加进 PYTHONPATH。
+        # 前者会读 pyproject 里的依赖声明——而依赖写错（比如漏了
+        # SQLAlchemy 的 [asyncio] extra）恰恰是「本地能跑、装完就炸」
+        # 那类 bug 的根源。只有真的装一遍才能照出来。
+        run: pip install -e .
+
+      - name: 全量测试
+        run: pytest backend/tests -q
+
+      - name: CLI 冒烟（规则清单必须能列出来）
+        # ⚠️ 别省这步。规则注册表加载失败时，pytest 可能因为
+        # 自己的 import 路径而「恰好没碰到」那条路径，
+        # 但真正 `seoclaw rules` 一跑就炸。
+        run: python -m seoclaw.cli rules | head -5
+
+      - name: 包能构建
+        # ⚠️ 也是别省的那类。源码跑得通 ≠ 能装成 wheel。
+        # 我今天就踩过：pyproject 写 `SQLAlchemy>=2.0`，
+        # 装出来的同步版一 import asyncio 就炸——而本地 .deps/ 里
+        # greenlet 早就躺在那儿，压根照不出来。
+        run: |
+          pip install build
+          python -m build --wheel
+          ls -la dist/
+
+  guard:
+    name: 四道闸真容器验收
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 打闸
+        # ⚠️ 这是最容易被省掉、也最不该省的一步。
+        # 单元测试测的是「函数被调用时返回什么」；
+        # 这个脚本测的是「一个真跑起来的容器，面对真 HTTP 请求，
+        # 会不会真的拦」。路由没挂上、装饰器位置错、依赖没装 ——
+        # 这些单测全绿，线上照样裸奔。
+        #
+        # 曾经真踩过：用 .example 当黑名单测试目标，拿回 400 就当通过，
+        # 实际那 400 是前面 SSRF 的 DNS 校验给的，请求压根没走到黑名单。
+        run: ./tools/guard_smoke.sh
