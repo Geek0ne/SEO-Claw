@@ -17,7 +17,7 @@ python3 ../tools/verify_sitemap2.py       # sitemap.missing
 
 ## 结果
 
-| 规则 | 抽样 | 真问题 | 误报 | 存疑 | 备注 |
+| 规则 | 核对条数 | 真问题 | 误报 | 存疑 | 备注 |
 |---|---|---|---|---|---|
 | `title.missing` | 12 | 11 | 1 | 0 | 唯一误报是 shopify 社区页，实际有 description |
 | `canonical.missing` | 15 | 13 | 0 | 2 | |
@@ -35,7 +35,7 @@ python3 ../tools/verify_sitemap2.py       # sitemap.missing
 | `http.mixed_content` | 2 | 2 | 0 | 0 | 逐条跑 |
 | `img.alt.generic` | 1 | 1 | 0 | 0 | 逐条跑 |
 | `sitemap.missing` | 10 | 8 | **2** | 0 | 查出一个真 bug，已修 |
-| `link.noanchor` | 10 | 6 | 4 | 0 | 4 条差 1 个，判为规则站得住 |
+| `link.noanchor` | 34 | 23 | **0** | 10 | 全量跑的，换判据后 |
 | `robots.blocks_own_site` | 1 | 0 | 1 | 0 | 判据存疑，未查实 |
 
 ## 查出的真 bug（已修）
@@ -70,6 +70,16 @@ is_index = "<sitemapindex" in content or (
 3. **HTML 实体要解码。** `PagerDuty&#x27;s` vs `PagerDuty's`。
 4. **没测到 ≠ 不存在。** 回访失败、页面是 JS 壳、被跳去了别的域——一律存疑，
    不记误报。
+6. **规则报的是子集，我却要求数字相等。** `link.noanchor` 我第一版要求
+   `实测 == 规则报数`，全量 34 条判出 15 条误报。实跑看：slashdot 规则报 6
+   我数 24 —— 规则只是**少报**，不是报错。这跟第 1 条（img.alt）是同一个错，
+   我改了那边忘了改这边。两处一起修后误报归零。
+7. **我数得比规则少时，记「存疑」不是「误报」。** csdn 规则报 25 我数 1、
+   edx 报 11 我数 0 —— 页面这几天变了，我抓到的不是当初那份。这类我判不了。
+8. **页面上看不见的 `<a>` 不算。** 我 regex 到 slashdot 的 270 个 `<a>`，
+   6 个藏在 `<script>`/`<noscript>` 里。不去掉就会把 JS 模板里的字符串
+   当成页面上的空锚。
+
 5. **规则源码先读。** 不知道 `link.noanchor` 有 6 层锚文本兜底、
    `img.alt.missing` 只算「完全没有 alt 属性」，就写不出对的核对器。
 

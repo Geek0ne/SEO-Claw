@@ -23,6 +23,8 @@ import collections
 from urllib.parse import urlparse
 
 UA = "Mozilla/5.0 (compatible; SEOClawVerifier/1.0)"
+# 判定三态。真问题 / 误报 / 存疑——「没测到」既不是真问题也不是误报。
+TRUE, FALSE, UNSURE = "真问题", "误报", "存疑"
 
 
 def fetch(url, timeout=20):
@@ -77,10 +79,25 @@ def anchor_text(attrs: str, inner: str) -> str:
     return ""
 
 
+def strip_invisible(raw: str) -> str:
+    """去掉注释和 script/style/noscript —— 页面上看不见的东西不算链接。
+
+    实测 slashdot：我 regex 到 270 个 <a>，其中 6 个藏在 <script>/<noscript>
+    里。不去掉就会把 JS 模板里的字符串当成页面上的空锚。
+    """
+    out = raw
+    for pat in (r"(?is)<!--.*?-->",
+                r"(?is)<script\b.*?</script>",
+                r"(?is)<style\b.*?</style>",
+                r"(?is)<noscript\b.*?</noscript>"):
+        out = re.sub(pat, " ", out)
+    return out
+
+
 def count_empty_anchors(html: str, host: str):
     """返回 (非装饰空锚数, 装饰空锚数, 抽到的总链接数)。"""
     empty = dec = total = 0
-    for m in re.finditer(r"<a\b([^>]*)>(.*?)</a>", html, re.I | re.S):
+    for m in re.finditer(r"<a\b([^>]*)>(.*?)</a>", strip_invisible(html), re.I | re.S):
         attrs, inner = m.group(1), m.group(2)
         href = re.search(r"href\s*=\s*[\"']?([^\"'\s>]*)", attrs, re.I)
         if not href:
@@ -130,15 +147,35 @@ def main():
             continue
         want = iss["evidence"].get("empty_anchor_count")
         empty, dec, total = count_empty_anchors(html, domain)
-        # 规则要求 empties >= 2 才报
-        ok = (empty == want and empty >= 2)
-        tally["真问题" if ok else "误报"] += 1
-        mark = "真问题" if ok else "误报 "
+        # ⚠️ 判据：**不要求两者相等**。
+        #
+        # 我第一版写的是 empty == want，结果 34 条里 15 条判成误报。实跑看：
+        #   - slashdot 规则报 6、我数 24 → 规则报的是**子集**，它**少报**不是报错。
+        #     这跟 img.alt.missing 是同一个错（那边 1 vs 21），我改了那边忘了改这边。
+        #   - www.csdn.net 规则报 25、我数 1；edx 规则报 11、我数 0 → 页面变了
+        #     或要渲染，**这该记存疑**，跟 airbnb 跳去 zh.airbnb.com 一个道理。
+        #
+        # 正向证据：原文里确实存在 >= want 个真空锚，且 want >= 2（规则阈值）→ 真问题。
+        # 我数得比规则少 → 存疑，不是我能判的。
+        if want is None:
+            verdict, mark = UNSURE, "存疑 "
+        elif empty >= want >= 2:
+            verdict, mark = TRUE, "真问题"
+        elif empty < want:
+            verdict, mark = UNSURE, "存疑 "
+        else:
+            verdict, mark = FALSE, "误报 "
+        tally[mark.strip()] += 1
+        note = ""
+        if empty > want:
+            note = f"（我多数 {empty - want} 个——规则报的是子集）"
+        elif empty < want:
+            note = f"（我少数 {want - empty} 个，页面可能变了）"
         print(f"  {mark} {domain:<24} 规则报 {want} · 实测 {empty}"
-              f"（抽到 {total} 个内链，装饰性空锚 {dec}）", flush=True)
+              f"（内链 {total}，装饰性空锚 {dec}）{note}", flush=True)
 
     print(f"\n=== 小结：真问题 {tally['真问题']} · 误报 {tally['误报']} "
-          f"· 抓不到 {tally['抓不到']}", flush=True)
+          f"· 存疑 {tally['存疑']} · 抓不到 {tally['抓不到']}", flush=True)
     return 0
 
 
