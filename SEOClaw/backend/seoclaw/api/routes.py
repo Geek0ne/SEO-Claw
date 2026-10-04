@@ -13,8 +13,10 @@ from fastapi import APIRouter, HTTPException, Query
 from ..db import models as m
 from .deps import get_uow
 from .schemas import (
+    IssueBulkStatusIn,
     IssueOut,
     IssuePage,
+    IssueStatusIn,
     JobOut,
     ReportSummary,
     ScanRequest,
@@ -65,6 +67,25 @@ async def list_sites(
         )
         for s in page.items
     ]
+
+
+def _issue_out(i: m.Issue) -> IssueOut:
+    """Issue → 出参。
+
+    ⚠️ 抽出来是因为这段构造在 list_issues / update_issue_status 两处各写了一遍。
+    以后给 IssueOut 加字段，漏改一处就会出现「列表里没有、详情里有」。
+    """
+    return IssueOut(
+        id=i.id,
+        code=i.code,
+        severity=i.severity.value,
+        scope=i.scope.value,
+        url=i.url,
+        title=i.title,
+        fingerprint=i.fingerprint,
+        status=i.status.value,
+        occurrences=i.occurrences or 1,
+    )
 
 
 async def _require_site(uow, site_id: int) -> m.Site:
@@ -182,6 +203,53 @@ async def list_issues(
     )
 
 
+@router.patch("/sites/{site_id}/issues/{issue_id}", response_model=IssueOut)
+async def update_issue_status(
+    site_id: int,
+    issue_id: int,
+    body: IssueStatusIn,
+    uow=__import__("fastapi").Depends(get_uow),
+) -> IssueOut:
+    """把一条问题标成「已修 / 已知悉 / 忽略」。
+
+    没有这条，这个产品就只是个只读报告：扫出一百条，用户改完了
+    系统却永远显示那一百条还在——扫完就没有闭环了。
+
+    ⚠️ **必须校验归属**：站点是租户边界。不校验的话
+    ``PATCH /sites/1/issues/9999`` 会把 2 号站点的问题改掉，
+    而调用方拿到的是 200 —— 越界写入比 404 难查得多。
+    """
+    await _require_site(uow, site_id)
+    issue = await uow.issues.get(issue_id)
+    if issue is None or issue.site_id != site_id:
+        # 归属不对也说 404：说「那条存在但不属于你」等于泄露了别的站点
+        # 有什么问题，而用户压根没有查询别人的资格。
+        raise HTTPException(status_code=404, detail=f"问题不存在：{issue_id}")
+    # ⚠️ 必须转成枚举再赋值。Literal 校验出来的是 str，而列的类型是
+    # IssueStatus：塞 str 不会立刻报错，只在出参时炸
+    # `AttributeError: 'str' object has no attribute 'value'`。
+    # 这类「写入不报错、读取才炸」的错最难查，必须在写入口就转好。
+    issue.status = m.IssueStatus(body.status)
+    await uow.session.flush()
+    return _issue_out(issue)
+
+
+@router.patch("/sites/{site_id}/issues", response_model=dict)
+async def bulk_update_issue_status(
+    site_id: int,
+    body: IssueBulkStatusIn,
+    uow=__import__("fastapi").Depends(get_uow),
+) -> dict:
+    """按根因批量改状态（「这一类我都处理了」）。
+
+    ⚠️ 刻意**不提供全选兜底**：一次把全站几百条标成「已修」极易点错，
+    而这个操作没有 undo —— 状态只能一条条改回来。批量必须指明根因。
+    """
+    await _require_site(uow, site_id)
+    n = await uow.issues.resolve_by_fingerprint(site_id, body.fingerprint, body.status)
+    return {"updated": n}
+
+
 @router.get("/sites/{site_id}/trend", response_model=ScoreTrend)
 async def trend(site_id: int, uow=__import__("fastapi").Depends(get_uow)) -> ScoreTrend:
     """分数随时间的变化 —— 趋势线数据。
@@ -230,18 +298,7 @@ async def report(site_id: int, uow=__import__("fastapi").Depends(get_uow)) -> Re
     counts: dict[str, int] = {sev.value: raw_counts.get(sev.value, 0) for sev in m.Severity}
     issues_page = await uow.issues.list(site_id, limit=200)
     items = [
-        IssueOut(
-            id=i.id,
-            code=i.code,
-            severity=i.severity.value,
-            scope=i.scope.value,
-            url=i.url,
-            title=i.title,
-            fingerprint=i.fingerprint,
-            status=i.status.value,
-            occurrences=i.occurrences or 1,
-        )
-        for i in issues_page.items
+        _issue_out(i) for i in issues_page.items
     ]
     pages_crawled = jobs.items[0].pages_crawled if jobs.items else 0
     return ReportSummary(

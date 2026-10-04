@@ -286,6 +286,59 @@ def test_trend_without_scan_is_empty_not_error(client):
     assert tr["points"] == []
 
 
+def test_issue_status_can_be_marked_fixed(client):
+    """能把一条问题标成「已修」。
+
+    ⚠️ 没有这条，整个产品就只是个只读报告：扫出一百条，用户改完了，
+    系统却永远显示那一百条还在 —— 扫完就没有闭环了。
+    """
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    items = client.get(f"/api/v1/sites/{site['id']}/issues?limit=1").json()["items"]
+    issue_id = items[0]["id"]
+
+    r = client.patch(
+        f"/api/v1/sites/{site['id']}/issues/{issue_id}", json={"status": "fixed"}
+    )
+    assert r.status_code == 200
+    assert r.json()["status"] == "fixed"
+
+    # 落库了没：再查列表必须能看到 fixed，而不是只在响应里好看
+    again = client.get(f"/api/v1/sites/{site['id']}/issues?limit=50").json()["items"]
+    hit = [i for i in again if i["id"] == issue_id][0]
+    assert hit["status"] == "fixed", "状态只在响应里变了，没落库"
+
+
+def test_issue_status_rejects_other_sites_issue(client):
+    """⚠️ 归属校验：站点是租户边界，不校验就是越界写入。
+
+    拿别的站点的问题 id 来 PATCH，必须 404 —— 而且**不能说「那条存在但
+    不属于你」**，那等于泄露了别的站点有什么问题，用户压根没这个资格。
+    """
+    a = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    client.post(f"/api/v1/sites/{a['id']}/scan", json={"max_pages": 2})
+    issue_id = client.get(f"/api/v1/sites/{a['id']}/issues?limit=1").json()["items"][0]["id"]
+
+    r = client.patch(f"/api/v1/sites/99999/issues/{issue_id}", json={"status": "fixed"})
+    assert r.status_code == 404
+
+    # 关键：越界请求不能真的把它改了
+    still = client.get(f"/api/v1/sites/{a['id']}/issues?limit=50").json()["items"]
+    assert [i for i in still if i["id"] == issue_id][0]["status"] == "open"
+
+
+def test_issue_status_rejects_bogus_value(client):
+    """状态写错（``fixed `` 带空格 / ``done``）必须在校验层 422，
+    不能掉进 SQL 才炸成 500，更不能静默写进去。"""
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    issue_id = client.get(f"/api/v1/sites/{site['id']}/issues?limit=1").json()["items"][0]["id"]
+    r = client.patch(
+        f"/api/v1/sites/{site['id']}/issues/{issue_id}", json={"status": "fixed "}
+    )
+    assert r.status_code == 422
+
+
 def test_report_without_scan_has_null_score(client):
     """没扫过的站点 health_score 必须是 null —— 0 分意味着「扫了且很差」，
     这两件事不能共用同一个值。"""

@@ -625,6 +625,23 @@ class IssueRepository:
             )
         return groups
 
+    async def set_status(
+        self, issue_id: int, status: m.IssueStatus | str
+    ) -> Optional[m.Issue]:
+        """改单条问题的状态（"这条我改了"）。
+
+        ⚠️ 必须校验问题归属：只按 id 更新的话，
+        ``PATCH /sites/1/issues/9999`` 会把 2 号站点的问题改掉——
+        而站点是这个产品的租户边界（见 models 注释第 3 条）。
+        越界写入比 404 更难查，因为调用方拿到的是 200。
+        """
+        job = await self.session.get(m.Issue, issue_id)
+        if job is None:
+            return None
+        job.status = m.IssueStatus(status)
+        await self.session.flush()
+        return job
+
     async def resolve_by_fingerprint(
         self, site_id: int, fingerprint: str, status: m.IssueStatus | str
     ) -> int:

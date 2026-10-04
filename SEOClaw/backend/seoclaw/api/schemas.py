@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -61,6 +61,29 @@ class IssueOut(BaseModel):
     fingerprint: Optional[str] = None
     status: str
     occurrences: int = 1
+
+
+class IssueStatusIn(BaseModel):
+    """改一条问题的状态（「这条我改了」）。
+
+    ⚠️ 用 Literal 约束取值而不是裸 str：写错 ``"fixed "``（带空格）或
+    ``"done"`` 时，应当在**校验层**就 422，而不是掉进 SQL 才炸成 500。
+    状态拼错还静默写进去，比直接报错难查得多。
+    """
+
+    status: Literal["open", "acknowledged", "fixed", "ignored", "false_positive"]
+
+
+class IssueBulkStatusIn(BaseModel):
+    """按根因批量改状态（「这一类我都处理了」）。
+
+    ⚠️ ``fingerprint`` 必填且**没有**全选兜底：全站 200 条一起标「已修」
+    是个极容易点错的操作，而点错了没法从状态反推回来（没有 undo）。
+    要批量就得指明根因。
+    """
+
+    fingerprint: str = Field(min_length=1, max_length=64)
+    status: Literal["open", "acknowledged", "fixed", "ignored", "false_positive"]
 
 
 class IssuePage(BaseModel):
