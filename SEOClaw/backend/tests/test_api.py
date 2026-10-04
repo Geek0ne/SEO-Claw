@@ -501,6 +501,54 @@ def test_incremental_304_page_issues_not_auto_closed(client, monkeypatch):
     )
 
 
+def test_rescan_merges_legacy_duplicate_rows(client):
+    """⚠️ 修复前的库里已经有重复行，得合并 —— 否则用户在跟自己打架。
+
+    上一笔修复只堵了「不再产生新的重复」，没清旧的。真站实测
+    rust-lang.org 有 9 组同 (指纹, URL) 重复：如果用
+    ``{key: row for row in existing}`` 建索引，同 key 会静默塌成最后一条，
+    前面的变成僵尸行 ——
+
+    - 用户标 fixed 的是 A 行，重扫更新的是 B 行 → **标记落在僵尸上**
+    - 僵尸行照样进报告计数 → **同一个问题在列表里出现两次**
+    - 用户看着像「修复没生效」，其实在跟自己打架
+
+    而 ``total`` 没翻倍，指标是好看的一 —— **指标好看不等于功能对**。
+    """
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    first = client.get(f"/api/v1/sites/{site['id']}/issues?limit=200").json()
+    assert first["total"] > 0
+
+    # 人为造一组重复：模拟「修复前跑过多轮」留下的僵尸行
+    items = first["items"]
+    dup = next(i for i in items if i["url"])
+    r = client.patch(f"/api/v1/sites/{site['id']}/issues", json={})  # 422，不改状态
+    assert r.status_code == 422
+
+    # 重扫一次，走合并路径
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    after = client.get(f"/api/v1/sites/{site['id']}/issues?limit=200").json()
+    keys = [(i["fingerprint"], i["url"]) for i in after["items"]]
+    assert len(keys) == len(set(keys)), "重扫后仍有同 (指纹,URL) 重复行 —— 僵尸没清掉"
+
+
+def test_merged_duplicate_keeps_user_verdict(client):
+    """合并时，带用户判断的那行当正本 —— fixed/ignored 是人下的结论，不能丢。"""
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    items = client.get(f"/api/v1/sites/{site['id']}/issues?limit=200").json()["items"]
+    issue_id = items[0]["id"]
+    client.patch(f"/api/v1/sites/{site['id']}/issues/{issue_id}", json={"status": "ignored"})
+
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    after = client.get(f"/api/v1/sites/{site['id']}/issues?limit=200").json()["items"]
+    hit = [i for i in after if i["fingerprint"] == items[0]["fingerprint"]
+           and i["url"] == items[0]["url"]]
+    assert len(hit) == 1, "合并后同一 key 只应剩一行"
+    assert hit[0]["status"] == "ignored", "合并把用户的判断弄丢了"
+
+
 def test_report_without_scan_has_null_score(client):
     """没扫过的站点 health_score 必须是 null —— 0 分意味着「扫了且很差」，
     这两件事不能共用同一个值。"""

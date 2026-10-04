@@ -575,12 +575,37 @@ class IssueRepository:
             .scalars()
             .all()
         )
-        by_key: dict[tuple[str, Optional[str]], m.Issue] = {
-            (i.fingerprint, i.url): i for i in existing
-        }
+        # ⚠️ 不能直接 {key: i} 建字典 —— 修复前的库里**已经有重复行**（实测
+        # rust-lang.org 9 组），字典会让同一 key 静默塌成最后一条，前面的
+        # 变成僵尸：用户标 fixed 的是 A 行，重扫更新的是 B 行，
+        # 僵尸行照样进报告计数 —— 同一个问题在列表里出现两次，
+        # 用户看着像「修复没生效」，其实在跟自己打架。
+        #
+        # 所以先**合并**：同一 key 有多行时，带用户判断的那行当正本
+        # （fixed/ignored/false_positive 都是人下的结论，不能丢）；
+        # 全是 open 就取 id 最小的（最老那条，身份稳定）。其余物理删除 ——
+        # 它们是 bug 造出来的，不是历史事实，status 枚举里没有「已废弃」，
+        # 硬塞一个状态只会让所有查询都得记得排除它。
+        by_key: dict[tuple[str, Optional[str]], m.Issue] = {}
+        merged = 0
+        for i in sorted(existing, key=lambda x: x.id):
+            key = (i.fingerprint, i.url)
+            keeper = by_key.get(key)
+            if keeper is None:
+                by_key[key] = i
+                continue
+            merged += 1
+            if (
+                keeper.status is m.IssueStatus.OPEN
+                and i.status is not m.IssueStatus.OPEN
+            ):
+                await self.session.delete(keeper)
+                by_key[key] = i
+            else:
+                await self.session.delete(i)
 
         stats = {"created": 0, "updated": 0, "reopened": 0,
-                 "kept_verdict": 0, "auto_closed": 0}
+                 "kept_verdict": 0, "auto_closed": 0, "merged_dupes": merged}
         seen: set[tuple[str, Optional[str]]] = set()
 
         for row in rows:
