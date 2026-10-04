@@ -3,629 +3,983 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SEOClaw —— 站点 SEO 体检</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+<title>SEOClaw</title>
+<!--
+  ⚠️ 零外部依赖：无 Web Font、无 CDN、无外部 CSS/JS。
+  理由：这套系统要能私有化部署、离线可用，而 webfont 是 CDN 请求第一名。
+  代价是没有品牌字体 —— 补偿手段在 DESIGN.md：数字与代码全部等宽 +
+  tabular-nums，层级靠字重/字距/留白建立，不靠装饰。
+  所有接口路径照 backend 的 OpenAPI 契约，不凭印象。
+-->
 <style>
-/*
- * SEOClaw 设计系统 —— 投影自仓库根目录 DESIGN.md。
- * 改样式前先改 DESIGN.md，两边冲突以 DESIGN.md 为准。
- *
- * 审美：审计报告 / 计量仪器。纸白底、墨黑字、等宽规则编号、刻度线、印章红点缀。
- * 刻意不做：蓝紫渐变、发光阴影、圆角气泡、居中 hero + 三张卡片。
- */
 :root{
-  /* 色板：OKLCH，绕开蓝紫红海。60-30-10 —— 纸白与墨黑约 85%，琥珀 <10%，印章红 <2% */
-  --bg:        oklch(0.985 0.002 90);
-  --surface:   oklch(1 0 0);
-  --fg:        oklch(0.21 0.01 90);
-  --fg-2:      oklch(0.42 0.01 90);
-  --muted:     oklch(0.58 0.008 90);
-  --line:      oklch(0.91 0.004 90);
-  --line-2:    oklch(0.955 0.003 90);
-  --accent:    oklch(0.52 0.115 62);
-  --accent-bg: oklch(0.955 0.022 70);
-  --stamp:     oklch(0.48 0.16 25);
-  --stamp-bg:  oklch(0.962 0.018 25);
-  --ok:        oklch(0.48 0.09 150);
-  --warn:      oklch(0.55 0.11 70);
-  --err:       oklch(0.50 0.16 25);
-
-  /* 间距基数 4px：组内紧，组间松 */
-  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
-
-  /* 圆角只有两个：不给胶囊 */
-  --r-sm:2px; --r-md:4px;
-
-  /* 动效：只两处有意义。默认 ease-out，<300ms，只动 transform/opacity */
-  --ease:cubic-bezier(.2,.8,.3,1);
-  --dur:120ms;
-
-  /* 字体：IBM Plex 家族三层。回退栈必须完整可用 —— 本机可能拉不到 CDN */
-  --sans:"IBM Plex Sans","IBM Plex Sans SC","PingFang SC","Microsoft YaHei",
-         -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --bg:oklch(0.145 0.006 265); --bg-raised:oklch(0.185 0.007 265);
+  --bg-sunken:oklch(0.115 0.005 265);
+  --fg:oklch(0.93 0.006 265); --fg-muted:oklch(0.62 0.010 265);
+  --fg-faint:oklch(0.45 0.008 265);
+  --border:oklch(0.28 0.008 265); --border-strong:oklch(0.36 0.010 265);
+  --accent:oklch(0.86 0.19 128); --accent-dim:oklch(0.55 0.12 128);
+  --critical:oklch(0.62 0.22 25); --high:oklch(0.72 0.17 55);
+  --medium:oklch(0.78 0.15 85); --low:oklch(0.65 0.10 240);
+  --r-ctl:3px; --r-panel:6px;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+  --sp:4px;
+  --t-fast:120ms; --t-base:200ms;
 }
-*{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
 body{
   margin:0;background:var(--bg);color:var(--fg);
-  font:400 14.5px/1.65 var(--sans);
+  font:400 14px/1.55 var(--sans);
+  -webkit-font-smoothing:antialiased;
 }
-.wrap{max-width:940px;margin:0 auto;padding:0 var(--s5) var(--s7)}
+button,input,select,textarea{font:inherit;color:inherit}
 a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
-/* ── 顶栏 ── */
-header{padding:var(--s7) 0 var(--s6);border-bottom:1px solid var(--line)}
-.mark{display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s5)}
-.mark .box{
-  width:24px;height:24px;border-radius:var(--r-sm);background:var(--fg);
-  color:var(--surface);font:600 12px/24px var(--mono);text-align:center;
+/* ── 布局：左栏固定 + 主区 ───────────────────────────── */
+.app{display:grid;grid-template-columns:264px 1fr;height:100vh}
+.side{
+  background:var(--bg-sunken);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
 }
-.mark b{font-size:14px;font-weight:600;letter-spacing:-.01em}
-.mark .sep{width:1px;height:12px;background:var(--line)}
-.mark span{font:500 11px/1 var(--mono);color:var(--muted);
-  letter-spacing:.06em;text-transform:uppercase}
-h1{
-  font-size:32px;font-weight:600;letter-spacing:-.02em;line-height:1.2;
-  margin:0 0 var(--s2);
+.brand{padding:16px 16px 12px;border-bottom:1px solid var(--border)}
+.brand b{font-size:15px;font-weight:700;letter-spacing:-0.02em}
+.brand small{display:block;color:var(--fg-faint);font:400 11px/1.4 var(--mono);margin-top:2px}
+.side-scroll{flex:1;overflow-y:auto;padding:8px}
+.side-h{
+  font:600 10px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;
+  color:var(--fg-faint);padding:12px 8px 6px;
 }
-h1 .hl{color:var(--accent)}
-.lede{margin:0;color:var(--fg-2);font-size:14.5px;max-width:62ch}
-
-/* ── 卡片：层级只靠 1px 边框和留白，全系统零阴影 ── */
-.card{background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--r-md);margin:var(--s5) 0 var(--s4)}
-.card-hd{
-  padding:var(--s3) var(--s5);border-bottom:1px solid var(--line-2);
-  font:500 11px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase;
-  color:var(--muted);
+.site-item{
+  display:block;width:100%;text-align:left;background:none;border:0;
+  padding:8px 10px;border-radius:var(--r-ctl);cursor:pointer;
+  transition:background var(--t-fast) ease-out;
 }
-.card-bd{padding:var(--s5)}
+.site-item:hover{background:var(--bg-raised)}
+.site-item[aria-current="true"]{background:var(--bg-raised);box-shadow:inset 2px 0 0 var(--accent)}
+.site-item .d{font:500 13px/1.35 var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.site-item .m{font:400 11px/1.3 var(--mono);color:var(--fg-faint);margin-top:1px}
+.side-foot{padding:8px;border-top:1px solid var(--border)}
 
-.grid{display:grid;grid-template-columns:1.6fr 1fr;gap:var(--s5)}
-@media(max-width:680px){.grid{grid-template-columns:1fr;gap:var(--s4)}}
-.field{display:block;margin-bottom:var(--s4)}
-.field:last-child{margin-bottom:0}
-.lbl{display:block;font:500 12px/1.4 var(--mono);letter-spacing:.04em;
-  color:var(--fg-2);margin-bottom:var(--s2);text-transform:uppercase}
-
-/* ── 表单控件：全状态矩阵 ── */
-input[type=text]{
-  width:100%;min-height:44px;padding:11px 13px;font:400 15px/1.4 var(--sans);
-  color:var(--fg);background:var(--surface);
-  border:1px solid var(--line);border-radius:var(--r-sm);
-  transition:border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease);
+/* ── 主区 ────────────────────────────────────────────── */
+.main{overflow-y:auto;display:flex;flex-direction:column}
+.top{
+  padding:20px 28px 0;border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;
 }
-input[type=text]::placeholder{color:var(--muted);opacity:.75}
-input[type=text]:hover{border-color:oklch(0.83 0.005 90)}
-input[type=text]:focus-visible{outline:none;border-color:var(--accent);
-  box-shadow:0 0 0 3px var(--accent-bg)}
-input[type=text]:disabled{background:var(--line-2);color:var(--muted);cursor:not-allowed}
+.top h1{margin:0;font-size:21px;font-weight:700;letter-spacing:-0.028em;font-family:var(--mono)}
+.top .sub{color:var(--fg-muted);font:400 12px/1.5 var(--mono);margin-top:4px}
+.spacer{flex:1}
 
-select{
-  width:100%;min-height:44px;padding:10px 30px 10px 12px;
-  font:400 14px/1.4 var(--sans);color:var(--fg);background:var(--surface);
-  border:1px solid var(--line);border-radius:var(--r-sm);cursor:pointer;
-  appearance:none;transition:border-color var(--dur) var(--ease);
-  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5'%3E%3Cpath fill='none' stroke='%236b7280' stroke-width='1.4' d='M0 0l4.5 5L9 0'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 12px center;
+/* 健康分环 */
+.ring{--v:0;width:76px;height:76px;flex:none;position:relative}
+.ring svg{transform:rotate(-90deg)}
+.ring .tr{fill:none;stroke:var(--border);stroke-width:6}
+.ring .vl{fill:none;stroke:var(--accent);stroke-width:6;stroke-linecap:round;
+  transition:stroke-dashoffset 600ms cubic-bezier(.2,.8,.3,1)}
+.ring .num{
+  position:absolute;inset:0;display:grid;place-items:center;
+  font:600 20px/1 var(--mono);letter-spacing:-0.03em;
 }
-select:hover{border-color:oklch(0.83 0.005 90)}
-select:focus-visible{outline:none;border-color:var(--accent);
-  box-shadow:0 0 0 3px var(--accent-bg)}
-select:disabled{background:var(--line-2);color:var(--muted);cursor:not-allowed}
+.ring .num small{font-size:10px;font-weight:400;color:var(--fg-faint)}
 
-/* 分段控件：像仪器上的档位选择 */
-.seg{display:flex;border:1px solid var(--line);border-radius:var(--r-sm);
-  overflow:hidden;background:var(--surface)}
-.seg label{
-  flex:1;min-height:42px;display:flex;align-items:center;justify-content:center;
-  font:400 13px/1 var(--sans);color:var(--fg-2);cursor:pointer;
-  border-right:1px solid var(--line);transition:background var(--dur) var(--ease),
-  color var(--dur) var(--ease);user-select:none;
-}
-.seg label:last-child{border-right:0}
-.seg label:hover{background:var(--line-2)}
-.seg label:has(input:checked){background:var(--accent-bg);color:var(--accent)}
-.seg label:has(input:focus-visible){box-shadow:inset 0 0 0 2px var(--accent)}
-.seg input{position:absolute;opacity:0;width:0;height:0}
-.seg input:checked+span{font-weight:600}
-
-/* 勾选项：原生 checkbox，不自绘 */
-.opt{display:flex;gap:10px;align-items:flex-start;padding:10px 0;
-  border-top:1px solid var(--line-2);cursor:pointer;min-height:42px}
-.opt:first-of-type{border-top:0}
-.opt input{width:16px;height:16px;margin:2px 0 0;accent-color:var(--accent);
-  cursor:pointer;flex:0 0 auto}
-.opt input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.opt b{display:block;font-weight:500;font-size:13.5px}
-.opt small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
-
-/* 按钮按重要性排名，不按含义配色 */
-.actions{display:flex;gap:var(--s2);margin-top:var(--s5);
-  padding-top:var(--s5);border-top:1px solid var(--line-2)}
+/* ── 按钮：按重要性排序，不按语义配色 ─────────────────── */
 .btn{
-  min-height:44px;padding:0 var(--s5);border-radius:var(--r-sm);
-  font:600 14px/1 var(--sans);cursor:pointer;
-  border:1px solid transparent;
-  transition:background var(--dur) var(--ease),color var(--dur) var(--ease),
-    border-color var(--dur) var(--ease);
+  display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;
+  background:var(--bg-raised);border:1px solid var(--border-strong);
+  border-radius:var(--r-ctl);cursor:pointer;font-size:13px;font-weight:500;
+  transition:background var(--t-fast) ease-out,border-color var(--t-fast) ease-out;
 }
-.btn-primary{background:var(--fg);color:var(--surface)}
-.btn-primary:hover:not(:disabled){background:oklch(0.15 0.01 90)}
-.btn-primary:active:not(:disabled){background:oklch(0.11 0.01 90)}
-.btn-primary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.btn-primary:disabled{opacity:.4;cursor:not-allowed}
-.btn-ghost{background:var(--surface);color:var(--fg-2);border-color:var(--line)}
-.btn-ghost:hover{background:var(--line-2);color:var(--fg)}
-.btn-ghost:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn:hover{background:oklch(0.22 0.008 265);border-color:var(--fg-faint)}
+.btn:active{transform:translateY(0.5px)}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+.btn:disabled:hover{background:var(--bg-raised);border-color:var(--border-strong)}
+.btn-p{background:var(--accent);border-color:var(--accent);color:oklch(0.20 0.06 128);font-weight:600}
+.btn-p:hover{background:oklch(0.92 0.19 128);border-color:oklch(0.92 0.19 128)}
+.btn-sm{min-height:26px;padding:0 8px;font-size:12px}
+.btn-g{background:none;border-color:transparent}
+.btn-g:hover{background:var(--bg-raised);border-color:var(--border)}
 
-.examples{display:flex;gap:var(--s1);flex-wrap:wrap;align-items:center;margin-top:var(--s4)}
-.examples .t{font:500 11px/1 var(--mono);letter-spacing:.06em;color:var(--muted);
-  text-transform:uppercase;margin-right:var(--s1)}
-.examples button{
-  min-height:28px;padding:0 10px;border:1px solid var(--line);border-radius:var(--r-sm);
-  background:var(--surface);color:var(--fg-2);font:400 12px/1 var(--mono);
-  cursor:pointer;transition:border-color var(--dur) var(--ease),color var(--dur) var(--ease);
+/* ── 表单：真 label，不是 placeholder ─────────────────── */
+.fld{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.fld label{font:600 11px/1 var(--mono);letter-spacing:.04em;color:var(--fg-muted)}
+.fld .hint{font:400 11px/1.45 var(--sans);color:var(--fg-faint)}
+.fld input[type=text],.fld input[type=number],.fld select{
+  height:32px;padding:0 9px;background:var(--bg-sunken);
+  border:1px solid var(--border);border-radius:var(--r-ctl);
+  transition:border-color var(--t-fast) ease-out;
 }
-.examples button:hover{border-color:var(--accent);color:var(--accent)}
-.examples button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.fld input:focus,.fld select:focus{border-color:var(--accent);outline:none}
+.fld input[aria-invalid="true"]{border-color:var(--critical)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1;min-width:120px}
 
-/* ── 状态提示 ── */
-.note{
-  border:1px solid var(--line);border-left:2px solid var(--muted);
-  background:var(--surface);border-radius:var(--r-sm);
-  padding:var(--s3) var(--s4);margin-bottom:var(--s3);
-  font-size:13.5px;line-height:1.7;color:var(--fg-2);
+/* ── 卡片 / 面板 ─────────────────────────────────────── */
+.panel{background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--r-panel);margin:0 28px 20px}
+.panel-h{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.panel-h h2{margin:0;font-size:13px;font-weight:600;letter-spacing:-0.01em}
+.panel-h .n{font:400 11px/1 var(--mono);color:var(--fg-faint)}
+.panel-b{padding:16px}
+
+/* 签名动作：最该先做的三件事 */
+.prio{display:flex;flex-direction:column;gap:8px}
+.prio-i{
+  display:flex;gap:12px;align-items:flex-start;padding:10px 12px;
+  background:var(--bg-sunken);border:1px solid var(--border);
+  border-left-width:3px;border-radius:var(--r-ctl);
 }
-.note b{color:var(--fg);font-weight:600}
-.note.err{border-left-color:var(--err);background:var(--stamp-bg)}
-.note.warn{border-left-color:var(--warn);background:oklch(0.98 0.014 75)}
-.note.ok{border-left-color:var(--ok);background:oklch(0.97 0.016 150)}
-.note code{font:400 12px var(--mono)}
+.prio-i .num{font:600 12px/1.4 var(--mono);color:var(--fg-faint);flex:none;width:18px}
+.prio-i .bd{flex:1;min-width:0}
+.prio-i .t{font-size:13px;font-weight:500}
+.prio-i .u{font:400 11px/1.5 var(--mono);color:var(--fg-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
 
-.progress{background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--r-md);padding:var(--s5);margin-bottom:var(--s3)}
-.pg-head{display:flex;align-items:center;gap:10px;margin-bottom:var(--s4);
-  font-weight:500}
-.spin{width:14px;height:14px;border:1.5px solid var(--line);
-  border-top-color:var(--accent);border-radius:50%;
-  animation:sp .8s linear infinite;flex:0 0 auto}
-@keyframes sp{to{transform:rotate(360deg)}}
-.pg-bar{height:2px;background:var(--line-2);border-radius:var(--r-sm);
-  overflow:hidden;margin-bottom:var(--s3)}
-.pg-bar>i{display:block;height:100%;width:30%;background:var(--accent);
-  animation:slide 1.8s var(--ease) infinite}
-@keyframes slide{0%{margin-left:-30%}100%{margin-left:100%}}
-.pg-log{display:flex;justify-content:space-between;
-  font:400 12px/1 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+/* ── 严重度：颜色 + 文字标签，绝不只靠颜色 ─────────────── */
+.sev{display:inline-flex;align-items:center;gap:5px;font:600 10px/1 var(--mono);
+  letter-spacing:.06em;text-transform:uppercase;padding:3px 6px;border-radius:2px;
+  border:1px solid currentColor;flex:none}
+.sev::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+.sev-critical{color:var(--critical)} .sev-high{color:var(--high)}
+.sev-medium{color:var(--medium)} .sev-low{color:var(--low)}
+.sev-info{color:var(--fg-faint)}
 
-/* ── 签名动作①：带刻度的量规 ── */
-.report{background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--r-md);margin-bottom:var(--s4);overflow:hidden}
-.rpt-hd{display:flex;align-items:flex-end;gap:var(--s4);
-  padding:var(--s5) var(--s5) var(--s4);flex-wrap:wrap}
-.rpt-score{font:500 56px/0.9 var(--mono);letter-spacing:-.03em;
-  font-variant-numeric:tabular-nums}
-.rpt-score.g1{color:var(--ok)} .rpt-score.g2{color:var(--warn)}
-.rpt-score.g3{color:var(--stamp)} .rpt-score.g4{color:var(--err)}
-.rpt-verdict{font-size:16px;font-weight:600;padding-bottom:5px}
-.rpt-meta{margin-left:auto;text-align:right;
-  font:400 12px/1.7 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.tag{display:inline-block;font:500 11px/1 var(--mono);color:var(--fg-muted);
+  background:var(--bg-sunken);border:1px solid var(--border);
+  padding:3px 6px;border-radius:2px}
 
-/* 刻度尺：11 道主刻度 + 中间短刻度，墨黑标记指到得分处 */
-.gauge{padding:0 var(--s5) var(--s5);position:relative}
-.gauge svg{display:block;width:100%;height:26px;overflow:visible}
-.gauge .track{stroke:var(--line);stroke-width:1}
-.gauge .major{stroke:var(--fg-2);stroke-width:1}
-.gauge .minor{stroke:var(--line);stroke-width:1}
-.gauge .fill{stroke:var(--accent);stroke-width:2}
-.gauge .marker{stroke:var(--fg);stroke-width:2}
-.gauge .num{font:400 9.5px var(--mono);fill:var(--muted);
-  text-anchor:middle;font-variant-numeric:tabular-nums}
-
-/* 维度：六格以 1px 间隙相连，不做六张独立卡片 */
-.dims{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;
-  background:var(--line-2);border-top:1px solid var(--line-2)}
-@media(max-width:680px){.dims{grid-template-columns:repeat(3,1fr)}}
-.dim{background:var(--surface);padding:10px var(--s3) 11px}
-.dim label{display:block;font:400 10.5px/1.4 var(--sans);color:var(--muted);
-  margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dim .t{height:2px;background:var(--line-2);border-radius:var(--r-sm);
-  overflow:hidden;margin-bottom:6px}
-.dim .t>i{display:block;height:100%;background:var(--fg-2)}
-.dim em{font:500 12.5px/1 var(--mono);font-style:normal;
-  font-variant-numeric:tabular-nums}
-
-/* ── 筛选 ── */
-.filters{display:flex;gap:var(--s1);flex-wrap:wrap;align-items:center;
-  margin:var(--s5) 0 var(--s3)}
-.filters .t{font:500 11px/1 var(--mono);letter-spacing:.06em;color:var(--muted);
-  text-transform:uppercase;margin-right:var(--s1)}
-.f{
-  min-height:30px;padding:0 11px;border:1px solid var(--line);border-radius:var(--r-sm);
-  background:var(--surface);color:var(--fg-2);font:400 12.5px/1 var(--sans);
-  cursor:pointer;display:inline-flex;align-items:center;gap:6px;
-  transition:border-color var(--dur) var(--ease),background var(--dur) var(--ease),
-    color var(--dur) var(--ease);
+/* ── 表格：文本左对齐，数字右对齐 + tabular ─────────────── */
+table{width:100%;border-collapse:collapse}
+th{
+  text-align:left;font:600 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;
+  color:var(--fg-faint);padding:8px 10px;border-bottom:1px solid var(--border);
 }
-.f:hover{border-color:oklch(0.8 0.005 90)}
-.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.f.on{background:var(--fg);border-color:var(--fg);color:var(--surface);font-weight:500}
-.f .n{font-family:var(--mono);font-variant-numeric:tabular-nums;opacity:.7}
+td{padding:9px 10px;border-bottom:1px solid oklch(0.22 0.007 265);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:oklch(0.20 0.007 265)}
+td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
 
-/* ── 问题条目：像审计报告条目，带等宽编号 ── */
-.issue{background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--r-sm);margin-bottom:var(--s2);
-  transition:border-color var(--dur) var(--ease)}
-.issue:hover{border-color:oklch(0.82 0.005 90)}
-.issue[open]{border-color:oklch(0.82 0.005 90)}
-.issue>summary{cursor:pointer;display:flex;gap:var(--s3);align-items:center;
-  padding:var(--s3) var(--s4);min-height:48px;list-style:none}
-.issue>summary::-webkit-details-marker{display:none}
-.issue>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.issue[open]>summary{border-bottom:1px solid var(--line-2)}
-/* 严重度：颜色 + 文字双重编码，不靠颜色单独传意 */
-.sev{
-  font:600 10.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;
-  padding:4px 7px;border-radius:var(--r-sm);border:1px solid;flex:0 0 auto;
-  white-space:nowrap;
+/* ── 空 / 加载 / 错：三者各有版式 ─────────────────────── */
+.empty{padding:32px 20px;text-align:center}
+.empty .t{font-size:14px;font-weight:600;margin-bottom:6px}
+.empty .d{font-size:13px;color:var(--fg-muted);max-width:44ch;margin:0 auto;line-height:1.6}
+.empty .a{margin-top:14px}
+.err{padding:12px 14px;background:oklch(0.22 0.045 25);border:1px solid var(--critical);
+  border-radius:var(--r-ctl);margin-bottom:12px}
+.err .t{font-weight:600;font-size:13px;margin-bottom:3px}
+.err .d{font:400 12px/1.55 var(--mono);color:var(--fg-muted);word-break:break-word}
+.err .n{font-size:12px;color:var(--fg-muted);margin-top:6px}
+.skel{background:linear-gradient(90deg,var(--bg-raised) 25%,oklch(0.22 0.008 265) 50%,var(--bg-raised) 75%);
+  background-size:200% 100%;animation:sk 1.3s infinite;border-radius:2px}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── 页签 ───────────────────────────────────────────── */
+.tabs{display:flex;gap:2px;padding:0 28px;border-bottom:1px solid var(--border);
+  overflow-x:auto;background:var(--bg);position:sticky;top:0;z-index:5}
+.tab{
+  padding:9px 13px;background:none;border:0;border-bottom:2px solid transparent;
+  color:var(--fg-muted);cursor:pointer;font-size:13px;white-space:nowrap;
+  transition:color var(--t-fast) ease-out,border-color var(--t-fast) ease-out;
 }
-.sev.critical{color:var(--stamp);border-color:oklch(0.85 0.05 25);background:var(--stamp-bg)}
-.sev.high{color:var(--err);border-color:oklch(0.87 0.04 45);background:oklch(0.975 0.012 45)}
-.sev.medium{color:var(--warn);border-color:oklch(0.86 0.05 75);background:oklch(0.98 0.015 78)}
-.sev.low{color:var(--accent);border-color:oklch(0.85 0.04 75);background:oklch(0.975 0.02 80)}
-.sev.info{color:var(--muted);border-color:var(--line);background:var(--line-2)}
-/* 签名动作②：等宽体规则编号 */
-.idx{font:500 11px/1 var(--mono);color:var(--muted);flex:0 0 auto;
-  min-width:46px;font-variant-numeric:tabular-nums}
-.ttl{flex:1;font-weight:500;font-size:14px;min-width:0}
-.cnt{font:400 11.5px/1 var(--mono);color:var(--muted);flex:0 0 auto;
-  font-variant-numeric:tabular-nums}
-.caret{color:var(--muted);font-size:9px;flex:0 0 auto;
-  transition:transform var(--dur) var(--ease)}
-.issue[open] .caret{transform:rotate(90deg)}
+.tab:hover{color:var(--fg)}
+.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent);font-weight:600}
+.tab .badge{margin-left:5px;font:600 10px/1 var(--mono);color:var(--fg-faint)}
 
-.body{padding:var(--s4);font-size:13.5px;line-height:1.75;color:var(--fg-2)}
-.body p{margin:0 0 var(--s4)}
-.bl{font:500 10.5px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase;
-  color:var(--muted);margin-bottom:var(--s1)}
-.fix{background:var(--bg);border:1px solid var(--line-2);
-  border-left:2px solid var(--accent);border-radius:0 var(--r-sm) var(--r-sm) 0;
-  padding:10px var(--s3);color:var(--fg);font-size:13.5px}
-pre{margin:0;white-space:pre-wrap;font:400 12.5px/1.7 var(--mono)}
-code,.code{font:400 12px/1.5 var(--mono);
-  background:var(--line-2);padding:2px 5px;border-radius:var(--r-sm);color:var(--fg-2)}
-.url{font:400 12px/1.6 var(--mono);color:var(--accent);word-break:break-all}
+/* 统计条 */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;
+  background:var(--border);border:1px solid var(--border);border-radius:var(--r-panel);overflow:hidden}
+.stat{background:var(--bg-raised);padding:12px 14px}
+.stat .k{font:600 10px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--fg-faint)}
+.stat .v{font:600 20px/1.2 var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-0.03em;margin-top:6px}
+.stat .x{font:400 11px/1.4 var(--mono);color:var(--fg-faint);margin-top:2px}
 
-footer{margin-top:var(--s6);padding-top:var(--s5);border-top:1px solid var(--line);
-  color:var(--muted);font-size:12px;line-height:2;text-align:center}
-.toast{
-  position:fixed;left:50%;bottom:var(--s5);transform:translate(-50%,10px);
-  background:var(--fg);color:var(--surface);padding:9px var(--s4);
-  border-radius:var(--r-sm);font-size:13px;opacity:0;pointer-events:none;
-  transition:opacity var(--dur) var(--ease),transform var(--dur) var(--ease);
-  z-index:50;
-}
-.toast.show{opacity:1;transform:translate(-50%,0)}
+/* 迷你趋势 */
+.spark{width:100%;height:56px;display:block}
+.spark .ln{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-linejoin:round}
+.spark .ar{fill:oklch(0.145 0.006 265);stroke:var(--accent);stroke-width:1.5}
+.spark .gl{stroke:oklch(0.24 0.007 265);stroke-width:1}
 
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.001ms!important;
-    animation-iteration-count:1!important;transition-duration:.001ms!important}
-}
-@media print{.actions,.filters,.examples,.toast{display:none}}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px}
+.kv dt{font:500 11px/1.5 var(--mono);color:var(--fg-faint);white-space:nowrap}
+.kv dd{margin:0;line-height:1.5}
+details{border-top:1px solid var(--border);padding:9px 0}
+details:first-of-type{border-top:0}
+summary{cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸";color:var(--fg-faint);font-size:10px;transition:transform var(--t-fast) ease-out}
+details[open] summary::before{transform:rotate(90deg)}
+code{font:400 12px/1.5 var(--mono);background:var(--bg-sunken);
+  padding:1px 5px;border-radius:2px;border:1px solid var(--border)}
+.toolbar{padding:0 28px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.hidden{display:none!important}
 </style>
 </head>
 <body>
-<div class="wrap">
-
-<header>
-  <div class="mark">
-    <span class="box">SC</span><b>SEOClaw</b><span class="sep"></span>
-    <span>SEO Audit</span>
-  </div>
-  <h1>扫一遍，告诉你<span class="hl">先改哪几件</span></h1>
-  <p class="lede">43 项确定性检查，每条结论都能追到原文证据。没把握的直接标注，不猜。</p>
-</header>
-
-<form class="card" id="f">
-  <div class="card-hd">体检目标</div>
-  <div class="card-bd">
-    <label class="field">
-      <span class="lbl">网址</span>
-      <input type="text" id="url" placeholder="example.com" autocomplete="off"
-             spellcheck="false" required>
-    </label>
-
-    <div class="grid">
-      <div>
-        <label class="field">
-          <span class="lbl">抓取页数</span>
-          <select id="max_pages">
-            <option value="10">10 页 · 快速看看</option>
-            <option value="30" selected>30 页 · 够看结构</option>
-            <option value="80">80 页 · 更全</option>
-            <option value="200">200 页 · 较慢</option>
-          </select>
-        </label>
-        <div class="field">
-          <span class="lbl">抓取深度</span>
-          <div class="seg" role="radiogroup" aria-label="抓取深度">
-            <label><input type="radio" name="depth" value="1"><span>仅首页</span></label>
-            <label><input type="radio" name="depth" value="2" checked><span>2 层</span></label>
-            <label><input type="radio" name="depth" value="6"><span>全站</span></label>
-          </div>
-        </div>
-      </div>
-      <div>
-        <label class="field">
-          <span class="lbl">市场</span>
-          <select id="market">
-            <option value="base" selected>通用 · Google 系</option>
-            <option value="google">Google 生态</option>
-            <option value="baidu">百度生态</option>
-            <option value="cnh_eco">中文生态 · 微信等</option>
-          </select>
-        </label>
-      </div>
+<div class="app">
+  <!-- ══ 左栏：站点 ══ -->
+  <aside class="side">
+    <div class="brand"><b>SEOClaw</b><small id="brandSub">—</small></div>
+    <div class="side-scroll">
+      <div class="side-h">站点</div>
+      <div id="siteList"></div>
     </div>
+    <div class="side-foot"><button class="btn" id="btnAdd" style="width:100%;justify-content:center">+ 接入站点</button></div>
+  </aside>
 
-    <div class="field">
-      <span class="lbl">选项</span>
-      <label class="opt">
-        <input type="checkbox" id="render_js">
-        <span><b>渲染 JavaScript</b><small>SPA / 前端渲染的站点建议开，慢很多</small></span>
-      </label>
-      <label class="opt">
-        <input type="checkbox" id="robots" checked>
-        <span><b>遵守 robots.txt</b><small>关掉可扫到不该扫的页面，仅自测用</small></span>
-      </label>
-    </div>
-
-    <div class="actions">
-      <button class="btn btn-primary" id="go" type="submit">开始体检</button>
-      <button class="btn btn-ghost" id="reset" type="button">重置</button>
-    </div>
-
-    <div class="examples">
-      <span class="t">试试</span>
-      <button type="button" data-u="example.com">example.com</button>
-      <button type="button" data-u="www.rust-lang.org">rust-lang.org</button>
-      <button type="button" data-u="www.python.org">python.org</button>
-      <button type="button" data-u="go.dev">go.dev</button>
-    </div>
-  </div>
-</form>
-
-<div id="out"></div>
-
-<footer>
-  规则永不依赖 LLM · 每条结论都能追到原文证据<br>
-  没抓到页面 ≠ 没问题 · 没覆盖到的检查项一律不装作查过了
-</footer>
+  <!-- ══ 主区 ══ -->
+  <main class="main" id="main"></main>
 </div>
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
-const $=id=>document.getElementById(id);
-const out=$('out'), goBtn=$('go');
-const SEV=['critical','high','medium','low','info'];
-const SEV_CN={critical:'致命',high:'高',medium:'中',low:'低',info:'提示'};
-const DIM_CN={crawlability:'可抓取',architecture:'结构',content:'内容',
-  performance:'性能',structured_data:'结构化',trust:'信任'};
-let filter='all', last=null, timer=null;
-
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>
-  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function el(h){const d=document.createElement('div');d.innerHTML=h.trim();return d.firstChild;}
-function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');
-  clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2100);}
-
-document.querySelectorAll('.examples button').forEach(b=>b.addEventListener('click',()=>{
-  $('url').value=b.dataset.u;$('url').focus();}));
-
-$('reset').addEventListener('click',()=>{
-  if(timer){clearTimeout(timer);timer=null;}
-  clearInterval(window._tk);
-  $('url').value='';out.innerHTML='';last=null;
-  goBtn.disabled=false;goBtn.textContent='开始体检';
-});
-
-$('f').addEventListener('submit',async e=>{
-  e.preventDefault();
-  const url=$('url').value.trim();
-  if(!url){toast('先填个网址');return;}
-  if(timer){clearTimeout(timer);timer=null;}
-  goBtn.disabled=true;goBtn.textContent='提交中…';
-  out.innerHTML=loading('正在提交…','连接服务');
-  window._t0=Date.now();startClock();
-  try{
-    const r=await fetch('/api/v1/web/quick-scan',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        url,
-        max_pages:Number($('max_pages').value),
-        market:$('market').value,
-        max_depth:Number(document.querySelector('input[name=depth]:checked').value),
-        respect_robots:$('robots').checked,
-        render_js:$('render_js').checked,
-      })
-    });
-    let d=null;try{d=await r.json();}catch(_){}
-    if(!r.ok)throw new Error((d&&d.detail)?String(d.detail):('HTTP '+r.status));
-    out.innerHTML=loading('正在扫描 '+esc(d.domain),'已排队，正在抓取页面…');
-    poll(d.job_id,0);
-  }catch(err){
-    clearInterval(window._tk);out.innerHTML='';
-    out.appendChild(el(`<div class="note err"><b>提交失败：</b>${esc(err.message)}</div>`));
-    goBtn.disabled=false;goBtn.textContent='开始体检';
-  }
-});
-
-function loading(title,note){
-  return `<div class="progress">
-    <div class="pg-head"><span class="spin"></span>${title}</div>
-    <div class="pg-bar"><i></i></div>
-    <div class="pg-log"><span id="pg-note">${note}</span><span id="el">0s</span></div>
-  </div>`;
-}
-function startClock(){
-  clearInterval(window._tk);
-  window._tk=setInterval(()=>{
-    const e=$('el');
-    if(e)e.textContent=Math.round((Date.now()-window._t0)/1000)+'s';
-  },500);
-}
-
-async function poll(jobId,tries){
-  const started=window._t0||Date.now();
-  if(Date.now()-started>5*60*1000){
-    clearInterval(window._tk);out.innerHTML='';
-    out.appendChild(el(`<div class="note warn"><b>等太久了，这次没等到结果。</b><br>
-      站点可能在拦自动化访问，或页面特别多。把「抓取页数」调到 10 再试。</div>`));
-    goBtn.disabled=false;goBtn.textContent='开始体检';
-    return;
-  }
-  const steps=['已排队，正在抓取页面…','正在解析页面…','正在跑 43 项检查…','快好了…'];
-  const n=$('pg-note');
-  if(n&&tries%3===0)n.textContent=steps[Math.min(3,Math.floor(tries/3))];
-  try{
-    const r=await fetch('/api/v1/web/jobs/'+jobId);
-    if(!r.ok)throw new Error('任务不存在或服务已重启');
-    const d=await r.json();
-    if(d.status==='done'){clearInterval(window._tk);render(d.report);return;}
-    if(d.status==='failed'){
-      clearInterval(window._tk);out.innerHTML='';
-      out.appendChild(el(`<div class="note err"><b>扫描失败：</b>${esc(d.error||'未知错误')}</div>`));
-      goBtn.disabled=false;goBtn.textContent='开始体检';return;
+"use strict";
+/* ══════════════════════════════════════════════════════════
+   API 层 —— 全部照 backend OpenAPI 契约，不凭印象
+   ══════════════════════════════════════════════════════════ */
+const API = {
+  async req(method, path, body) {
+    const opt = { method, headers: {} };
+    if (body !== undefined) {
+      opt.headers["Content-Type"] = "application/json";
+      opt.body = JSON.stringify(body);
     }
-    timer=setTimeout(()=>poll(jobId,tries+1),1100);
-  }catch(err){
-    clearInterval(window._tk);out.innerHTML='';
-    out.appendChild(el(`<div class="note warn">${esc(err.message)}——请重新发起一次。</div>`));
-    goBtn.disabled=false;goBtn.textContent='开始体检';
+    const res = await fetch(path, opt);
+    const txt = await res.text();
+    let data = null;
+    try { data = txt ? JSON.parse(txt) : null; } catch { data = null; }
+    if (!res.ok) {
+      // 错误必须说清「是什么、为什么、下一步」——不许只抛一句红色
+      const detail = (data && (data.detail || data.reason)) ||
+                     (typeof data === "string" && data) ||
+                     `HTTP ${res.status}`;
+      const e = new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+      e.status = res.status; e.data = data;
+      throw e;
+    }
+    return data;
+  },
+  get:  (p)     => API.req("GET", p),
+  post: (p,b)   => API.req("POST", p, b ?? {}),
+  patch:(p,b)   => API.req("PATCH", p, b),
+  sites:        ()     => API.get("/api/v1/sites"),
+  createSite:   (b)    => API.post("/api/v1/sites", b),
+  site:         (id)   => API.get(`/api/v1/sites/${id}`),
+  scan:         (id,b) => API.post(`/api/v1/sites/${id}/scan`, b),
+  jobs:         (id)   => API.get(`/api/v1/sites/${id}/jobs`),
+  report:       (id)   => API.get(`/api/v1/sites/${id}/report`),
+  trend:        (id)   => API.get(`/api/v1/sites/${id}/trend`),
+  issues:       (id,q) => API.get(`/api/v1/sites/${id}/issues` + (q||"")),
+  setIssue:     (id,iid,st) => API.patch(`/api/v1/sites/${id}/issues/${iid}`, {status:st}),
+  bulkIssue:    (id,fp,st)  => API.patch(`/api/v1/sites/${id}/issues`, {fingerprint:fp,status:st}),
+  keywords:     (id)   => API.get(`/api/v1/sites/${id}/keywords?limit=200`),
+  expandKw:     (id,b) => API.post(`/api/v1/sites/${id}/keywords/expand`, b),
+  brief:        (id,b) => API.post(`/api/v1/sites/${id}/brief`, b),
+  aiSummary:    (id)   => API.get(`/api/v1/sites/${id}/report/summary`),
+  rankDrops:    (id,b) => API.post(`/api/v1/sites/${id}/rank-drops`, b),
+  ackDrops:     (id,keys) => API.post(`/api/v1/sites/${id}/rank-drops/ack`, {alert_keys:keys}),
+  usage:        (id)   => API.get(`/api/v1/sites/${id}/usage`),
+};
+
+/* ══════════════════════════════════════════════════════════
+   工具
+   ══════════════════════════════════════════════════════════ */
+const $  = (s,r=document) => r.querySelector(s);
+const el = (tag, attrs={}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v;
+    else if (k === "html") n.innerHTML = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2).toLowerCase(), v);
+    else if (v !== null && v !== undefined && v !== false) n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) {
+    if (c === null || c === undefined || c === false) continue;
+    n.append(c.nodeType ? c : document.createTextNode(String(c)));
+  }
+  return n;
+};
+const SEV = ["critical","high","medium","low","info"];
+const SEV_LABEL = {critical:"严重",high:"高",medium:"中",low:"低",info:"提示"};
+const sevTag = (s) => el("span",{class:`sev sev-${s}`,title:SEV_LABEL[s]||s}, SEV_LABEL[s]||s);
+
+/* null 与 0 必须分开显示：0 分是「抓到了但全是问题」，
+   null 是「一页都没抓到」—— 两者都显示成 0 会让用户误判该做什么。*/
+const num = (v) => (v === null || v === undefined) ? "—" : v;
+const fmtTime = (iso) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return isNaN(d) ? "—" : d.toLocaleString("zh-CN",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+};
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ══════════════════════════════════════════════════════════
+   状态
+   ══════════════════════════════════════════════════════════ */
+const S = { sites: [], siteId: null, tab: "overview", busy: new Map(), note: null };
+
+function toast(msg, kind="info") {
+  const t = el("div", {class:"err", style: kind==="info"
+      ? "background:var(--bg-raised);border-color:var(--border)"
+      : ""},
+    el("div",{class:"t"}, msg));
+  const host = $("#main");
+  host.prepend(t);
+  setTimeout(() => t.remove(), 4200);
+}
+async function withBusy(key, fn) {
+  if (S.busy.has(key)) return;
+  S.busy.set(key, true); render();
+  try { return await fn(); }
+  catch (e) { toast(e.message || String(e), "error"); throw e; }
+  finally { S.busy.delete(key); render(); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   组件
+   ══════════════════════════════════════════════════════════ */
+function ring(score) {
+  // null 时画空环并显示「—」：没抓到页不是 0 分
+  const v = (score === null || score === undefined) ? 0 : Math.max(0, Math.min(100, score));
+  const C = 2 * Math.PI * 32;
+  return el("div", {class:"ring", title: score === null || score === undefined
+      ? "没有可评分的数据：一页都没抓到" : `健康分 ${v}`},
+    el("div",{html:`
+      <svg width="76" height="76" viewBox="0 0 76 76" aria-hidden="true">
+        <circle class="tr" cx="38" cy="38" r="32"/>
+        <circle class="vl" cx="38" cy="38" r="32"
+          stroke-dasharray="${C}" stroke-dashoffset="${C*(1-v/100)}"/>
+      </svg>`}),
+    el("div",{class:"num"},
+      score === null || score === undefined
+        ? el("span",{style:"color:var(--fg-faint)",html:"—"})
+        : [el("span",{},String(Math.round(v))), el("small",{}, "/100")]));
+}
+
+function sparkline(points) {
+  const pts = (points||[]).filter(p => p && p.score !== null && p.score !== undefined);
+  if (pts.length < 2) {
+    return el("div",{class:"empty",style:"padding:20px"},
+      el("div",{class:"d"},"至少需要两轮有分数的扫描才能画出趋势。"));
+  }
+  const W=520,H=56,P=4;
+  const xs = i => P + i*(W-2*P)/(pts.length-1);
+  const ys = s => H-P - (Math.max(0,Math.min(100,s))/100)*(H-2*P);
+  const d = pts.map((p,i)=>`${i?"L":"M"}${xs(i).toFixed(1)},${ys(p.score).toFixed(1)}`).join("");
+  const last = pts[pts.length-1];
+  return el("div",{class:"spark"}, el("div",{html:`
+    <svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"
+         role="img" aria-label="健康分趋势，最近 ${pts.length} 轮，从 ${Math.round(pts[0].score)} 到 ${Math.round(last.score)}">
+      <line class="gl" x1="0" y1="${ys(0)}" x2="${W}" y2="${ys(0)}"/>
+      <line class="gl" x1="0" y1="${ys(100)}" x2="${W}" y2="${ys(100)}"/>
+      <path class="ln" d="${d}"/>
+      <circle class="ar" cx="${xs(pts.length-1).toFixed(1)}" cy="${ys(last.score).toFixed(1)}" r="3"/>
+    </svg>`}));
+}
+
+function emptyBox(title, desc, action) {
+  return el("div",{class:"empty"},
+    el("div",{class:"t"}, title), el("div",{class:"d"}, desc),
+    action ? el("div",{class:"a"}, action) : null);
+}
+function errBox(e, hint) {
+  return el("div",{class:"err"},
+    el("div",{class:"t"},"请求失败"),
+    el("div",{class:"d"}, e.message || String(e)),
+    hint ? el("div",{class:"n"}, hint) : null);
+}
+
+/* ══════════════════════════════════════════════════════════
+   左栏
+   ══════════════════════════════════════════════════════════ */
+function renderSide() {
+  const host = $("#siteList");
+  host.textContent = "";
+  if (!S.sites.length) {
+    host.append(el("div",{style:"padding:10px 8px;font-size:12px;color:var(--fg-faint);line-height:1.6"},
+      "还没接入任何站点。点下面「接入站点」，填一个域名就能扫。"));
+    return;
+  }
+  for (const s of S.sites) {
+    host.append(el("button", {
+      class:"site-item", "aria-current": String(s.id === S.siteId),
+      onclick: () => { S.siteId = s.id; S.tab = "overview"; render(); },
+    },
+      el("div",{class:"d"}, s.domain),
+      el("div",{class:"m"}, (s.markets||[]).join(" · ") || "未指定市场")));
   }
 }
 
-/* 签名动作：带刻度的量规。0–100，每 10 分长刻度并标数，每 2 分短刻度，
-   琥珀填充到得分处，墨黑标记指到得分处。 */
-function gauge(score){
-  const W=100,H=22,pad=1.2;
-  let ticks='';
-  for(let v=0;v<=100;v+=2){
-    const major=v%10===0;
-    ticks+=`<line class="${major?'major':'minor'}" x1="${v}" y1="${major?0:11}"
-      x2="${v}" y2="${major?18:15}"/>`;
-    if(major) ticks+=`<text class="num" x="${v}" y="26">${v}</text>`;
-  }
-  return `<svg viewBox="-2 -2 ${W+4} ${H+8}" preserveAspectRatio="none"
-    role="img" aria-label="健康分 ${Math.round(score)}，满分 100">
-    <line class="track" x1="0" y1="9" x2="${W}" y2="9"/>
-    ${ticks}
-    <line class="fill" x1="0" y1="9" x2="${Math.max(pad,score)}" y2="9"/>
-    <line class="marker" x1="${score}" y1="-2" x2="${score}" y2="20"/>
-  </svg>`;
+/* ══════════════════════════════════════════════════════════
+   主区
+   ══════════════════════════════════════════════════════════ */
+function render() {
+  renderSide();
+  const main = $("#main");
+  main.textContent = "";
+  if (!S.sites.length) { main.append(welcomeView()); return; }
+  if (S.siteId === null) { main.append(pickSiteView()); return; }
+  const site = S.sites.find(s => s.id === S.siteId);
+  main.append(siteHeader(site), tabBar(site));
+  const body = el("div",{style:"padding-top:20px"});
+  main.append(body);
+  ({ overview: viewOverview, issues: viewIssues, trend: viewTrend,
+     keywords: viewKeywords, brief: viewBrief, ranks: viewRanks, usage: viewUsage
+   }[S.tab] || viewOverview)(body, site);
 }
 
-function render(rep){
-  goBtn.disabled=false;goBtn.textContent='重新体检';
-  out.innerHTML='';
-  if(!rep){out.appendChild(el('<div class="note warn">没有拿到报告。</div>'));return;}
+function welcomeView() {
+  return el("div",{style:"flex:1;display:grid;place-items:center;padding:40px"},
+    el("div",{style:"max-width:46ch;text-align:center"},
+      el("h1",{style:"font-size:22px;letter-spacing:-.03em;margin:0 0 10px"},"还没有接入任何站点"),
+      el("p",{style:"color:var(--fg-muted);line-height:1.7;margin:0 0 20px;font-size:14px"},
+        "接一个域名就能拿到完整体检：22 条规则全站扫一遍，给出健康分、问题清单，以及每条问题的判定依据。"),
+      el("button",{class:"btn btn-p",onclick:openAdd},"接入第一个站点")));
+}
 
-  // 一页没抓到时 health_score 是 null，不是 0。
-  // 「什么都没看到」跟「抓到了但问题多」必须分开说。
-  if(rep.health_score==null){
-    out.appendChild(el(`<div class="note warn"><b>一页都没抓到，所以给不出分数。</b><br>
-      常见原因：站点屏蔽了自动化访问、需要 JS 渲染，或 robots.txt 不允许。<br>
-      可以试试打开上面的「渲染 JavaScript」再扫一次。<br>
-      <span style="color:var(--muted)">这不是「你的网站没问题」，只是我们什么都没看到。</span></div>`));
+function pickSiteView() {
+  return el("div",{style:"flex:1;display:grid;place-items:center;padding:40px"},
+    el("div",{style:"text-align:center"},
+      el("p",{style:"color:var(--fg-muted)"},"从左边选一个站点，或接入新的。")));
+}
+
+function siteHeader(site) {
+  const busy = S.busy.get(`scan:${site.id}`);
+  return el("div",{class:"top"},
+    el("div",{style:"min-width:0"},
+      el("h1",{}, site.domain),
+      el("div",{class:"sub"}, (site.markets||[]).join(" · ") || "未指定市场")),
+    el("div",{class:"spacer"}),
+    busy ? el("span",{class:"tag"},"扫描进行中…")
+         : el("button",{class:"btn btn-p",onclick:()=>openScan(site)},"开始体检"));
+}
+
+const TABS = [
+  ["overview","概览"],["issues","问题"],["trend","趋势"],
+  ["keywords","关键词"],["brief","内容 Brief"],["ranks","排名告警"],["usage","用量"],
+];
+function tabBar(site) {
+  const bar = el("div",{class:"tabs"});
+  for (const [k,label] of TABS) {
+    bar.append(el("button",{class:"tab","aria-selected":String(S.tab===k),
+      onclick:()=>{S.tab=k;render();}},
+      label, k==="issues" ? el("span",{class:"badge",id:"issueBadge"}) : null));
+  }
+  return bar;
+}
+
+/* ── 概览 ─────────────────────────────────────────────── */
+async function viewOverview(host, site) {
+  host.append(el("div",{class:"skel",style:"height:96px;margin:0 28px 20px"}));
+  let rep, trend;
+  try {
+    rep = await API.report(site.id);
+    trend = await API.trend(site.id).catch(() => null);
+  } catch (e) {
+    host.textContent = "";
+    host.append(el("div",{class:"panel"},
+      el("div",{class:"panel-b"}, errBox(e, "如果刚启动服务，确认它已加载最新代码：GET /api/v1/health 的 stale 字段。"))));
+    return;
+  }
+  host.textContent = "";
+  if (S.busy.has(`scan:${site.id}`)) { host.append(el("div",{class:"skel",style:"height:200px;margin:0 28px 20px"})); return; }
+
+  const counts = rep.counts || {};
+  const total = SEV.reduce((a,k)=>a+((counts[k]||0)),0);
+
+  if (rep.pages_crawled === 0) {
+    host.append(el("div",{class:"panel"}, el("div",{class:"panel-b"},
+      emptyBox("这个站还没扫过", "先跑一次体检，才会有健康分和问题清单。扫一次通常 1～2 分钟，1000 页的站约 5.6 分钟。",
+        el("button",{class:"btn btn-p",onclick:()=>openScan(site)},"开始体检")))));
     return;
   }
 
-  last=rep;
-  const s=rep.health_score, v=Math.max(0,Math.min(100,s));
-  const g=s>=90?'g1':s>=70?'g2':s>=40?'g3':'g4';
-  const verdict=s>=90?'状态不错':s>=70?'有一些要改':s>=40?'问题不少':'亟需处理';
+  /* ── 签名动作：最该先做的三件事 ── */
+  const issues = rep.issues || [];
+  const rank = {critical:0,high:1,medium:2,low:3,info:4};
+  const sorted = issues.slice().sort((a,b)=>
+    (rank[a.severity]??9)-(rank[b.severity]??9) || (b.occurrences||1)-(a.occurrences||1));
+  const prio = sorted.slice(0,3);
 
-  const dims=Object.entries(rep.score_breakdown?.dimension_scores||{});
-  out.appendChild(el(`<div class="report">
-    <div class="rpt-hd">
-      <span class="rpt-score ${g}">${Math.round(s)}</span>
-      <span class="rpt-verdict">${verdict}</span>
-      <span class="rpt-meta">${esc(rep.domain)}<br>
-        ${rep.pages_crawled} 页 · ${rep.pages_discovered} URL · ${rep.duration_seconds}s</span>
-    </div>
-    <div class="gauge">${gauge(v)}</div>
-    <div class="dims">
-      ${dims.map(([k,val])=>`<div class="dim">
-        <label>${esc(DIM_CN[k]||k)}</label>
-        <div class="t"><i style="width:${Math.max(0,Math.min(100,val))}%"></i></div>
-        <em>${Math.round(val)}</em></div>`).join('')}
-    </div>
-  </div>`));
+  const prioPanel = el("div",{class:"panel"},
+    el("div",{class:"panel-h"},
+      el("h2",{},"最该先做的三件事"),
+      el("span",{class:"n"},`共 ${total} 条问题`)),
+    el("div",{class:"panel-b"},
+      prio.length
+        ? el("div",{class:"prio"}, prio.map((it,i)=>
+            el("div",{class:"prio-i", style:`border-left-color:var(--${it.severity==="info"?"fg-faint":it.severity})`},
+              el("div",{class:"num"}, String(i+1)),
+              el("div",{class:"bd"},
+                el("div",{class:"t"}, it.title),
+                el("div",{class:"u"}, it.url || it.code),
+                el("div",{style:"margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"},
+                  sevTag(it.severity),
+                  el("button",{class:"btn btn-sm",onclick:()=>markIssue(site,it)},"标为已修"),
+                  el("button",{class:"btn btn-sm btn-g",onclick:()=>{S.tab="issues";render();}},"看全部"))))))
+        : emptyBox("没有待处理的问题","这轮扫描没发现问题。保持定期体检，才能发现回退。")));
+  host.append(prioPanel);
 
-  const counts=rep.score_breakdown?.severity_counts||{};
-  const total=rep.issue_count||0;
-  if(!total){
-    out.appendChild(el(`<div class="note ok"><b>这次没查出问题。</b><br>
-      <span style="color:var(--muted)">但这不等于你的网站一定没问题——只覆盖了这次抓到的
-      ${rep.pages_crawled} 个页面，而且只跑了当前选中的市场那套规则。</span></div>`));
-    return;
+  /* ── 分数 + 统计 ── */
+  const stat = (k,v,x) => el("div",{class:"stat"},el("div",{class:"k"},k),
+    el("div",{class:"v"},v), x?el("div",{class:"x"},x):null);
+  host.append(el("div",{style:"display:flex;gap:20px;align-items:center;padding:0 28px 20px;flex-wrap:wrap"},
+    ring(rep.health_score),
+    el("div",{style:"display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;              background:var(--border);border:1px solid var(--border);border-radius:var(--r-panel);overflow:hidden;flex:1;min-width:280px"},
+      stat("已抓页面", String(rep.pages_crawled)),
+      stat("严重", String(counts.critical||0)),
+      stat("高", String(counts.high||0)),
+      stat("中", String(counts.medium||0)),
+      stat("低", String(counts.low||0)))));
+
+  /* ── 趋势 ── */
+  host.append(el("div",{class:"panel"},
+    el("div",{class:"panel-h"},
+      el("h2",{},"健康分趋势"),
+      el("span",{class:"n"}, trend ? `${(trend.points||[]).length} 轮` : "")),
+    el("div",{class:"panel-b"}, trend && (trend.points||[]).length
+      ? sparkline(trend.points)
+      : emptyBox("还没有趋势数据","趋势需要至少两轮扫描。当前只有一轮，等下次体检后再看。"))));
+
+  /* ── AI 总结（收费功能）── */
+  host.append(el("div",{class:"panel"},
+    el("div",{class:"panel-h"}, el("h2",{},"AI 总结"),
+      el("span",{class:"n"},"需配置模型 API")),
+    el("div",{class:"panel-b"}, el("div",{id:"aiBox"},
+      el("button",{class:"btn btn-sm",onclick:()=>loadAi(site)},"生成总结")))));
+}
+
+async function loadAi(site) {
+  const box = $("#aiBox"); if (!box) return;
+  box.textContent = "生成中…";
+  try {
+    const r = await API.aiSummary(site.id);
+    box.textContent = "";
+    if (r.summary) box.append(el("p",{style:"margin:0;line-height:1.7"}, r.summary));
+    else box.append(el("div",{},
+      el("div",{style:"color:var(--fg-muted);font-size:13px;line-height:1.6"},
+        r.reason || "没生成出来。"),
+      el("div",{style:"color:var(--fg-faint);font-size:12px;margin-top:6px"},
+        "这是需要模型 API 的功能，配上 key 即可用；不影响其余功能。")));
+  } catch (e) { box.textContent = ""; box.append(errBox(e)); }
+}
+
+/* ── 问题 ─────────────────────────────────────────────── */
+async function viewIssues(host, site) {
+  const wrap = el("div");
+  host.append(wrap);
+  const filter = {severity:"", limit:100};
+  async function load() {
+    wrap.textContent = "";
+    const q = new URLSearchParams();
+    if (filter.severity) q.set("severity", filter.severity);
+    q.set("limit", String(filter.limit));
+    let items;
+    try { items = await API.issues(site.id, "?" + q.toString()); }
+    catch (e) { wrap.append(errBox(e)); return; }
+
+    const bar = el("div",{class:"toolbar"});
+    const sel = el("select",{style:"height:30px;padding:0 8px;background:var(--bg-sunken);border:1px solid var(--border);border-radius:var(--r-ctl)",
+      onchange:(e)=>{filter.severity=e.target.value;load();}});
+    sel.append(el("option",{value:""},"全部严重度"));
+    for (const s of SEV) sel.append(el("option",{value:s},SEV_LABEL[s]));
+    sel.value = filter.severity;
+    bar.append(sel, el("span",{class:"tag"},`${items.length} 条`));
+    wrap.append(bar);
+
+    if (!items.length) {
+      wrap.append(el("div",{class:"panel"}, el("div",{class:"panel-b"},
+        emptyBox("这里没有问题", filter.severity ? "换个严重度看看。" : "这轮扫描没发现问题。"))));
+      return;
+    }
+
+    const rows = items.map(it => {
+      const tr = el("tr",{},
+        el("td",{}, it.severity ? sevTag(it.severity) : "—"),
+        el("td",{}, el("div",{style:"font-weight:500"}, it.title),
+          el("div",{style:"font:400 11px/1.5 var(--mono);color:var(--fg-faint);margin-top:2px"}, it.url || it.code)),
+        el("td",{class:"num"}, String(it.occurrences || 1)),
+        el("td",{}, it.status === "open"
+          ? el("button",{class:"btn btn-sm",onclick:()=>markIssue(site,it)},"标为已修")
+          : el("span",{class:"tag"}, it.status)));
+      return tr;
+    });
+    wrap.append(el("div",{class:"panel"},
+      el("table",{},
+        el("thead",{}, el("tr",{},
+          el("th",{},"严重度"), el("th",{},"问题"),
+          el("th",{class:"num"},"页数"), el("th",{},"操作"))),
+        el("tbody",{}, rows))));
+  }
+  await load();
+}
+
+async function markIssue(site, it) {
+  try {
+    await API.setIssue(site.id, it.id, "fixed");
+    toast("已标为已修。下次体检会确认它是否真的消失了。");
+    render();
+  } catch (e) { toast(e.message || String(e), "error"); }
+}
+
+/* ── 趋势 ─────────────────────────────────────────────── */
+async function viewTrend(host, site) {
+  let t;
+  try { t = await API.trend(site.id); } catch (e) { host.append(errBox(e)); return; }
+  const pts = t.points || [];
+  host.append(el("div",{class:"panel"},
+    el("div",{class:"panel-h"}, el("h2",{},"每轮体检的分数"),
+      el("span",{class:"n"}, `${pts.length} 轮`)),
+    el("div",{class:"panel-b"},
+      pts.length >= 2 ? sparkline(pts) :
+        emptyBox("轮次还不够","趋势需要至少两轮扫描。")),
+    pts.length ? el("div",{class:"panel-b",style:"padding-top:0"},
+      el("table",{},
+        el("thead",{},el("tr",{},el("th",{},"时间"),el("th",{class:"num"},"分数"),
+          el("th",{class:"num"},"抓取页数"),el("th",{},"状态"))),
+        el("tbody",{}, pts.slice().reverse().map(p=>el("tr",{},
+          el("td",{style:"font:400 12px/1.5 var(--mono)"},fmtTime(p.finished_at)),
+          el("td",{class:"num"}, num(p.score===null||p.score===undefined?null:Math.round(p.score))),
+          el("td",{class:"num"}, String(p.pages_crawled ?? "—")),
+          el("td",{}, el("span",{class:"tag"}, p.status))))))) : null));
+}
+
+/* ── 关键词 ───────────────────────────────────────────── */
+async function viewKeywords(host, site) {
+  const wrap = el("div"); host.append(wrap);
+  async function load() {
+    wrap.textContent = "";
+    const tools = el("div",{class:"toolbar"});
+    const seed = el("input",{type:"text",placeholder:"rust 所有权, async trait",
+      style:"height:30px;padding:0 9px;min-width:220px;background:var(--bg-sunken);border:1px solid var(--border);border-radius:var(--r-ctl)"});
+    tools.append(el("label",{style:"font:600 11px/1 var(--mono);color:var(--fg-muted)"},"种子词"),
+      seed,
+      el("button",{class:"btn",onclick:async()=>{
+        const seeds = seed.value.split(/[,，]/).map(s=>s.trim()).filter(Boolean);
+        if (!seeds.length) { toast("至少给一个种子词——没有种子的共现等于把全站词两两配对，噪声大于信号","error"); return; }
+        try { const r = await API.expandKw(site.id,{seeds});
+          toast(r.status==="ok" ? `扩展出 ${r.candidates} 个候选词，分成 ${r.clusters} 簇`
+                                : `没扩展：${r.reason}`);
+          load();
+        } catch(e){ toast(e.message||String(e),"error"); }
+      }},"扩展 + 聚类"),
+      el("span",{class:"spacer"}),
+      el("button",{class:"btn btn-g btn-sm",onclick:load},"刷新"));
+    wrap.append(tools);
+
+    let data;
+    try { data = await API.keywords(site.id); } catch (e) { wrap.append(errBox(e)); return; }
+    const items = data.items || [];
+    if (!items.length) {
+      wrap.append(el("div",{class:"panel"}, el("div",{class:"panel-b"},
+        emptyBox("还没有关键词","关键词来自已抓页面的语料与共现统计。先跑一次体检，再填种子词扩展。"))));
+      return;
+    }
+    const head = el("tr", {},
+      el("th", {}, "词"), el("th", {}, "意图"),
+      el("th", {class:"num"}, "簇"),
+      el("th", {class:"num"}, "分数"),
+      el("th", {}, "来源"));
+    const rows = items.map(k => el("tr", {},
+      el("td", {style:"font:500 13px/1.4 var(--mono)"}, k.term),
+      el("td", {}, k.intent ? el("span", {class:"tag"}, k.intent) : "—"),
+      el("td", {class:"num"}, num(k.cluster_id)),
+      el("td", {class:"num"}, num(k.score)),
+      el("td", {style:"font:400 12px/1.4 var(--mono);color:var(--fg-faint)"}, k.source || "—")));
+    wrap.append(el("div", {class:"panel"},
+      el("div", {class:"panel-h"},
+        el("h2", {}, "关键词"),
+        el("span", {class:"n"}, `${data.total} 个`)),
+      el("table", {},
+        el("thead", {}, head),
+        el("tbody", {}, rows))));
+  }
+  await load();
+}
+
+/* ── 内容 Brief ───────────────────────────────────────── */
+async function viewBrief(host, site) {
+  const wrap = el("div"); host.append(wrap);
+  const kw = el("input",{type:"text",placeholder:"要写的关键词"});
+  const url = el("input",{type:"text",placeholder:"https://example.com/target-page"});
+  const btn = el("button",{class:"btn btn-p"},"生成 Brief");
+  wrap.append(el("div",{class:"panel"},
+    el("div",{class:"panel-h"}, el("h2",{},"内容 Brief"),
+      el("span",{class:"n"},"纯规则计算，不需要模型 API")),
+    el("div",{class:"panel-b"},
+      el("div",{class:"row"},
+        el("div",{class:"fld"},el("label",{},"关键词"),kw),
+        el("div",{class:"fld"},el("label",{},"目标 URL"),url)),
+      btn, el("div",{id:"briefOut",style:"margin-top:16px"}))));
+
+  btn.addEventListener("click", async () => {
+    const out = $("#briefOut");
+    if (!kw.value.trim() || !url.value.trim()) {
+      out.textContent = ""; out.append(errBox({message:"关键词和目标 URL 都要填"},"两者都是必需的：Brief 是「这个词 + 这篇页面」的组合。"));
+      return;
+    }
+    btn.disabled = true; out.textContent = "生成中…";
+    try {
+      const b = await API.brief(site.id,{keyword:kw.value.trim(),target_url:url.value.trim()});
+      out.textContent = ""; out.append(briefView(b));
+    } catch(e){ out.textContent=""; out.append(errBox(e)); }
+    finally { btn.disabled = false; }
+  });
+}
+
+function briefView(b) {
+  const wrap = el("div");
+  if (b.caveats && b.caveats.length) {
+    wrap.append(el("div",{class:"err",style:"background:var(--bg-raised);border-color:var(--medium)"},
+      el("div",{class:"t"},"这份 Brief 的依据不完整"),
+      ...b.caveats.map(c=>el("div",{class:"n",style:"margin-top:4px"}, c))));
+  }
+  const dl = el("dl",{class:"kv",style:"margin-top:14px"});
+  dl.append(el("dt",{},"页面类型"), el("dd",{}, b.page_type || "—"));
+  if (b.title_candidates && b.title_candidates.length) {
+    dl.append(el("dt",{},"标题候选"),
+      el("dd",{}, el("ul",{style:"margin:0;padding-left:18px"},
+        b.title_candidates.map(t=>el("li",{},t)))));
+  }
+  const ob = b.own_length_baseline || {};
+  if (Object.keys(ob).length) {
+    dl.append(el("dt",{},"本站字数基线"),
+      el("dd",{style:"font-family:var(--mono);font-size:12px"},
+        Object.entries(ob).map(([k,v])=>`${k}: ${v}`).join(" · ")));
+  }
+  wrap.append(el("div",{class:"panel"}, el("div",{class:"panel-b"}, dl)));
+  if (b.opportunities && b.opportunities.length) {
+    wrap.append(el("div",{class:"panel"},
+      el("div",{class:"panel-h"}, el("h2",{},"可做的差异化机会"), el("span",{class:"n"},`${b.opportunities.length} 条`)),
+      el("div",{class:"panel-b"}, el("div",{class:"prio"},
+        b.opportunities.map((o,i)=>el("div",{class:"prio-i",style:"border-left-color:var(--accent)"},
+          el("div",{class:"num"},String(i+1)),
+          el("div",{class:"bd"},
+            el("div",{class:"t"}, o.title || o.code || "机会"),
+            el("div",{class:"u"}, o.detail || o.why || ""))))))));
+  }
+  if (b.not_available && b.not_available.length) {
+    wrap.append(el("div",{class:"panel"},
+      el("div",{class:"panel-h"}, el("h2",{},"本次拿不到的数据")),
+      el("div",{class:"panel-b"}, el("ul",{style:"margin:0;padding-left:18px;color:var(--fg-muted);font-size:13px;line-height:1.7"},
+        b.not_available.map(x=>el("li",{},x))))));
+  }
+  return wrap;
+}
+
+/* ── 排名告警 ─────────────────────────────────────────── */
+async function viewRanks(host, site) {
+  const wrap = el("div"); host.append(wrap);
+  async function load() {
+    wrap.textContent = "";
+    const cfg = {window_days:30,min_drop:5,min_impressions:10,min_days:4,only_new:true};
+    const tools = el("div",{class:"toolbar"});
+    const nd = el("input",{type:"number",value:"5",min:"0",step:"1",
+      style:"height:30px;padding:0 8px;width:74px;background:var(--bg-sunken);border:1px solid var(--border);border-radius:var(--r-ctl)"});
+    const ni = el("input",{type:"number",value:"10",min:"0",
+      style:"height:30px;padding:0 8px;width:74px;background:var(--bg-sunken);border:1px solid var(--border);border-radius:var(--r-ctl)"});
+    tools.append(
+      el("label",{style:"font:600 11px/1 var(--mono);color:var(--fg-muted)"},"掉几名才算事"), nd,
+      el("label",{style:"font:600 11px/1 var(--mono);color:var(--fg-muted);margin-left:8px"},"最低曝光"), ni,
+      el("button",{class:"btn",style:"margin-left:8px",onclick:()=>{cfg.min_drop=+nd.value||5;cfg.min_impressions=+ni.value||0;load();}},"查"),
+      el("span",{class:"spacer"}),
+      el("span",{class:"tag"},"仅显示未标记「已看过」的"));
+    wrap.append(tools);
+
+    let alerts;
+    try { alerts = await API.rankDrops(site.id, cfg); }
+    catch (e) { wrap.append(errBox(e)); return; }
+
+    if (!alerts.length) {
+      wrap.append(el("div",{class:"panel"}, el("div",{class:"panel-b"},
+        emptyBox("没有需要提醒的跌落",
+          "要么排名没掉，要么掉得没超过你设的门槛。这是好结果——告警宁少勿多，吵多了就没人看了。"))));
+      return;
+    }
+    const panel = el("div",{class:"panel"},
+      el("div",{class:"panel-h"}, el("h2",{},"排名跌幅"), el("span",{class:"n"},`${alerts.length} 条`)),
+      el("div",{class:"panel-b"}, el("div",{class:"prio"},
+        alerts.map(a=>el("div",{class:"prio-i",style:"border-left-color:var(--high)"},
+          el("div",{class:"num"},"↓"),
+          el("div",{class:"bd"},
+            el("div",{class:"t"}, a.message),
+            el("div",{class:"u"}, `${a.from_date} → ${a.to_date}`),
+            el("div",{style:"margin-top:8px"},
+              el("button",{class:"btn btn-sm",onclick:async()=>{
+                try { await API.ackDrops(site.id,[a.alert_key]); toast("已标记看过"); load(); }
+                catch(e){ toast(e.message||String(e),"error"); }
+              }},"标记已看过"))))))));
+    wrap.append(panel);
+  }
+  await load();
+}
+
+/* ── 用量 ─────────────────────────────────────────────── */
+async function viewUsage(host, site) {
+  let u;
+  try { u = await API.usage(site.id); } catch (e) { host.append(errBox(e)); return; }
+
+  const FREE = 2000;
+  const stat = (k, v, x) => el("div", {class:"stat"},
+    el("div", {class:"k"}, k),
+    el("div", {class:"v"}, v),
+    x ? el("div", {class:"x"}, x) : null);
+
+  const statsRow = el("div", {class:"stats"},
+    stat("累计计量", String(u.total)),
+    stat("免费额度", `${FREE} 页/月`));
+  for (const [k, v] of Object.entries(u.by_kind || {})) {
+    statsRow.append(stat(k, String(v)));
   }
 
-  const f=el(`<div class="filters">
-    <span class="t">筛选</span>
-    <button class="f on" data-f="all">全部 <span class="n">${total}</span></button>
-    ${SEV.filter(k=>counts[k]).map(k=>
-      `<button class="f" data-f="${k}">${SEV_CN[k]} <span class="n">${counts[k]}</span></button>`).join('')}
-  </div>`);
-  f.querySelectorAll('.f').forEach(btn=>btn.addEventListener('click',()=>{
-    filter=btn.dataset.f;
-    f.querySelectorAll('.f').forEach(x=>x.classList.remove('on'));
-    btn.classList.add('on');paint();
-  }));
-  out.appendChild(f);
-  out.appendChild(el('<div id="list"></div>'));
-  paint();
+  const note = el("div",
+    {style:"margin-top:14px;color:var(--fg-muted);font-size:12px;line-height:1.7"},
+    "成本与抓取的页数成正比，与「扫了几次」无关。所以额度按页算：",
+    el("br"),
+    "小站随便扫、天天扫都行；大站才贵。按次数限制反而会挡住还没体验到价值的用户。");
+
+  const body = el("div", {class:"panel-b"}, statsRow, note);
+  const head = el("div", {class:"panel-h"},
+    el("h2", {}, "用量"),
+    el("span", {class:"n"}, "免费额度按页算，不按次数"));
+  host.append(el("div", {class:"panel"}, head, body));
 }
 
-function paint(){
-  const box=$('list');
-  if(!box||!last)return;
-  const all=(last.issues||[]).slice()
-    .sort((a,b)=>SEV.indexOf(a.severity)-SEV.indexOf(b.severity));
-  const shown=filter==='all'?all:all.filter(i=>i.severity===filter);
-  box.innerHTML='';
-  if(!shown.length){box.appendChild(el('<div class="note">这个级别没有问题。</div>'));return;}
-  const w=String(shown.length).padStart(3,'0');
-  shown.forEach((i,n)=>box.appendChild(card(i,'R-'+String(n+1).padStart(3,'0'),w)));
-  box.appendChild(el(`<div style="color:var(--muted);font:400 12px/1 var(--mono);
-    text-align:center;margin-top:var(--s4);letter-spacing:.04em">
-    共 ${shown.length} 条 · 每条都可在报告里追到原文证据</div>`));
+/* ══════════════════════════════════════════════════════════
+   弹层：接入站点 / 开始体检
+   ══════════════════════════════════════════════════════════ */
+function modal(title, bodyNode, onClose) {
+  function close() { scrim.remove(); onClose && onClose(); }
+
+  const boxStyle = [
+    "background:var(--bg-raised)",
+    "border:1px solid var(--border-strong)",
+    "border-radius:var(--r-panel)",
+    "width:min(560px,100%)",
+    "max-height:86vh",
+    "overflow-y:auto",
+  ].join(";");
+
+  const head = el("div", {class:"panel-h", style:"padding:14px 16px"},
+    el("h2", {}, title),
+    el("div", {class:"spacer"}),
+    el("button", {class:"btn btn-sm btn-g", onclick:() => close()}, "关闭"));
+
+  const box = el("div", {style: boxStyle},
+    head,
+    el("div", {class:"panel-b"}, bodyNode));
+
+  const scrim = el("div", {
+    style:"position:fixed;inset:0;background:oklch(0 0 0/.62);display:grid;place-items:center;padding:20px;z-index:50",
+    onclick: (e) => { if (e.target === scrim) close(); },
+  });
+  scrim.append(box);
+  document.body.append(scrim);
+
+  const f = box.querySelector("input,select");
+  if (f) f.focus();
+
+  document.addEventListener("keydown", function esc(e) {
+    if (e.key === "Escape") { close(); document.removeEventListener("keydown", esc); }
+  });
+  return {close};
 }
 
-function card(i,idx){
-  return el(`<details class="issue">
-    <summary>
-      <span class="sev ${esc(i.severity)}">${esc(SEV_CN[i.severity]||i.severity)}</span>
-      <span class="idx">${idx}</span>
-      <span class="ttl">${esc(i.title)}</span>
-      <span class="cnt">${i.affected_pages>1?i.affected_pages+' 页':''}</span>
-      <span class="caret">▶</span>
-    </summary>
-    <div class="body">
-      ${i.description?`<p>${esc(i.description)}</p>`:''}
-      ${i.fix_hint?`<div class="bl">怎么改</div><div class="fix">${esc(i.fix_hint)}</div>`:''}
-      ${i.fix_example?`<div class="bl" style="margin-top:var(--s3)">示例</div>
-        <div class="fix"><pre>${esc(i.fix_example)}</pre></div>`:''}
-      ${i.url?`<div class="bl" style="margin-top:var(--s3)">出问题的页面</div>
-        <div class="url">${esc(i.url)}</div>`:''}
-      <div class="bl" style="margin-top:var(--s3)">规则</div>
-      <span class="code">${esc(i.code)}</span>
-    </div>
-  </details>`);
+function openAdd() {
+  const dom = el("input", {type:"text", placeholder:"example.com"});
+  const mk  = el("input", {type:"text", placeholder:"base, google, baidu", value:"base"});
+  const out = el("div", {style:"margin-top:12px"});
+
+  async function submit() {
+    const d = dom.value.trim();
+    if (!d) { dom.setAttribute("aria-invalid", "true"); return; }
+    try {
+      const markets = mk.value.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+      const created = await API.createSite({domain: d, markets});
+      m.close();
+      S.sites = await API.sites();
+      S.siteId = created.id;
+      S.tab = "overview";
+      toast(`已接入 ${created.domain}，跑一次体检就有结论了`);
+      render();
+    } catch (e) {
+      out.textContent = "";
+      out.append(errBox(e));
+    }
+  }
+
+  const body = el("div", {},
+    el("div", {class:"fld"},
+      el("label", {}, "域名"), dom,
+      el("div", {class:"hint"}, "只填域名，不要带 https:// 和路径。")),
+    el("div", {class:"fld"},
+      el("label", {}, "检查市场"), mk,
+      el("div", {class:"hint"},
+        "base 是通用规则；google / baidu / cnh_eco 是各生态专属规则。")),
+    el("button", {class:"btn btn-p", onclick: submit}, "接入"),
+    out);
+
+  const m = modal("接入站点", body);
+  dom.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
 }
+
+function openScan(site) {
+  const pages = el("input", {type:"number", value:"100", min:"1", max:"5000"});
+  const rps   = el("input", {type:"number", value:"3", min:"0.2", step:"0.5"});
+  const depth = el("input", {type:"number", value:"6", min:"0", max:"20"});
+  const js    = el("select", {},
+    el("option", {value:"false"}, "否（快，静态 HTML）"),
+    el("option", {value:"true"},  "是（慢，能看 JS 渲染后的页面）"));
+
+  function start() {
+    const body = {
+      max_pages: Math.max(1, +pages.value || 100),
+      max_depth: Math.max(0, +depth.value || 6),
+      per_domain_rps: Math.max(0.2, +rps.value || 3),
+      render_js: js.value === "true",
+    };
+    m.close();
+    withBusy(`scan:${site.id}`, async () => {
+      const r = await API.scan(site.id, body);
+      S.sites = await API.sites().catch(() => S.sites);
+      toast(`扫描完成：抓了 ${r.pages_crawled ?? "?"} 页`);
+      render();
+    }).catch(() => {});
+  }
+
+  const field = (label, node, hint) => el("div", {class:"fld"},
+    el("label", {}, label), node,
+    hint ? el("div", {class:"hint"}, hint) : null);
+
+  const body = el("div", {},
+    el("div", {class:"row"},
+      field("最多抓几页", pages, "3 rps 下，1000 页约 5.6 分钟，这是物理下界。"),
+      field("最大深度", depth)),
+    el("div", {class:"row"},
+      field("每秒请求数", rps, "调高会让对方站点更快把你拉黑。"),
+      field("渲染 JS", js)),
+    el("button", {class:"btn btn-p", onclick: start}, "开始"));
+
+  const m = modal(`体检 ${site.domain}`, body);
+}
+
+/* ══════════════════════════════════════════════════════════
+   启动
+   ══════════════════════════════════════════════════════════ */
+$("#btnAdd").addEventListener("click", openAdd);
+(async function boot() {
+  try {
+    S.sites = await API.sites();
+    if (S.sites.length === 1) S.siteId = S.sites[0].id;
+    $("#brandSub").textContent = `${S.sites.length} 个站点`;
+  } catch (e) {
+    $("#brandSub").textContent = "服务未连接";
+    $("#siteList").append(errBox(e, "确认后端已启动，并加载了最新代码。"));
+  }
+  render();
+  // 扫描进行中时轻量轮询，让「开始体检」有真实的进行中反馈
+  setInterval(() => { if ([...S.busy.keys()].some(k=>k.startsWith("scan:"))) render(); }, 2000);
+})();
 </script>
 </body>
 </html>
