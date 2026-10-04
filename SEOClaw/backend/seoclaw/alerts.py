@@ -31,6 +31,7 @@ class RankPoint:
 @dataclass(frozen=True, slots=True)
 class RankDropAlert:
     url: str
+    #: 稳定标识「这一场跌落」，用于「已看过」标记。
     from_position: float
     to_position: float
     drop: float
@@ -40,6 +41,18 @@ class RankDropAlert:
     #: 等于让用户自己解读——而用户看不出「10→20」是好是坏。
     message: str = ""
     evidence: dict = field(default_factory=dict)
+
+    @property
+    def key(self) -> str:
+        """同一场跌落的稳定标识：URL + 起止日。
+
+        ⚠️ 刻意**不含**分数与曝光量：同一场跌落每被查一次，算出来的
+        from_position/to_position 可能因为窗口滑动而略有不同。若把它们
+        塞进标识，用户标记过一次「看过了」，下一次窗口一滑就算成
+        **另一场**跌落，于是同件事反复提醒 —— 那正是加「已看过」
+        本来要解决的问题。标识只能由「这件事本身」决定。
+        """
+        return f"{self.url}|{self.from_date}|{self.to_date}"
 
 
 def detect_rank_drops(

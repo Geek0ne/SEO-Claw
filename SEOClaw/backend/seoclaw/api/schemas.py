@@ -218,6 +218,19 @@ class RankDropRequest(BaseModel):
     min_drop: float = Field(default=5.0, ge=0.0, le=1000.0)
     min_impressions: int = Field(default=10, ge=0, le=1_000_000)
     min_days: int = Field(default=4, ge=2, le=90)
+    #: 只返回还没被标记过「已看过」的。默认 False —— 全量返回才是
+    #: 「这个位置现在有哪些跌落」的诚实答案；要「有什么新动静」才开。
+    only_new: bool = False
+
+
+class RankAlertAckIn(BaseModel):
+    """标记若干条告警为已看过。
+
+    ⚠️ 由**用户动作**驱动，不在查询时自动标记：「我算了但没人看」
+    不等于「看过了」，自动标记等于这声告警根本没发过。
+    """
+
+    alert_keys: list[str] = Field(min_length=1, max_length=200)
 
 
 class RankAlertOut(BaseModel):
@@ -235,6 +248,8 @@ class RankAlertOut(BaseModel):
     to_date: str
     message: str
     evidence: dict[str, Any] = Field(default_factory=dict)
+    #: 稳定标识这一场跌落，用于 ack。
+    alert_key: str = ""
 
 
 class UsageOut(BaseModel):

@@ -616,6 +616,35 @@ class Suggestion(Base, TimestampMixin):
 # --------------------------------------------------------------------------
 
 
+class RankAlertAck(Base):
+    """一条排名跌幅告警的「已看过」标记。
+
+    ⚠️ 没有这张表，告警就是个会一直重复的函数：同一场跌落（同一 URL、
+    同一对起止日）在往后每一次查询里都会被重新算出来、重新报一次。
+    而**告警一多就不叫告警了** —— 用户会开始整体忽略，于是真正该看的
+    那次也一起被忽略。
+
+    「已看过」必须由**用户动作**驱动，不能查询时顺手自动标记：自动标记
+    意味着「我算了但没人看」也算看过，那这声告警就等于没发过。
+    """
+
+    __tablename__ = "rank_alert_acks"
+    __table_args__ = (
+        UniqueConstraint("site_id", "alert_key", name="uq_alert_ack"),
+        Index("ix_alert_ack_site", "site_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    site_id: Mapped[int] = mapped_column(
+        ForeignKey("sites.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    #: 稳定标识一场跌落：url + 起止日。同一天同一段区间算同一场。
+    alert_key: Mapped[str] = mapped_column(String(200), nullable=False)
+    acked_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class UsageEvent(Base):
     """一次计量事件（**追加写，不更新**）。
 
@@ -721,4 +750,5 @@ __all__ = [
     "Suggestion",
     "RankHistory",
     "UsageEvent",
+    "RankAlertAck",
 ]

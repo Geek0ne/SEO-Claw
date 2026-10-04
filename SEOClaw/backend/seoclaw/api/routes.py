@@ -29,6 +29,7 @@ from .schemas import (
     KeywordExpandOut,
     KeywordOut,
     KeywordPage,
+    RankAlertAckIn,
     RankAlertOut,
     RankDropRequest,
     ScorePoint,
@@ -558,6 +559,14 @@ async def rank_drops(
         min_impressions=body.min_impressions,
         min_days=body.min_days,
     )
+
+    # ⚠️ only_new 过滤的是「用户已标记看过」的，**不是自动标记**。
+    # 若这里顺手把返回过的都记成已看，那「我算了但没人看」也算看过，
+    # 这声告警等于根本没发过 —— 用户下一次就不会再来了。
+    if body.only_new:
+        seen = await uow.alert_acks.acked_keys(site_id)
+        alerts = [a for a in alerts if a.key not in seen]
+
     return [
         RankAlertOut(
             url=a.url,
@@ -568,9 +577,28 @@ async def rank_drops(
             to_date=a.to_date,
             message=a.message,
             evidence=a.evidence,
+            alert_key=a.key,
         )
         for a in alerts
     ]
+
+
+@router.post("/sites/{site_id}/rank-drops/ack", response_model=dict)
+async def ack_rank_drops(
+    site_id: int,
+    body: RankAlertAckIn,
+    uow=__import__("fastapi").Depends(get_uow),
+) -> dict:
+    """把若干条告警标记为「已看过」，幂等。
+
+    ⚠️ **只接受调用方给的 key，不校验它们当前是否仍是告警** ——
+    「历史上某场跌落被看过」这件事本身就该长期有效。若要求 key 必须
+    还在当前告警列表里，那么随着窗口滑动，同一件事会重新变成「新告警」，
+    反复提醒；而标记它的目的正是避免这个。
+    """
+    await _require_site(uow, site_id)
+    added = await uow.alert_acks.ack(site_id, body.alert_keys)
+    return {"acked": added, "total": len(set(body.alert_keys))}
 
 
 @router.get("/sites/{site_id}/usage", response_model=UsageOut)

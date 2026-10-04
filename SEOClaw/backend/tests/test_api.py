@@ -681,6 +681,49 @@ def test_usage_of_unknown_site_is_404(client):
     assert r.status_code == 404
 
 
+def test_rank_alert_ack_is_idempotent(client):
+    """「已看过」标记必须幂等 —— 重复标记不产生第二条。
+
+    ⚠️ 这是告警去重的地基：同一场跌落若每查一次就多一条「已看过」记录，
+    过滤就会随记录膨胀而漏掉真告警。
+    """
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    url = f"/api/v1/sites/{site['id']}/rank-drops/ack"
+    body = {"alert_keys": ["/a|2026-10-01|2026-10-30"]}
+    first = client.post(url, json=body).json()
+    assert first["acked"] == 1
+    second = client.post(url, json=body).json()
+    assert second["acked"] == 0, "同一条被标记了两次"
+    assert second["total"] == 1
+
+
+def test_rank_alert_ack_dedupes_within_one_call(client):
+    """同一次请求里重复的 key 只算一条。"""
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    r = client.post(
+        f"/api/v1/sites/{site['id']}/rank-drops/ack",
+        json={"alert_keys": ["/a|x|y", "/a|x|y"]},
+    ).json()
+    assert r["acked"] == 1 and r["total"] == 1
+
+
+def test_rank_alert_ack_unknown_site_is_404(client):
+    """归属校验：站点不存在就 404，不给别的站点写标记。"""
+    r = client.post(
+        "/api/v1/sites/99999/rank-drops/ack", json={"alert_keys": ["/a|x|y"]}
+    )
+    assert r.status_code == 404
+
+
+def test_rank_alert_ack_requires_at_least_one_key(client):
+    """空 key 列表必须 422 —— 那等于「什么都不标」，静默成功是错的。"""
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    r = client.post(
+        f"/api/v1/sites/{site['id']}/rank-drops/ack", json={"alert_keys": []}
+    )
+    assert r.status_code == 422
+
+
 def test_report_without_scan_has_null_score(client):
     """没扫过的站点 health_score 必须是 null —— 0 分意味着「扫了且很差」，
     这两件事不能共用同一个值。"""

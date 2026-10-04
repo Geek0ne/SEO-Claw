@@ -87,3 +87,32 @@ def test_unsorted_input_gives_same_answer():
 def test_empty_site_returns_empty_list():
     """空输入是合法结论，不是失败。"""
     assert detect_rank_drops({}) == []
+
+
+def test_alert_key_is_stable_across_score_changes():
+    """⚠️ 告警标识**不得**包含分数与曝光量。
+
+    同一场跌落每被查一次，from_position/to_position 可能因为窗口滑动而
+    略有不同。若把它们塞进标识，用户标记过一次「看过了」，下一次窗口一滑
+    就被算成**另一场**跌落，于是同件事反复提醒 —— 而加「已看过」本来
+    就是为了解决这个。
+    """
+    a = detect_rank_drops(
+        dict([_series("/a", [10, 11, 12, 22])]), min_drop=5.0, min_impressions=10,
+        min_days=4,
+    )[0]
+    # 同样的起止日、但窗口里多了一天（首尾分数被重新算过）
+    pts = list(_series("/a", [10, 11, 12, 13, 22])[1])
+    b = detect_rank_drops({"/a": pts}, min_drop=5.0, min_impressions=10, min_days=4)[0]
+    assert a.key != b.key, "起止日不同就应该是不同的场次"
+    assert "/a|2026-10-01|2026-10-04" == a.key, "key 应只由 url + 起止日组成"
+
+
+def test_alert_key_contains_no_score():
+    """反向断言：key 里不出现数字形式的分数/曝光量。"""
+    a = detect_rank_drops(
+        dict([_series("/a", [10, 11, 12, 22], imps=12345)]),
+        min_drop=5.0, min_impressions=10, min_days=4,
+    )[0]
+    assert "12345" not in a.key
+    assert a.key.count("|") == 2

@@ -1040,6 +1040,44 @@ class RankHistoryRepository:
         return list((await self.session.execute(stmt)).scalars())
 
 
+class RankAlertAckRepository:
+    """排名告警的「已看过」标记。"""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def ack(self, site_id: int, alert_keys: Iterable[str]) -> int:
+        """标记若干条告警为已看过，幂等。返回新标记的条数。
+
+        ⚠️ 只记**用户显式标记**的。查询时顺手自动标记是错的：
+        「我算了但没人看」不等于「看过了」，那样这声告警等于没发过。
+        """
+        added = 0
+        for key in {k for k in alert_keys if k}:
+            existing = (
+                await self.session.execute(
+                    select(m.RankAlertAck).where(
+                        m.RankAlertAck.site_id == site_id,
+                        m.RankAlertAck.alert_key == key,
+                    )
+                )
+            ).scalar_one_or_none()
+            if existing is not None:
+                continue
+            self.session.add(
+                m.RankAlertAck(site_id=site_id, alert_key=key)
+            )
+            added += 1
+        await self.session.flush()
+        return added
+
+    async def acked_keys(self, site_id: int) -> set[str]:
+        stmt = select(m.RankAlertAck.alert_key).where(
+            m.RankAlertAck.site_id == site_id
+        )
+        return {k for (k,) in (await self.session.execute(stmt)).all()}
+
+
 # --------------------------------------------------------------------------
 # usage（计量）
 # --------------------------------------------------------------------------
@@ -1219,6 +1257,7 @@ class UnitOfWork:
         self.serp = SerpRepository(session)
         self.ranks = RankHistoryRepository(session)
         self.usage = UsageRepository(session)
+        self.alert_acks = RankAlertAckRepository(session)
         self.suggestions = SuggestionRepository(session)
         self.briefs = ContentBriefRepository(session)
 
