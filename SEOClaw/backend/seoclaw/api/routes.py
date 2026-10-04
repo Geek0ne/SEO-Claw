@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+import time
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
@@ -41,7 +43,35 @@ router = APIRouter(prefix="/api/v1")
 
 @router.get("/health")
 def health() -> dict:
-    return {"ok": True}
+    """健康检查。
+
+    ⚠️ 顺带报告**进程起点**与**代码文件最后修改时间**，并在两者矛盾时
+    明确标 ``stale: true``。
+
+    为什么加这个：我今天被同一个坑绊了两次（16:28、22:31）—— 改完代码
+    去验，接口 404，第一反应是「代码写错了」，实际是**服务加载的是旧
+    进程**。`{"ok": true}` 对这种状态完全沉默：它说服务活着，而活着的是
+    三小时前的版本。
+
+    这个坑之所以反复咬人，是因为它**伪装成别的 bug** —— 404 长得就像
+    「路由没注册」。让 health 自己说出「我加载的代码比磁盘旧」，下次
+    一次就能定位。
+
+    ⚠️ 局限：只看本文件 mtime。改别的模块（schemas/仓库层）不会被标出来
+    —— 要彻底解决得比 git HEAD，那是另一件事，不假装做了。
+    """
+    return {
+        "ok": True,
+        "process_started_at": _PROCESS_STARTED_AT,
+        "code_modified_at": _CODE_MTIME,
+        "stale": bool(_CODE_MTIME and _CODE_MTIME > _PROCESS_STARTED_AT),
+    }
+
+
+_PROCESS_STARTED_AT = time.time()
+_CODE_MTIME = (
+    Path(__file__).stat().st_mtime if Path(__file__).exists() else None
+)
 
 
 # --------------------------------------------------------------------------

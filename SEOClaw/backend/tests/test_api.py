@@ -87,7 +87,12 @@ def client(monkeypatch):
 
 
 def test_health(client):
-    assert client.get("/api/v1/health").json() == {"ok": True}
+    # ⚠️ 原来断言的是 `== {"ok": True}`（整份返回精确相等）。我给 health
+    # 加了进程起点/代码 mtime/stale 三个字段后，这条红了 —— 是我改了既有
+    # 契约却没更新它的测试，不是新功能有问题。改成逐字段断言，把「服务活着」
+    # 这个本意锁住；新增字段由 test_health_reports_stale_code 负责。
+    body = client.get("/api/v1/health").json()
+    assert body["ok"] is True
 
 
 def test_openapi_generates(client):
@@ -631,6 +636,26 @@ def test_summary_without_key_says_so_explicitly(client, monkeypatch):
     body = r.json()
     assert body["summary"] is None
     assert "key" in (body["reason"] or ""), "没配 key 没说清楚"
+
+
+def test_health_reports_stale_code(client):
+    """⚠️ health 必须能说出「我加载的代码比磁盘旧」。
+
+    背景是我今天被同一个坑绊了两次（16:28、22:31）：改完代码去验，
+    新端点 404，第一反应是「路由没注册」，实际是**服务加载的是旧进程**。
+
+    ``{"ok": true}`` 对这种状态完全沉默 —— 它说服务活着，而活着的是
+    三个小时前的版本。更坏的是 404 长得就像「路由没写」，于是每次都
+    先怀疑代码、后怀疑进程，白排查一轮。
+    """
+    body = client.get("/api/v1/health").json()
+    assert body["ok"] is True
+    assert isinstance(body["process_started_at"], (int, float))
+    # ⚠️ 进程刚起来、代码刚落盘，正常必须是 false。
+    # 若这里红，说明测试跑在一个比代码还老的进程上 —— 正是那个坑本身。
+    assert body["stale"] is False, (
+        "进程加载的代码比磁盘旧：重启服务后再跑测试"
+    )
 
 
 def test_report_without_scan_has_null_score(client):
