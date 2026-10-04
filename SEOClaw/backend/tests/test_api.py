@@ -255,6 +255,37 @@ def test_scan_persists_health_score(client):
     assert 0 <= rep["health_score"] <= 100
 
 
+def test_trend_is_ascending_and_has_no_null_points(client):
+    """趋势线按时间**升序**返回，且不混进算不出分数的那次。
+
+    ⚠️ 两个坑都在这里：
+    1. DB 默认 ``id DESC``（新的在前），直接吐给前端连线会画成反的线，
+       而这种错在图上看不出来，只会「看起来不对」，极难自查。
+    2. 0 页成功时 health_score 是 null —— 那是「什么都没看到」，不是「0 分」。
+       画进趋势线等于**用一次抓取失败冒充质量下滑**，比不画更糟。
+    """
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    for _ in range(3):
+        client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+
+    tr = client.get(f"/api/v1/sites/{site['id']}/trend").json()
+    assert tr["site_id"] == site["id"]
+    assert tr["domain"] == client.domain
+    ids = [p["job_id"] for p in tr["points"]]
+    assert ids == sorted(ids), f"趋势必须按时间升序，返回的是 {ids}"
+    assert len(ids) >= 3, f"扫了 3 次应有 3 个点，实际 {len(ids)}"
+    for pt in tr["points"]:
+        assert pt["score"] is not None, "算不出分数的那次不该进趋势线"
+        assert 0 <= pt["score"] <= 100
+
+
+def test_trend_without_scan_is_empty_not_error(client):
+    """没扫过的站点趋势是空数组，不是 404、也不是 null。"""
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    tr = client.get(f"/api/v1/sites/{site['id']}/trend").json()
+    assert tr["points"] == []
+
+
 def test_report_without_scan_has_null_score(client):
     """没扫过的站点 health_score 必须是 null —— 0 分意味着「扫了且很差」，
     这两件事不能共用同一个值。"""

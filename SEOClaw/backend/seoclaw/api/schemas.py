@@ -69,6 +69,29 @@ class IssuePage(BaseModel):
     has_next: bool
 
 
+class ScorePoint(BaseModel):
+    """一轮扫描的分数快照 —— 趋势线上的一个点。"""
+
+    job_id: int
+    score: Optional[float] = None
+    pages_crawled: int
+    status: str
+    finished_at: Optional[datetime] = None
+
+
+class ScoreTrend(BaseModel):
+    """一个站点的分数变化。
+
+    ⚠️ ``points`` 按时间**升序**（旧的在前）：前端直接连线即得趋势图，
+    不必再自己反转发���。倒序取的是 DB 里的默认序（id desc），
+    每加一次绘制就得多写一次 reverse —— 那是最容易漏的一步。
+    """
+
+    site_id: int
+    domain: str
+    points: list[ScorePoint]
+
+
 class ReportSummary(BaseModel):
     domain: str
     pages_crawled: int

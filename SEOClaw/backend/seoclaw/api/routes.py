@@ -18,6 +18,8 @@ from .schemas import (
     JobOut,
     ReportSummary,
     ScanRequest,
+    ScorePoint,
+    ScoreTrend,
     SiteCreate,
     SiteOut,
 )
@@ -178,6 +180,39 @@ async def list_issues(
         ],
         has_next=offset + len(page.items) < page.total,
     )
+
+
+@router.get("/sites/{site_id}/trend", response_model=ScoreTrend)
+async def trend(site_id: int, uow=__import__("fastapi").Depends(get_uow)) -> ScoreTrend:
+    """分数随时间的变化 —— 趋势线数据。
+
+    ⚠️ 两个坑，都在这行代码里体现：
+
+    1. **只取算得出分数的那几次。** 0 页成功时 health_score 是 null，
+       那是「什么都没看到」而不是「0 分」。把它画进趋势线，会让一条
+       明明没抓到的扫描看起来像暴跌 —— **用一个抓取失败冒充一次质量下滑，
+       是比不画更糟的谎**。所以 ``score is None`` 的直接跳过。
+
+    2. **按时间升序返回。** DB 默认是 ``id DESC``（新的在前），直接吐给前端
+       连线会画成一条反着的线，而这种错在图上看不出来，只会看起来「不对」，
+       极难自查。所以这里显式 reverse。
+    """
+    site = await _require_site(uow, site_id)
+    page = await uow.jobs.list_for_site(site_id, limit=100)
+    points: list[ScorePoint] = []
+    for job in reversed(page.items):  # 最老的在前
+        if getattr(job, "health_score", None) is None:
+            continue
+        points.append(
+            ScorePoint(
+                job_id=job.id,
+                score=job.health_score,
+                pages_crawled=job.pages_crawled,
+                status=job.status.value,
+                finished_at=job.finished_at,
+            )
+        )
+    return ScoreTrend(site_id=site_id, domain=site.domain, points=points)
 
 
 @router.get("/sites/{site_id}/report", response_model=ReportSummary)
