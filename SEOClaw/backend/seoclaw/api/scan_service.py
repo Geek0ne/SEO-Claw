@@ -221,10 +221,17 @@ async def run_scan(
                 _issue_to_row(i, job_id=job.id, page_id=page_ids.get(i.url or ""))
                 for i in issues
             ),
-            # 本轮实际抓到的页面集合。同步入库据此判断「旧问题是不是
-            # 真消失了」——只扫到 10 页时，不能把另外 90 页上没被检查
-            # 过的问题当成已修好。抓取失败的那页不算进范围。
-            scoped_urls={p.url for p in ok_pages},
+            # 本轮**真正重新检查过**的页面集合。同步入库据此判断「旧问题
+            # 是不是真消失了」。
+            #
+            # ⚠️ 必须排除 not_modified 页 —— 这是我自己埋的雷：
+            # 增量扫描里服务器回 304 的页**不重跑规则**（见 audit/engine
+            # 的 _skip_page_rules），所以这轮扫不出它上面的任何问题。但
+            # 它 status_code 仍是 200，照样落进 ok_pages。若把它算进范围，
+            # sync_for_scan 会认为「本轮扫过且没问题」→ 自动标成已修好。
+            # 用户根本没改任何东西，一开增量扫描就凭空「修好」一大批问题 ——
+            # 这正是我在仓库注释里说过「绝不谎报」的那件事。
+            scoped_urls={p.url for p in ok_pages if not p.not_modified},
         )
         # ⚠️ 这个文件没有 logger（我第一版写了这行，实跑才发现是 NameError，
         # 白等一次端到端）。同步统计目前只在排障时手工看，所以直接丢弃；

@@ -460,6 +460,47 @@ def test_bulk_issue_status_requires_fingerprint(client):
     assert r.status_code == 422
 
 
+def test_incremental_304_page_issues_not_auto_closed(client, monkeypatch):
+    """⚠️ 增量扫描：服务器回 304 的页**不重跑规则**，其问题绝不能被标成已修。
+
+    这是我自己埋的雷，正好撞上我在同一笔提交里写下的原则：
+    「把『没检查』当成『已修好』是谎报」。
+
+    坑在 status_code 上 —— 304 页走的是
+    ``prior.model_copy(update={...,"not_modified": True})``，
+    **status_code 仍是 200**，照样落进 ``ok_pages``。若把它算进
+    scoped_urls，sync_for_scan 会认为「本轮扫过且没问题」→ 自动收尾。
+    于是用户什么都没改，一开增量扫描，一大批问题凭空变成「已修好」。
+    """
+    calls = {"n": 0}
+
+    def _fake_incremental(url, **kwargs):
+        calls["n"] += 1
+        pages = _fake_pages(url)
+        if calls["n"] == 1:
+            issues, _ctx = run_audit(pages, _domain_of(url), [Market.BASE], {})
+            return pages, {"issues": issues, "site_facts": {}}, 1.0, len(pages)
+        # 第二轮：全站 304。规则层会跳过这两页的页面级规则
+        cached = [p.model_copy(update={"not_modified": True}) for p in pages]
+        return cached, {"issues": [], "site_facts": {}}, 0.3, len(cached)
+
+    monkeypatch.setattr(scan_service, "_crawl_and_audit", _fake_incremental)
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    before = client.get(f"/api/v1/sites/{site['id']}/issues?limit=200").json()
+    assert before["total"] > 0, "样本里得先有问题才谈得上被误收尾"
+
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2, "incremental": True})
+    after = client.get(f"/api/v1/sites/{site['id']}/issues?limit=200").json()
+    assert after["total"] == before["total"], "304 页上的问题被凭空收尾了"
+    # ⚠️ 这里必须用 issues 端点的 total，**不能**去读 report 的 counts ——
+    # 我第一版写成 after["counts"]，直接 KeyError。/issues 返回的是
+    # IssuePage（total/items/has_next），counts 只在 /report 里。
+    assert sum(1 for i in after["items"] if i["status"] == "open") > 0, (
+        "问题被凭空收尾了"
+    )
+
+
 def test_report_without_scan_has_null_score(client):
     """没扫过的站点 health_score 必须是 null —— 0 分意味着「扫了且很差」，
     这两件事不能共用同一个值。"""
