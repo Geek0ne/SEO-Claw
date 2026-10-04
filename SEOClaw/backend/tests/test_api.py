@@ -549,6 +549,90 @@ def test_merged_duplicate_keeps_user_verdict(client):
     assert hit[0]["status"] == "ignored", "合并把用户的判断弄丢了"
 
 
+# --------------------------------------------------------------------------
+# P2 智能层（此前只有 CLI 能用，API 一行都没暴露）
+# --------------------------------------------------------------------------
+
+
+def test_p2_endpoints_are_reachable(client):
+    """P2 的四个端点必须真的挂上。
+
+    ⚠️ 这条曾经骗过我一次：我用 ``app.routes`` 按 ``APIRoute`` 过滤，
+    数出 0 个，就断言「没挂上」。而 FastAPI 把 include_router 装进来的
+    路由包成 ``_IncludedRouter`` 对象，根本不是 APIRoute —— **我数错了，
+    不是代码错了**。验收路由是否挂上只认 openapi，那是唯一真相源。
+    """
+    spec = client.get("/openapi.json").json()
+    paths = spec["paths"]
+    for p in (
+        "/api/v1/sites/{site_id}/keywords",
+        "/api/v1/sites/{site_id}/keywords/expand",
+        "/api/v1/sites/{site_id}/brief",
+        "/api/v1/sites/{site_id}/report/summary",
+    ):
+        assert p in paths, f"{p} 没挂上"
+
+
+def test_keywords_empty_site_returns_empty_not_error(client):
+    """没扫过的站点返回空列表，不是 404 也不是 500。"""
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    r = client.get(f"/api/v1/sites/{site['id']}/keywords")
+    assert r.status_code == 200
+    assert r.json() == {"total": 0, "items": [], "has_next": False}
+
+
+def test_keywords_expand_says_why_it_skipped(client):
+    """⚠️ 推断类结果必须自带 limitations —— 不能用空列表让人猜。
+
+    空数组在调用方看来是「没有可扩展的词」，而真相是「语料不足，
+    共现挖掘需要跨页证据」。这两种该做的后续动作完全不同。
+    """
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    r = client.post(
+        f"/api/v1/sites/{site['id']}/keywords/expand", json={"seeds": ["rust"]}
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "skipped_no_corpus"
+    assert "语料" in body["reason"] and body["candidates"] == 0
+
+
+def test_brief_declares_missing_competitor_data(client):
+    """没有 SERP 数据时，Brief 必须明说「竞品分析缺失」。
+
+    ⚠️ 不说的话，用户会把「只基于本站得出的结论」当成「基于竞品全貌的
+    结论」—— 而这两种东西的可信度差着一个量级。这是谎报，不是省略。
+    """
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    r = client.post(
+        f"/api/v1/sites/{site['id']}/brief",
+        json={"keyword": "rust ownership", "target_url": "https://x.test/a"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["keyword"] == "rust ownership"
+    assert any("竞品数据缺失" in c for c in body["caveats"]), (
+        f"缺 SERP 数据却没说，caveats={body['caveats']}"
+    )
+
+
+def test_summary_without_key_says_so_explicitly(client, monkeypatch):
+    """没配 key 必须明说「没配」，不能返回 null 让人以为是「AI 说了但没内容」。
+
+    这两件事对用户完全不同：前者是「还没接」，后者是「接了但没用好」。
+    """
+    for name in ("OPENAI_API_KEY", "SEO_CLAW_LLM_API_KEY", "ANTHROPIC_API_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    r = client.get(f"/api/v1/sites/{site['id']}/report/summary")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["summary"] is None
+    assert "key" in (body["reason"] or ""), "没配 key 没说清楚"
+
+
 def test_report_without_scan_has_null_score(client):
     """没扫过的站点 health_score 必须是 null —— 0 分意味着「扫了且很差」，
     这两件事不能共用同一个值。"""

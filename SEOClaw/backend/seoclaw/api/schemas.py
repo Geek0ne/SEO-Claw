@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -113,6 +113,97 @@ class ScoreTrend(BaseModel):
     site_id: int
     domain: str
     points: list[ScorePoint]
+
+
+# --------------------------------------------------------------------------
+# P2 智能层：关键词 / Brief / AI 总结
+#
+# ⚠️ 为什么单开一段而不是塞进前面：前面三类是「事实」（爬虫抓到什么就
+# 报什么），这三类是「推断」。混在一起会让调用方分不清哪些结论有证据、
+# 哪些是模型猜的 —— 而用户对后者理应有完全不同的信任度。
+# --------------------------------------------------------------------------
+
+
+class KeywordOut(BaseModel):
+    id: int
+    term: str
+    market: str = "base"
+    intent: Optional[str] = None
+    cluster_id: Optional[int] = None
+    score: Optional[float] = None
+    source: Optional[str] = None
+
+
+class KeywordPage(BaseModel):
+    total: int
+    items: list[KeywordOut]
+    has_next: bool
+
+
+class KeywordExpandIn(BaseModel):
+    """触发一次关键词扩展 + 聚类。
+
+    ⚠️ ``seeds`` 必填且不能为空：**无种子的共现等于把全站词两两配对，
+    噪声远大于信号**（与 cli.py 里的同一道门槛保持一致口径）。
+    """
+
+    seeds: list[str] = Field(min_length=1, max_length=50)
+    market: str = "base"
+    max_candidates: int = Field(default=50, ge=1, le=200)
+    min_pages: int = Field(default=2, ge=1, le=50)
+
+
+class KeywordExpandOut(BaseModel):
+    """扩展结果。
+
+    ⚠️ ``status`` 显式三态，不靠「返回空列表」让调用方自己猜：
+
+    - ``ok``    —— 真扩展了
+    - ``skipped_no_corpus`` / ``skipped_no_seeds`` —— **诚实地说不出结论**，
+      而不是硬凑一个空结果让人以为「没有可扩展的词」
+    """
+
+    status: str
+    candidates: int = 0
+    clusters: int = 0
+    reason: Optional[str] = None
+
+
+class BriefIn(BaseModel):
+    keyword: str = Field(min_length=1, max_length=120)
+    target_url: str = Field(min_length=1)
+    market: str = "google"
+    intent: Optional[str] = None
+
+
+class BriefOut(BaseModel):
+    id: Optional[int] = None
+    keyword: str
+    target_url: str
+    market: str
+    intent: Optional[str] = None
+    page_type: str = ""
+    title_candidates: list[str] = Field(default_factory=list)
+    serp_common: dict[str, Any] = Field(default_factory=dict)
+    own_length_baseline: dict[str, Any] = Field(default_factory=dict)
+    opportunities: list[dict[str, Any]] = Field(default_factory=list)
+    not_available: list[str] = Field(default_factory=list)
+    #: 明确写出哪些输入缺失导致结论受限 —— 缺 SERP 数据时不该让用户
+    #: 以为这份 Brief 是基于竞品全貌得出的。
+    caveats: list[str] = Field(default_factory=list)
+
+
+class SummaryOut(BaseModel):
+    """报告 AI 总结。
+
+    ⚠️ ``summary=None`` + ``reason`` 必须成对出现。AI 总结是锦上添花，
+    规则引擎的报告才是主结果 —— 任何失败都只让这里变成 null，**绝不让
+    整份报告消失**（那是把可选功能变成单点故障）。
+    """
+
+    summary: Optional[str] = None
+    reason: Optional[str] = None
+    model: Optional[str] = None
 
 
 class ReportSummary(BaseModel):

@@ -20,8 +20,15 @@ from .schemas import (
     JobOut,
     ReportSummary,
     ScanRequest,
+    BriefIn,
+    BriefOut,
+    KeywordExpandIn,
+    KeywordExpandOut,
+    KeywordOut,
+    KeywordPage,
     ScorePoint,
     ScoreTrend,
+    SummaryOut,
     SiteCreate,
     SiteOut,
 )
@@ -248,6 +255,234 @@ async def bulk_update_issue_status(
     await _require_site(uow, site_id)
     n = await uow.issues.resolve_by_fingerprint(site_id, body.fingerprint, body.status)
     return {"updated": n}
+
+
+# --------------------------------------------------------------------------
+# P2 智能层：关键词 / Brief / AI 总结
+#
+# ⚠️ 这三类此前只有 CLI 能用（cli.py 里 15 处调用），**API 一行都没暴露**
+# —— 意味着几个月前写好的能力，除了敲命令行没人能用得到。这不是「少个
+# 功能」，是「做完了但没交付」。
+#
+# 统一原则：**推断类结果必须自带 limitations**。关键词扩展不出来、Brief
+# 缺 SERP 数据、AI 总结没 key —— 三种都返回「诚实说不出结论」而不是空
+# 列表或 500。返回空数组时调用方无法区分「真没有」和「算失败」，而这两种
+# 该做的后续动作完全不同。
+# --------------------------------------------------------------------------
+
+
+@router.get("/sites/{site_id}/keywords", response_model=KeywordPage)
+async def list_keywords(
+    site_id: int,
+    intent: Optional[str] = None,
+    cluster_id: Optional[int] = None,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    uow=__import__("fastapi").Depends(get_uow),
+) -> KeywordPage:
+    """已落库的关键词（扩展+聚类的结果，由扫描时顺带写入）。"""
+    await _require_site(uow, site_id)
+    page = await uow.keywords.list(
+        site_id,
+        intent=intent,
+        cluster_id=cluster_id,
+        limit=limit,
+        offset=offset,
+    )
+    return KeywordPage(
+        total=page.total,
+        items=[
+            KeywordOut(
+                id=k.id,
+                term=k.term,
+                market=k.market,
+                intent=k.intent,
+                cluster_id=k.cluster_id,
+                score=k.score,
+                source=k.source,
+            )
+            for k in page.items
+        ],
+        has_next=offset + len(page.items) < page.total,
+    )
+
+
+@router.post("/sites/{site_id}/keywords/expand", response_model=KeywordExpandOut)
+async def expand_keywords(
+    site_id: int,
+    body: KeywordExpandIn,
+    uow=__import__("fastapi").Depends(get_uow),
+) -> KeywordExpandOut:
+    """按种子词，从**已抓页面**的语料里扩展候选并聚类，然后落库。
+
+    ⚠️ 与 CLI 走同一套口径（同一道门槛、同一份实现），因为两处各算一套
+    必然分叉，而分叉之后没人知道该信哪个。
+    """
+    from ..keywords import cluster as kw_cluster
+    from ..keywords import expand as kw_expand
+    from ..keywords import tokenize
+    from ..persist import persist_keywords
+
+    await _require_site(uow, site_id)
+    corpus: list[tuple[str, str]] = []
+    title_tokens: set[str] = set()
+    # ⚠️ pages.list 返回的是 Page(items/total)，**不是可迭代对象**。
+    # 直接 for row in 会 TypeError → 500。这是我第一版的错：
+    # 「有分页」和「能直接迭代」是两回事。
+    for row in (await uow.pages.list(site_id, limit=200, status_code=200)).items:
+        # 正文截断：共现统计不需要全文，而全文会让 1000 页的 tokenize
+        # 慢上一个数量级（与 cli.py 同一取舍）。
+        text = (row.text or "")[:4000]
+        head = (row.title or "") + " " + " ".join(row.h1 or [])
+        if not (text or head.strip()):
+            continue
+        corpus.append((row.url, head + " " + text))
+        title_tokens.update(tokenize(head))
+
+    if len(corpus) < body.min_pages:
+        return KeywordExpandOut(
+            status="skipped_no_corpus",
+            reason=(
+                f"可用语料 {len(corpus)} 页 < 门槛 {body.min_pages} 页："
+                "共现挖掘需要跨页证据，单页词语多半是该页专有名词"
+            ),
+        )
+    seeds = [s.strip() for s in body.seeds if s.strip()]
+    if not seeds:
+        return KeywordExpandOut(
+            status="skipped_no_seeds",
+            reason="种子词为空：无种子的共现等于把全站词两两配对，噪声大于信号",
+        )
+
+    candidates = kw_expand.expand(
+        seeds, corpus, max_candidates=body.max_candidates, min_pages=body.min_pages
+    )
+    stats = await persist_keywords(
+        uow.session,
+        site_id=site_id,
+        candidates=candidates,
+        clusters=kw_cluster.cluster([c.term for c in candidates])[0],
+        market=body.market,
+        title_tokens=title_tokens,
+    )
+    return KeywordExpandOut(
+        status="ok",
+        candidates=len(candidates),
+        clusters=int(stats.get("clusters") or 0),
+    )
+
+
+@router.post("/sites/{site_id}/brief", response_model=BriefOut)
+async def make_brief(
+    site_id: int,
+    body: BriefIn,
+    uow=__import__("fastapi").Depends(get_uow),
+) -> BriefOut:
+    """为「一个关键词 + 一个目标 URL」生成内容 Brief。
+
+    ⚠️ ``caveats`` 是这个端点最重要的字段：**缺 SERP 数据时不能装作是
+    基于竞品全貌得出的结论**。Top10 共性需要 serp_snapshots 有数据，没数据
+    就明说「竞品分析缺失」，让用户知道这份 Brief 的依据只有自己站。
+    """
+    from ..brief import ContentBrief, PageSignal, SerpEntry, generate_brief
+    from ..models import Market
+
+    site = await _require_site(uow, site_id)
+    caveats: list[str] = []
+
+    serp_entries: list[SerpEntry] = []
+    try:
+        # ⚠️ latest_for_keyword 收的是 keyword_id（整型），不是词字符串。
+        # 得先把词翻成 id；翻不到就是「这个词没被抓过」，不是异常。
+        kw = await uow.keywords.get_by_term(site_id, body.keyword)
+        if kw is not None:
+            serp_entries = [
+                SerpEntry(
+                    position=sn.position,
+                    url=sn.url,
+                    title=sn.title or "",
+                    snippet=sn.snippet,
+                )
+                for sn in await uow.serp.latest_for_keyword(kw.id, limit=10)
+            ]
+    except Exception:  # noqa: BLE001 —— 没 SERP 数据不该让整个端点失败
+        serp_entries = []
+    if not serp_entries:
+        caveats.append(
+            "竞品数据缺失：serp_snapshots 里没有该词的记录，"
+            "本 Brief 的 Top10 共性与标题候选**只基于本站**，不可当作竞品全貌"
+        )
+
+    own_pages = [
+        PageSignal(
+            url=row.url,
+            title=row.title or "",
+            h1=list(row.h1 or []),
+            word_count=row.word_count or 0,
+        )
+        for row in (await uow.pages.list(site_id, limit=50, status_code=200)).items
+    ]
+    if not own_pages:
+        caveats.append("本站无可用页面：字数基线缺失，标题长度建议将不可靠")
+
+    brief: ContentBrief = generate_brief(
+        body.keyword,
+        target_url=body.target_url,
+        market=Market(body.market) if body.market else Market.GOOGLE,
+        intent=body.intent,
+        serp_entries=serp_entries,
+        own_pages=own_pages,
+    )
+    return BriefOut(
+        keyword=brief.keyword,
+        target_url=brief.target_url,
+        market=brief.market,
+        intent=brief.intent,
+        page_type=brief.page_type,
+        title_candidates=list(brief.title_candidates),
+        serp_common=dict(brief.serp_common),
+        own_length_baseline=dict(brief.own_length_baseline),
+        opportunities=list(brief.opportunities),
+        not_available=list(brief.not_available),
+        caveats=caveats,
+    )
+
+
+@router.get("/sites/{site_id}/report/summary", response_model=SummaryOut)
+async def report_summary(
+    site_id: int,
+    uow=__import__("fastapi").Depends(get_uow),
+) -> SummaryOut:
+    """报告的 AI 总结。
+
+    ⚠️ **没配 key 就明确说没配**，而不是返回 null 让前端显示成空白 ——
+    「还没接AI」和「AI 说了但没内容」对用户是两件完全不同的事。
+
+    走 ``llm.summarize``：它内部吞掉所有异常返回 None，理由是 AI 总结是
+    锦上添花、规则引擎报告才是主结果，**总结失败绝不能让报告整个消失**。
+    这里要区分失败原因，所以改用 ``chat`` 拿异常。
+    """
+    from ..llm import LLMConfig, LLMNotConfigured, chat
+
+    await _require_site(uow, site_id)
+    cfg = LLMConfig.from_env()
+    if not cfg.api_key:
+        return SummaryOut(
+            reason="未配置 LLM key（设 SEO_CLAW_LLM_API_KEY 后本端点才可用）"
+        )
+    page = await uow.issues.list(site_id, limit=200)
+    try:
+        text = chat(
+            f"用中文为这个 SEO 体检报告写 3-5 句总结，指出最该先改的一处。"
+            f"问题共 {page.total} 条，最严重的几条："
+            + "；".join(f"{i.title}" for i in page.items[:5]),
+            config=cfg,
+        )
+    except LLMNotConfigured:
+        return SummaryOut(reason="LLM key 无效或模型不可用")
+    except Exception as exc:  # noqa: BLE001
+        return SummaryOut(reason=f"调用失败：{type(exc).__name__}: {exc}")
+    return SummaryOut(summary=text, model=cfg.model)
 
 
 @router.get("/sites/{site_id}/trend", response_model=ScoreTrend)
