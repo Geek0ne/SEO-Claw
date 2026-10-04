@@ -14,6 +14,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from ..db import models as m
 from .deps import get_uow
+from .summary import build_summary
 from .schemas import (
     IssueBulkStatusIn,
     IssueOut,
@@ -626,24 +627,11 @@ async def report(site_id: int, uow=__import__("fastapi").Depends(get_uow)) -> Re
     ⚠️ 0 页成功时 ``health_score`` 必须是 ``null`` 而不是 0 ——
     「一页没抓到」和「抓到了但全是问题」是两回事，不能都报 0 分。
     """
-    site = await _require_site(uow, site_id)
-    jobs = await uow.jobs.list_for_site(site_id, limit=1)
-    # count_by_severity 一次返回 dict，且只统计 OPEN 状态的问题。
-    # 缺失的 severity 必须补 0：前端按 key 取值，缺 key 会渲染成 undefined。
-    raw_counts = await uow.issues.count_by_severity(site_id)
-    counts: dict[str, int] = {sev.value: raw_counts.get(sev.value, 0) for sev in m.Severity}
-    issues_page = await uow.issues.list(site_id, limit=200)
-    items = [
-        _issue_out(i) for i in issues_page.items
-    ]
-    pages_crawled = jobs.items[0].pages_crawled if jobs.items else 0
-    return ReportSummary(
-        domain=site.domain,
-        pages_crawled=pages_crawled,
-        counts=counts,
-        health_score=None if pages_crawled == 0 else _latest_score(jobs),
-        issues=items,
-    )
+    await _require_site(uow, site_id)  # 站点不存在 → 404
+    # ⚠️ 装配交给 summary.build_summary：MCP Server 也要同一份报告。
+    # 两处各写一份必然分叉，而分叉之后没人知道该信哪个 —— 而 MCP 的
+    # 报告是给模型看的，与网页不一致意味着模型的建议会和用户看到的对不上。
+    return ReportSummary(**await build_summary(uow, site_id))
 
 
 def _latest_score(jobs) -> float | None:

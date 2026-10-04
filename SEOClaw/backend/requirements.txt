@@ -36,3 +36,7 @@ fastapi==0.142.2       # API（P1 #6 起）
 
 # --- 测试 ---
 pytest==9.1.1
+
+# MCP Server 专用。⚠️ 可选依赖：不装也能跑全部测试与 HTTP API，
+# 只有启动 mcp_server 时才需要。装到 2.x —— FastMCP 在 2.0 改名 MCPServer。
+mcp>=2.0
