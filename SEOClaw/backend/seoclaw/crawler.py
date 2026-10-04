@@ -33,8 +33,12 @@ from .render import RenderConfig, Renderer
 from .sitemap import SitemapFinder
 from .util import is_internal, normalize_url
 
+# UA 必须是**可识别且可联系**的，这是 robots 协议的基本要求：
+# 不该伪装成浏览器（那既违规，也让对方站长无法申诉），
+# 但也不能指向占位域名 —— 对方看到 +https://example.com/bot
+# 只知道有个爬虫，无法联系作者。
 DEFAULT_UA = (
-    "Mozilla/5.0 (compatible; SEOAgentBot/0.1; +https://example.com/bot) "
+    "Mozilla/5.0 (compatible; SEOAgentBot/0.1; +https://seo.geek0ne.com/bot) "
     "Python-httpx"
 )
 
