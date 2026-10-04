@@ -160,3 +160,63 @@ def test_no_proxy_pool_does_not_requeue():
         assert calls["n"] == 1, f"无代理池不该重试，实际请求 {calls['n']} 次"
     finally:
         c.close()
+
+
+# --------------------------------------------------------------------------
+# 请求间隔抖动（WAF 相关）
+# --------------------------------------------------------------------------
+
+
+def test_jitter_disabled_gives_constant_interval():
+    """jitter=0 → 严格恒定，便于测试与复现。"""
+    from seoclaw.crawler import RateLimiter
+
+    rl = RateLimiter(per_domain_rps=3.0, total_rps=20.0, jitter=0.0)
+    assert abs(rl._next_interval() - 1 / 3) < 1e-9
+
+
+def test_jitter_breaks_constant_interval():
+    """⚠️ 恒定间隔本身就是最强的机器人特征。
+
+    WAF（Cloudflare Bot Management 之类）判的不是速率而是行为熵：
+    333.33ms 严格等间隔的序列比 3rps 这个数字本身显眼得多。
+    """
+    from seoclaw.crawler import RateLimiter
+
+    rl = RateLimiter(per_domain_rps=3.0, total_rps=20.0, jitter=0.3)
+    xs = [rl._next_interval() for _ in range(30)]
+    assert len(set(xs)) > 1, "间隔仍然恒定 —— 抖动没生效"
+
+
+def test_jitter_stays_within_bounds():
+    """抖动后仍不得比基准更频繁（否则等于偷偷提速）。"""
+    from seoclaw.crawler import RateLimiter
+
+    rl = RateLimiter(per_domain_rps=3.0, total_rps=20.0, jitter=0.3)
+    base = 1 / 3
+    for _ in range(200):
+        v = rl._next_interval()
+        assert base * 0.7 - 1e-9 <= v <= base * 1.3 + 1e-9
+
+
+def test_jitter_is_symmetric_so_eta_is_unchanged():
+    """⚠️ 对称抖动是它能被接受的前提：**平均耗时不变**。
+
+    若只往后加不往前减，1000 页的平均耗时就整体变长 —— 那是拿
+    5.56 分钟的预算换伪装，不是我答应的「不影响墙钟下界」。
+    """
+    from seoclaw.crawler import RateLimiter
+
+    rl = RateLimiter(per_domain_rps=3.0, total_rps=20.0, jitter=0.3)
+    base = 1 / 3
+    mean = sum(rl._next_interval() for _ in range(2000)) / 2000
+    assert abs(mean - base) / base < 0.05, f"均值漂了 {(mean/base-1)*100:.1f}%"
+
+
+def test_jitter_is_clamped():
+    """jitter>0.9 会让 1-jitter 变负 → 间隔为负 → time.sleep 抛异常。"""
+    from seoclaw.crawler import RateLimiter
+
+    rl = RateLimiter(per_domain_rps=3.0, total_rps=20.0, jitter=5.0)
+    assert rl.jitter <= 0.9
+    assert all(rl._next_interval() > 0 for _ in range(50))
