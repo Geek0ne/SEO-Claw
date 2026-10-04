@@ -427,6 +427,39 @@ def test_issue_on_uncrawled_page_is_not_auto_closed(client, monkeypatch):
     )
 
 
+def test_bulk_issue_status_by_fingerprint(client):
+    """按根因批量改状态（「这一类我都处理了」）。
+
+    ⚠️ 刻意不提供全选兜底：一次把全站几百条标成「已修」极易点错，而
+    这个操作没有 undo —— 状态只能一条条改回来。所以 fingerprint 必填。
+    """
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    items = client.get(f"/api/v1/sites/{site['id']}/issues?limit=200").json()["items"]
+    fps = [i["fingerprint"] for i in items if i["fingerprint"]]
+    assert fps, "样本里得有 fingerprint 才能测"
+    target = fps[0]
+
+    r = client.patch(
+        f"/api/v1/sites/{site['id']}/issues",
+        json={"fingerprint": target, "status": "ignored"},
+    )
+    assert r.status_code == 200
+    assert r.json()["updated"] >= 1, "同根因至少该改到一条"
+
+    after = client.get(f"/api/v1/sites/{site['id']}/issues?limit=200").json()["items"]
+    same = [i for i in after if i["fingerprint"] == target]
+    assert all(i["status"] == "ignored" for i in same), "同根因没能一次改干净"
+
+
+def test_bulk_issue_status_requires_fingerprint(client):
+    """不给 fingerprint 必须 422 —— 不给就是「全选」，而全选极危险。"""
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    r = client.patch(f"/api/v1/sites/{site['id']}/issues", json={"status": "fixed"})
+    assert r.status_code == 422
+
+
 def test_report_without_scan_has_null_score(client):
     """没扫过的站点 health_score 必须是 null —— 0 分意味着「扫了且很差」，
     这两件事不能共用同一个值。"""
