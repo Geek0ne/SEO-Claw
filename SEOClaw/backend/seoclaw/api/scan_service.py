@@ -210,11 +210,26 @@ async def run_scan(
             )
             page_ids[p.url] = row.page.id
 
-        await repo.save_issues(
+        # ⚠️ 必须走 sync 而不是 save_issues：后者是无条件 INSERT，
+        # 同一个站每重扫一次就多一整套重复行（实测 site1：job1=7 行 → job2=36 行），
+        # 且用户标过「已修」的行原样留着 —— 「已修」按钮等于只能用一次。
+        _sync_stats = await repo.sync_issues_for_scan(
             session,
             site_id,
-            (_issue_to_row(i, job_id=job.id, page_id=page_ids.get(i.url or "")) for i in issues),
+            job_id=job.id,
+            issues=(
+                _issue_to_row(i, job_id=job.id, page_id=page_ids.get(i.url or ""))
+                for i in issues
+            ),
+            # 本轮实际抓到的页面集合。同步入库据此判断「旧问题是不是
+            # 真消失了」——只扫到 10 页时，不能把另外 90 页上没被检查
+            # 过的问题当成已修好。抓取失败的那页不算进范围。
+            scoped_urls={p.url for p in ok_pages},
         )
+        # ⚠️ 这个文件没有 logger（我第一版写了这行，实跑才发现是 NameError，
+        # 白等一次端到端）。同步统计目前只在排障时手工看，所以直接丢弃；
+        # 真要长期观测就先把 logger 引进这个模块，别在调用点现编一个。
+        _sync_stats
 
         # ⚠️ 分数必须**跟着这一轮扫描**存进 crawl_jobs。issues 表是最新快照
         # ——上一轮的问题已被这一轮覆盖，事后再拿 issues 重算，算出来的

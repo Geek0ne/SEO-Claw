@@ -339,6 +339,94 @@ def test_issue_status_rejects_bogus_value(client):
     assert r.status_code == 422
 
 
+def test_rescan_does_not_duplicate_issues(client):
+    """⚠️ 重扫不能把问题数翻倍。
+
+    以前入库是无条件 INSERT：同一个站扫两次，job1=7 行 → job2=36 行，
+    全库 16 组「同站点+同指纹+同 URL」重复。更糟的是用户标过「已修」的
+    行原样留着，问题总数只涨不跌，「已修」按钮等于只能用一次。
+    """
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    first = client.get(f"/api/v1/sites/{site['id']}/issues?limit=200").json()["total"]
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    second = client.get(f"/api/v1/sites/{site['id']}/issues?limit=200").json()["total"]
+    assert second == first, f"重扫后问题数从 {first} 涨到 {second} —— 又插了一遍"
+
+
+def test_fixed_issue_reopens_when_still_present(client):
+    """标了「已修」，重扫发现还在 → 必须翻回 OPEN。
+
+    「我改了」是个**事实主张**，扫描结果能直接证伪它。保持 FIXED 才是骗人：
+    用户以为修好了，其实没修好，而他正是最需要知道这件事的人。
+    """
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    issue_id = client.get(f"/api/v1/sites/{site['id']}/issues?limit=1").json()["items"][0]["id"]
+    client.patch(f"/api/v1/sites/{site['id']}/issues/{issue_id}", json={"status": "fixed"})
+
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    after = client.get(f"/api/v1/sites/{site['id']}/issues?limit=200").json()["items"]
+    hit = [i for i in after if i["id"] == issue_id]
+    assert hit, "认领后不该产生新行"
+    assert hit[0]["status"] == "open", "问题还在却仍是 fixed，等于骗用户"
+
+
+def test_ignored_verdict_survives_rescan(client):
+    """用户说「忽略」/「误报」，那是**对规则适用性**的判断，重扫也不翻。
+
+    翻回去等于让用户每次扫描都要重新解释一遍自己为什么忽略它。
+    """
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    issue_id = client.get(f"/api/v1/sites/{site['id']}/issues?limit=1").json()["items"][0]["id"]
+    for verdict in ("ignored", "false_positive"):
+        client.patch(f"/api/v1/sites/{site['id']}/issues/{issue_id}", json={"status": verdict})
+        client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+        after = client.get(f"/api/v1/sites/{site['id']}/issues?limit=200").json()["items"]
+        assert [i for i in after if i["id"] == issue_id][0]["status"] == verdict, (
+            f"{verdict} 被重扫翻掉了"
+        )
+
+
+def test_issue_on_uncrawled_page_is_not_auto_closed(client, monkeypatch):
+    """⚠️ 本轮没抓到的页面，其问题**绝不能**被当成「已修好」。
+
+    上一轮扫 100 页、这轮只扫 10 页，第 90 页上的一条问题本轮压根没被
+    检查过。把「没检查」当成「已修好」是谎报，而用户会照着这个数字
+    去改已经改好的东西 —— 这是自动收尾最危险的越界。
+    """
+    calls = {"n": 0}
+
+    def _second_scan_shallow(url, **kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return _fake_crawl(url)
+        page = _fake_pages(url)[0]  # 第二轮只抓首页
+        issues, _ctx = run_audit([page], _domain_of(url), [Market.BASE], {})
+        return [page], {"issues": issues, "site_facts": {}}, 0.5, 1
+
+    def _fake_crawl(url, **kwargs):
+        pages = _fake_pages(url)
+        issues, _ctx = run_audit(pages, _domain_of(url), [Market.BASE], {})
+        return pages, {"issues": issues, "site_facts": {}}, 1.0, len(pages)
+
+    monkeypatch.setattr(scan_service, "_crawl_and_audit", _second_scan_shallow)
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    before = client.get(f"/api/v1/sites/{site['id']}/issues?limit=200").json()["items"]
+    deep = [i for i in before if (i["url"] or "").endswith("/p")]
+    assert deep, "测试样本里得有一条挂在 /p 上的问题，否则这个用例是空的"
+
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 1})
+    after = client.get(f"/api/v1/sites/{site['id']}/issues?limit=200").json()["items"]
+    still = [i for i in after if (i["url"] or "").endswith("/p")]
+    assert len(still) == len(deep), "没抓到的页面上的问题被凭空收尾了"
+    assert all(i["status"] == "open" for i in still), (
+        "没被检查过的问题被标成已修 —— 这是谎报"
+    )
+
+
 def test_report_without_scan_has_null_score(client):
     """没扫过的站点 health_score 必须是 null —— 0 分意味着「扫了且很差」，
     这两件事不能共用同一个值。"""

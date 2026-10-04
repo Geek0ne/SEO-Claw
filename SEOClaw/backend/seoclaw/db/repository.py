@@ -530,6 +530,110 @@ class IssueRepository:
         await self.session.flush()
         return issue
 
+    async def sync_for_scan(
+        self,
+        site_id: int,
+        *,
+        job_id: int,
+        rows: Iterable[dict[str, Any]],
+        scoped_urls: Optional[set[str]] = None,
+    ) -> dict[str, int]:
+        """一轮扫描的问题入库 —— **认领同一条，而不是再插一行**。
+
+        ⚠️ 以前这里是 ``bulk_create`` 无条件 INSERT，于是同一个站点每重扫
+        一次就多一整套重复行（实测 site 1：job1=7 行 → job2=36 行，全库
+        16 组「同站点+同指纹+同 URL」重复）。更糟的是用户标了「已修」的
+        那些行**原封不动留在库里**，问题总数只涨不跌，「已修」按钮等于
+        只能用一次。
+
+        ## 认领键为什么是 (fingerprint, url) 而不是 fingerprint
+
+        fingerprint = sha1(code + 归一化根因)，本就**故意**让
+        ``/product/1001`` 与 ``/product/1002`` 聚成同一根因 —— 那是给
+        「这一类影响多少页」用的聚合视图。但入库粒度是「一条 Issue =
+        一条可单独勾选、单独统计的行动项」，一条记录得挂在具体某页上。
+        所以入库认领要按 (指纹, 页面)，聚合留给读时的
+        ``group_by_fingerprint()``。两件事混在一起就既没法批量修、
+        也说不清影响面。
+
+        ## 状态怎么演进（这是用户手动状态与事实的分工）
+
+        - ``IGNORED`` / ``FALSE_POSITIVE`` —— 用户对**规则适用性**下的判断，
+          重扫再命中也不翻回去。这类判断跨轮次成立，翻回去等于让用户
+          每次扫描都要重新解释一遍自己为什么忽略。
+        - ``FIXED`` —— 「我改了」是个**事实主张**，而扫描结果能直接证伪
+          它。所以仍命中就翻回 OPEN：用户以为修好了，实际没修好，这正是
+          他需要知道的。**保持 FIXED 才是骗人。**
+        - ``OPEN`` / ``ACKNOWLEDGED`` —— 保持。
+        """
+        existing = (
+            (
+                await self.session.execute(
+                    select(m.Issue).where(m.Issue.site_id == site_id)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        by_key: dict[tuple[str, Optional[str]], m.Issue] = {
+            (i.fingerprint, i.url): i for i in existing
+        }
+
+        stats = {"created": 0, "updated": 0, "reopened": 0,
+                 "kept_verdict": 0, "auto_closed": 0}
+        seen: set[tuple[str, Optional[str]]] = set()
+
+        for row in rows:
+            fp = row.get("fingerprint") or compute_fingerprint(
+                row["code"], row.get("evidence", {}).get("root_cause")
+            )
+            key = (fp, row.get("url"))
+            seen.add(key)
+            hit = by_key.get(key)
+
+            if hit is None:
+                # ⚠️ 指纹只能从 row 里带进去一次：再单写一个 fingerprint=fp
+                # 就是重复关键字参数，Python 直接 TypeError。
+                # create() 内部会 pop 掉它并用我们算好的值。
+                await self.create(site_id=site_id, **{**row, "fingerprint": fp})
+                stats["created"] += 1
+                continue
+
+            # 已认领到同一条：刷新事实字段，但不动用户状态
+            hit.job_id = row.get("job_id", job_id)
+            hit.page_id = row.get("page_id", hit.page_id)
+            hit.severity = m.Severity(row["severity"])
+            hit.last_seen_at = utcnow()
+            stats["updated"] += 1
+
+            if hit.status in (m.IssueStatus.IGNORED, m.IssueStatus.FALSE_POSITIVE):
+                stats["kept_verdict"] += 1
+            elif hit.status is m.IssueStatus.FIXED:
+                hit.status = m.IssueStatus.OPEN
+                stats["reopened"] += 1
+
+        # ── 收尾：本轮没再命中的旧问题，算「已消失」 ──
+        # ⚠️ 只在**本轮确实扫到那个页面**时才敢收尾。上一轮扫 100 页、
+        # 这轮只扫 10 页，第 90 页上的一条问题本轮压根没被检查过 ——
+        # 把「没检查」当成「已修好」是谎报，而用户会照着这个数字去改
+        # 已经改好的东西。所以 scoped_urls 是本轮实际抓到的 URL 集合，
+        # 旧问题的 URL 不在其中就一律不动。
+        stats["auto_closed"] = 0
+        if scoped_urls is not None:
+            for old_issue in existing:
+                if old_issue.status is not m.IssueStatus.OPEN:
+                    continue
+                if (old_issue.fingerprint, old_issue.url) in seen:
+                    continue
+                # site 级问题（url 为 None）永远算在范围内
+                if old_issue.url is not None and old_issue.url not in scoped_urls:
+                    continue
+                old_issue.status = m.IssueStatus.FIXED
+                stats["auto_closed"] += 1
+
+        await self.session.flush()
+        return stats
+
     async def bulk_create(
         self, site_id: int, issues: Iterable[dict[str, Any]]
     ) -> list[m.Issue]:
@@ -1074,8 +1178,31 @@ async def finish_job(session: AsyncSession, job_id: int, **fields: Any) -> Optio
 async def save_issues(
     session: AsyncSession, site_id: int, issues: Iterable[dict[str, Any]]
 ) -> list[m.Issue]:
-    """一次扫描的全部问题落库（fingerprint 自动补算）。"""
+    """一次扫描的全部问题落库（fingerprint 自动补算）。
+
+    ⚠️ **只用于「首次」落库。** 重复扫描请走 :func:`sync_issues_for_scan` ——
+    这里是无条件 INSERT，每扫一次就多一整套重复行。
+    """
     return await IssueRepository(session).bulk_create(site_id, issues)
+
+
+async def sync_issues_for_scan(
+    session: AsyncSession,
+    site_id: int,
+    *,
+    job_id: int,
+    issues: Iterable[dict[str, Any]],
+    scoped_urls: Optional[set[str]] = None,
+) -> dict[str, int]:
+    """一轮扫描的问题入库 —— 认领已有的，而不是再插一行。
+
+    重复扫描必须走这个，否则：同一个站每重扫一次问题数就翻一倍以上，
+    且用户标过「已修」的行原样留着，「已修」按钮等于只能用一次。
+    语义见 :meth:`IssueRepository.sync_for_scan`。
+    """
+    return await IssueRepository(session).sync_for_scan(
+        site_id, job_id=job_id, rows=issues, scoped_urls=scoped_urls
+    )
 
 
 async def query_issues_by_fingerprint(
@@ -1115,6 +1242,7 @@ __all__ = [
     "create_crawl_job",
     "finish_job",
     "save_issues",
+    "sync_issues_for_scan",
     "query_issues_by_fingerprint",
     "query_rank_history",
     "normalize_root_cause",
