@@ -206,6 +206,37 @@ class SummaryOut(BaseModel):
     model: Optional[str] = None
 
 
+class RankDropRequest(BaseModel):
+    """排名跌幅告警的查询条件。
+
+    ⚠️ 三道门槛**显式暴露给调用方**，不藏在代码默认值里：按天盯排名
+    的人若每跌 2 名收一条提醒，一周七条然后全部忽略 —— 告警一多就不叫
+    告警了。阈值该由「多吵才算吵」决定，那是使用场景的事，不是代码的事。
+    """
+
+    window_days: int = Field(default=30, ge=2, le=365)
+    min_drop: float = Field(default=5.0, ge=0.0, le=1000.0)
+    min_impressions: int = Field(default=10, ge=0, le=1_000_000)
+    min_days: int = Field(default=4, ge=2, le=90)
+
+
+class RankAlertOut(BaseModel):
+    """一条排名跌幅告警。
+
+    ⚠️ ``message`` 是人话结论，直接可发给用户。不给这个的话，通知里塞
+    一堆数字等于让用户自己解读 —— 而用户看不出「10→20」是好是坏。
+    """
+
+    url: str
+    from_position: float
+    to_position: float
+    drop: float
+    from_date: str
+    to_date: str
+    message: str
+    evidence: dict[str, Any] = Field(default_factory=dict)
+
+
 class ReportSummary(BaseModel):
     domain: str
     pages_crawled: int

@@ -26,6 +26,8 @@ from .schemas import (
     KeywordExpandOut,
     KeywordOut,
     KeywordPage,
+    RankAlertOut,
+    RankDropRequest,
     ScorePoint,
     ScoreTrend,
     SummaryOut,
@@ -483,6 +485,60 @@ async def report_summary(
     except Exception as exc:  # noqa: BLE001
         return SummaryOut(reason=f"调用失败：{type(exc).__name__}: {exc}")
     return SummaryOut(summary=text, model=cfg.model)
+
+
+@router.post("/sites/{site_id}/rank-drops", response_model=list[RankAlertOut])
+async def rank_drops(
+    site_id: int,
+    body: RankDropRequest,
+    uow=__import__("fastapi").Depends(get_uow),
+) -> list[RankAlertOut]:
+    """排名跌幅告警。
+
+    ⚠️ **沉默比误报重要**：按天盯排名的人若每跌 2 名就收一条提醒，
+    一周会收到七条，然后全部忽略 —— 告警一多就不叫告警了。所以三道
+    门槛都由调用方显式传入（min_drop / min_impressions / min_days），
+    而不是藏在代码里的默认魔法值。
+
+    空数组是合法结论，不是失败：「最近没跌」就该返回空。
+    """
+    from ..alerts import RankPoint, detect_rank_drops
+
+    await _require_site(uow, site_id)
+    rows = await uow.ranks.recent(site_id, days=body.window_days)
+
+    # 按 URL 攒成时间序列。recent 是 date DESC 排的，但 detect 会自己
+    # 排序，这里只管分组 —— 排序口径只留一处，两处各排一次必有一处是错的。
+    by_url: dict[str, list[RankPoint]] = {}
+    for r in rows:
+        by_url.setdefault(r.url, []).append(
+            RankPoint(
+                date=r.date.isoformat(),
+                position=r.position,
+                impressions=r.impressions or 0,
+                clicks=r.clicks or 0,
+            )
+        )
+
+    alerts = detect_rank_drops(
+        by_url,
+        min_drop=body.min_drop,
+        min_impressions=body.min_impressions,
+        min_days=body.min_days,
+    )
+    return [
+        RankAlertOut(
+            url=a.url,
+            from_position=a.from_position,
+            to_position=a.to_position,
+            drop=a.drop,
+            from_date=a.from_date,
+            to_date=a.to_date,
+            message=a.message,
+            evidence=a.evidence,
+        )
+        for a in alerts
+    ]
 
 
 @router.get("/sites/{site_id}/trend", response_model=ScoreTrend)
