@@ -11,6 +11,11 @@ export PYTHONPATH="$ROOT/.deps:$ROOT/backend"
 cd "$ROOT/backend"
 case "${1:-}" in
   test|"") shift || true; exec python3 -m pytest tests/ -q "$@" ;;
+  # ⚠️ migrate 必须带 -c migrations/alembic.ini：alembic.ini 在 migrations/ 下，
+  # 不在 cwd（backend/）。我今天为这个白跑了 4 次（alembic 不在 PATH →
+  # python3 -m alembic 说没模块 → 从 backend 跑说没有 script_location）。
+  # 踩一次的坑就该写进脚本，不然下个会话还要再摸一遍。
+  migrate) shift; exec python3 -m alembic -c migrations/alembic.ini "$@" ;;
   rules)   shift; exec python3 -m seoclaw.cli rules "$@" ;;
   scan)    shift; exec python3 -m seoclaw.cli scan "$@" ;;
   *)       exec "$@" ;;

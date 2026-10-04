@@ -616,6 +616,43 @@ class Suggestion(Base, TimestampMixin):
 # --------------------------------------------------------------------------
 
 
+class UsageEvent(Base):
+    """一次计量事件（**追加写，不更新**）。
+
+    ⚠️ 为什么不在站点行上放几列就地累加：计数被就地累加时，任何一次重试或
+    回滚都会让数字对不上，而且事后无法自证。追加写可以随时 SUM() 重算，
+    也能回答「上个月到底跑了多少」—— 计费的数字必须能被复算。
+
+    ⚠️ 唯一约束 (kind, ref_id) 是**幂等键**：任务完成后的投递会重试，
+    没有它就重复计量。**重复计量比漏计量严重得多** —— 用户要为没花过的
+    额度买单。
+
+    ⚠️ ``at`` 用 ``server_default=func.now()``（与本文件其它表一致），
+    不用 Python 侧 default —— 后者在 ORM 层就得算好时间，与 DB 时间可能
+    不一致，事后对账会对不上。上一版我就是图省事写了
+    ``default=utcnow``，而本模块根本没有 utcnow，一导入就 NameError。
+    """
+
+    __tablename__ = "usage_events"
+    __table_args__ = (
+        UniqueConstraint("kind", "ref_id", name="uq_usage_kind_ref"),
+        Index("ix_usage_site_at", "site_id", "at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    site_id: Mapped[int] = mapped_column(
+        ForeignKey("sites.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    #: pages_crawled / scan_run / llm_tokens ...
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    #: 幂等键：对应记录的 id（如 crawl_job.id）。同 kind 下必须唯一。
+    ref_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class RankHistory(Base):
     """日级排名/点击/曝光时序。后续可整体迁到 TimescaleDB hypertable。"""
 
@@ -683,4 +720,5 @@ __all__ = [
     "ContentBrief",
     "Suggestion",
     "RankHistory",
+    "UsageEvent",
 ]

@@ -33,6 +33,7 @@ from .schemas import (
     ScorePoint,
     ScoreTrend,
     SummaryOut,
+    UsageOut,
     SiteCreate,
     SiteOut,
 )
@@ -569,6 +570,20 @@ async def rank_drops(
         )
         for a in alerts
     ]
+
+
+@router.get("/sites/{site_id}/usage", response_model=UsageOut)
+async def usage(site_id: int, uow=__import__("fastapi").Depends(get_uow)) -> UsageOut:
+    """计量汇总（按 kind）。
+
+    ⚠️ 这里只给**数字**，不给「还剩多少额度」—— 配额与定价是产品决策，
+    没定之前硬编一个阈值只会被当成既定事实。数字先可算，定价后加。
+    """
+    await _require_site(uow, site_id)
+    by_kind = await uow.usage.totals(site_id)
+    return UsageOut(
+        site_id=site_id, by_kind=by_kind, total=sum(by_kind.values())
+    )
 
 
 @router.get("/sites/{site_id}/trend", response_model=ScoreTrend)

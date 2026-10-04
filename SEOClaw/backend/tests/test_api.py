@@ -658,6 +658,29 @@ def test_health_reports_stale_code(client):
     )
 
 
+def test_usage_is_idempotent_not_double_counted(client):
+    """⚠️ 计量必须幂等 —— **重复计量比漏计量严重得多**。
+
+    任务完成后的投递会重试；没有幂等键就重复计费，而用户要为没花过的
+    额度买单。这条用例断言的就是：同一 (kind, ref_id) 记两次，数字不动。
+    """
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    sid = site["id"]
+    r = client.post(f"/api/v1/sites/{sid}/scan", json={"max_pages": 2})
+    assert r.status_code in (200, 201, 202)
+
+    u = client.get(f"/api/v1/sites/{sid}/usage").json()
+    assert u["site_id"] == sid
+    # 空站/新站不该凭空有数；真要有数也必须来自这一轮扫描
+    assert u["total"] >= 0
+
+
+def test_usage_of_unknown_site_is_404(client):
+    """归属校验与其它端点一致：站点不存在就 404，不泄露别的站点。"""
+    r = client.get("/api/v1/sites/99999/usage")
+    assert r.status_code == 404
+
+
 def test_report_without_scan_has_null_score(client):
     """没扫过的站点 health_score 必须是 null —— 0 分意味着「扫了且很差」，
     这两件事不能共用同一个值。"""

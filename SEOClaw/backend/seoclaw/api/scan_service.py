@@ -250,6 +250,18 @@ async def run_scan(
             health_score=health,
             score_breakdown=breakdown,
         )
+
+        # 计量。⚠️ ref_id 用 job.id —— 它就是幂等键：任务完成后的投递会重试，
+        # 记两次就是重复计量，而**重复计量比漏计量严重得多**（用户为没花过
+        # 的额度买单）。所以记录放在 finish_job 之后而不是之前：
+        # 失败了整段回滚，重试时 job 还没完成，计量也就还没发生。
+        await repo.record_usage(
+            session,
+            site_id,
+            kind="pages_crawled",
+            ref_id=job.id,
+            quantity=len(ok_pages),
+        )
         return {
             "job_id": job.id,
             "domain": _domain_of(url),

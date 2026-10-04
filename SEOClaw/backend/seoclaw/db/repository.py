@@ -1041,6 +1041,67 @@ class RankHistoryRepository:
 
 
 # --------------------------------------------------------------------------
+# usage（计量）
+# --------------------------------------------------------------------------
+
+
+class UsageRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def record(
+        self, site_id: int, kind: str, ref_id: str | int, quantity: int
+    ) -> Optional[m.UsageEvent]:
+        """记一次计量事件，**幂等**。
+
+        ⚠️ 同一 (kind, ref_id) 重复调用不会重复计量，直接返回已有行。
+        用「先查后插」而不是捕 IntegrityError 回滚：后者会让整个外层
+        事务进入失败状态，调用方（扫描完成流程）整段回滚 —— 为了一个
+        「已经记过了」而让主结果丢失，代价完全不成比例。
+        """
+        key = str(ref_id)
+        stmt = select(m.UsageEvent).where(
+            m.UsageEvent.site_id == site_id,
+            m.UsageEvent.kind == kind,
+            m.UsageEvent.ref_id == key,
+        )
+        existing = (await self.session.execute(stmt)).scalar_one_or_none()
+        if existing is not None:
+            return existing
+        row = m.UsageEvent(
+            site_id=site_id, kind=kind, ref_id=key, quantity=int(quantity)
+        )
+        self.session.add(row)
+        await self.session.flush()
+        return row
+
+    async def totals(
+        self, site_id: int, *, start=None, end=None
+    ) -> dict[str, int]:
+        """按 kind 汇总（``SUM`` 而非累加计数）。
+
+        ⚠️ 刻意不做「读出来再加」：追加写的意义就是数字随时能被复算。
+        一旦开始读出来累加，两条口径就必然分叉，而计费数字分叉的下场
+        是对不上账。
+        """
+        # ⚠️ ``.group_by`` 不是可选的。漏掉它，SQL 就没有 GROUP BY ——
+        # 于是**空表也会返回一行 (NULL, NULL)**，字典变成 {None: 0}。
+        # 那比返回空更坏：调用方以为「有个叫 None 的计量项」，
+        # 账单上会凭空多出一项，而空表本该是「什么都没有」。
+        stmt = (
+            select(m.UsageEvent.kind, func.sum(m.UsageEvent.quantity))
+            .where(m.UsageEvent.site_id == site_id)
+            .group_by(m.UsageEvent.kind)
+        )
+        if start is not None:
+            stmt = stmt.where(m.UsageEvent.at >= start)
+        if end is not None:
+            stmt = stmt.where(m.UsageEvent.at <= end)
+        rows = (await self.session.execute(stmt)).all()
+        return {k: int(v or 0) for k, v in rows}
+
+
+# --------------------------------------------------------------------------
 # suggestions / briefs
 # --------------------------------------------------------------------------
 
@@ -1157,6 +1218,7 @@ class UnitOfWork:
         self.keywords = KeywordRepository(session)
         self.serp = SerpRepository(session)
         self.ranks = RankHistoryRepository(session)
+        self.usage = UsageRepository(session)
         self.suggestions = SuggestionRepository(session)
         self.briefs = ContentBriefRepository(session)
 
@@ -1209,6 +1271,25 @@ async def save_issues(
     这里是无条件 INSERT，每扫一次就多一整套重复行。
     """
     return await IssueRepository(session).bulk_create(site_id, issues)
+
+
+async def record_usage(
+    session: AsyncSession,
+    site_id: int,
+    *,
+    kind: str,
+    ref_id: str | int,
+    quantity: int,
+) -> Optional[m.UsageEvent]:
+    """记一次计量（幂等，见 :meth:`UsageRepository.record`）。"""
+    return await UsageRepository(session).record(site_id, kind, ref_id, quantity)
+
+
+async def usage_totals(
+    session: AsyncSession, site_id: int, *, start=None, end=None
+) -> dict[str, int]:
+    """按 kind 汇总计量（见 :meth:`UsageRepository.totals`）。"""
+    return await UsageRepository(session).totals(site_id, start=start, end=end)
 
 
 async def sync_issues_for_scan(
@@ -1268,6 +1349,8 @@ __all__ = [
     "finish_job",
     "save_issues",
     "sync_issues_for_scan",
+    "record_usage",
+    "usage_totals",
     "query_issues_by_fingerprint",
     "query_rank_history",
     "normalize_root_cause",

@@ -237,6 +237,19 @@ class RankAlertOut(BaseModel):
     evidence: dict[str, Any] = Field(default_factory=dict)
 
 
+class UsageOut(BaseModel):
+    """某站点的计量汇总。
+
+    ⚠️ ``by_kind`` 是 ``SUM`` 出来的，不是「读出来累加」—— 追加写的
+    意义就是数字随时能被复算，一旦开始读出来累加，两条口径必然分叉，
+    而计费数字分叉的下场是对不上账。
+    """
+
+    site_id: int
+    by_kind: dict[str, int] = Field(default_factory=dict)
+    total: int = 0
+
+
 class ReportSummary(BaseModel):
     domain: str
     pages_crawled: int
