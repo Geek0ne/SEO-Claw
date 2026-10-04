@@ -5,294 +5,304 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SEOClaw —— 站点 SEO 体检</title>
 <style>
+/*
+ * 设计取向：现代企业级。
+ *   浅色底、克制的单色强调、真实的分隔线、大量留白。
+ *   不用渐变、不发光、不用紫蓝——那是「AI 生成感」的来源。
+ */
 :root{
-  --bg:#0b0e14; --bg2:#111725; --card:#141b2d; --card2:#1a2236;
-  --ink:#e8ecf4; --muted:#8a94ad; --dim:#5c6580; --line:#232c44;
-  --accent:#5b8cff; --accent2:#8b5cf6; --good:#34d399; --ok:#a3e635;
-  --warn:#fbbf24; --high:#fb923c; --crit:#f87171; --info:#60a5fa;
-  --r:14px; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);
+  --bg:#fbfbfc; --surface:#fff; --ink:#16181d; --ink-2:#3f444e;
+  --muted:#6b7280; --faint:#9aa1ad; --line:#e8eaee; --line-2:#f1f2f5;
+  --accent:#1a56db; --accent-soft:#eef2ff;
+  --crit:#b42318; --high:#b54708; --med:#a15c07; --low:#175cd3; --info:#475467;
+  --ok-1:#067647; --ok-2:#b54708; --ok-3:#b42318;
+  --radius:6px;
 }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 body{
-  margin:0;color:var(--ink);
-  background:
-    radial-gradient(1100px 620px at 12% -8%,rgba(91,140,255,.16),transparent 60%),
-    radial-gradient(900px 520px at 88% 0%,rgba(139,92,246,.13),transparent 62%),
-    var(--bg);
-  font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",
-  "Hiragino Sans GB","Microsoft YaHei",sans-serif;
-  -webkit-font-smoothing:antialiased;
+  margin:0;background:var(--bg);color:var(--ink);
+  font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","Inter",
+  "PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
 }
-.wrap{max-width:880px;margin:0 auto;padding:0 20px 96px}
+.wrap{max-width:940px;margin:0 auto;padding:0 24px 88px}
 a{color:var(--accent)}
 
-/* ── 顶部 ── */
-header{padding:44px 0 26px}
-.brand{display:flex;align-items:center;gap:11px;margin-bottom:18px}
-.logo{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  box-shadow:0 4px 14px rgba(91,140,255,.4);font-size:17px}
-.brand b{font-size:17px;letter-spacing:.3px}
-.tagline{font-size:25px;font-weight:650;line-height:1.35;margin:0 0 8px;
-  letter-spacing:-.4px}
-.tagline em{font-style:normal;background:linear-gradient(120deg,var(--accent),var(--accent2));
-  -webkit-background-clip:text;background-clip:text;color:transparent}
-.sub{color:var(--muted);margin:0;font-size:14.5px}
+/* ── 顶栏：一条线，不是发光卡片 ── */
+header{padding:44px 0 30px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;gap:10px;margin-bottom:22px}
+.mark{width:22px;height:22px;border-radius:5px;background:var(--ink);
+  color:#fff;font-size:12px;display:grid;place-items:center;font-weight:600;
+  align-self:center}
+.brand b{font-size:15px;font-weight:600;letter-spacing:-.1px}
+.brand span{font-size:12.5px;color:var(--faint)}
+h1{font-size:30px;font-weight:600;letter-spacing:-.7px;line-height:1.25;margin:0 0 10px}
+h1 em{font-style:normal;color:var(--accent)}
+.lede{color:var(--muted);margin:0;font-size:15px}
 
-/* ── 表单卡 ── */
-.panel{background:linear-gradient(180deg,var(--card),var(--card2));
-  border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);
-  padding:22px;margin:26px 0 18px}
-.field{display:block;margin-bottom:16px}
-.field>span{display:block;font-size:12.5px;color:var(--muted);margin-bottom:7px;
-  font-weight:600;letter-spacing:.3px;text-transform:uppercase}
-.field input[type=text]{
-  width:100%;padding:14px 16px;font-size:16px;border-radius:11px;
-  border:1px solid var(--line);background:var(--bg2);color:var(--ink);
-  transition:border-color .15s,box-shadow .15s;
+/* ── 表单：卡片用真边框，不用阴影堆叠 ── */
+.card{background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius);margin:24px 0 16px}
+.card-hd{padding:16px 22px;border-bottom:1px solid var(--line-2);
+  font-size:13px;font-weight:600;letter-spacing:.2px}
+.card-bd{padding:22px}
+
+.field{display:block;margin-bottom:18px}
+.field:last-of-type{margin-bottom:0}
+.lbl{display:block;font-size:12px;font-weight:500;color:var(--ink-2);
+  margin-bottom:7px;letter-spacing:.1px}
+.hint{color:var(--faint);font-size:11.5px;font-weight:400;margin-left:6px}
+
+input[type=text]{
+  width:100%;padding:11px 13px;font-size:14.5px;color:var(--ink);
+  border:1px solid #d6d9e0;border-radius:var(--radius);background:var(--surface);
+  transition:border-color .12s,box-shadow .12s;
 }
-.field input[type=text]::placeholder{color:var(--dim)}
-.field input[type=text]:focus{outline:none;border-color:var(--accent);
-  box-shadow:0 0 0 3px rgba(91,140,255,.18)}
+input[type=text]::placeholder{color:var(--faint)}
+input[type=text]:focus{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(26,86,219,.10)}
 
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:640px){.grid{grid-template-columns:1fr}}
-select{width:100%;padding:11px 13px;font-size:14.5px;border-radius:10px;
-  border:1px solid var(--line);background:var(--bg2);color:var(--ink);cursor:pointer}
-select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,140,255,.18)}
+select{width:100%;padding:10px 12px;font-size:14px;color:var(--ink);
+  border:1px solid #d6d9e0;border-radius:var(--radius);background:var(--surface);
+  cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%236b7280' d='M0 0h10L5 6z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center}
+select:focus{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(26,86,219,.10)}
 
-/* 分段选择器 */
-.seg{display:flex;gap:7px;background:var(--bg2);padding:4px;border-radius:11px;
-  border:1px solid var(--line)}
-.seg label{flex:1;text-align:center;padding:8px 4px;border-radius:8px;cursor:pointer;
-  font-size:13.5px;color:var(--muted);transition:.15s;user-select:none}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:660px){.cols{grid-template-columns:1fr}}
+
+/* 分段控件：像系统设置里那种，不是彩色胶囊 */
+.seg{display:flex;border:1px solid #d6d9e0;border-radius:var(--radius);
+  overflow:hidden;background:var(--surface)}
+.seg label{flex:1;text-align:center;padding:9px 4px;font-size:13px;
+  color:var(--muted);cursor:pointer;transition:.12s;user-select:none;
+  border-right:1px solid var(--line)}
+.seg label:last-child{border-right:0}
+.seg label:hover{background:var(--line-2)}
 .seg input{position:absolute;opacity:0;pointer-events:none}
-.seg input:checked+span{color:var(--ink)}
-.seg label:has(input:checked){background:var(--accent);color:#fff;font-weight:600}
-.seg label:hover:not(:has(input:checked)){color:var(--ink)}
+.seg input:checked+span{color:var(--accent);font-weight:600}
+.seg label:has(input:checked){background:var(--accent-soft)}
 
-/* 开关 */
-.switch{display:flex;align-items:center;gap:10px;padding:11px 13px;
-  border:1px solid var(--line);border-radius:10px;background:var(--bg2);
-  cursor:pointer;margin-bottom:8px;transition:.15s}
-.switch:hover{border-color:var(--dim)}
-.switch input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer}
-.switch span{font-size:13.5px}
-.switch small{display:block;color:var(--dim);font-size:12px;margin-top:1px}
+/* 勾选项：原生 checkbox，不自绘圆角胶囊 */
+.opt{display:flex;gap:10px;align-items:flex-start;padding:11px 0;
+  border-top:1px solid var(--line-2);cursor:pointer}
+.opt:first-child{border-top:0}
+.opt input{width:15px;height:15px;margin:2px 0 0;accent-color:var(--accent);
+  cursor:pointer;flex:0 0 auto}
+.opt b{display:block;font-size:13.5px;font-weight:500}
+.opt small{display:block;color:var(--faint);font-size:12px;margin-top:1px}
 
-.actions{display:flex;gap:10px;margin-top:4px}
-.btn{flex:1;padding:14px 22px;font-size:15.5px;font-weight:650;border:0;
-  border-radius:11px;cursor:pointer;transition:.15s;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
-  box-shadow:0 4px 16px rgba(91,140,255,.32)}
-.btn:hover:not(:disabled){transform:translateY(-1px);
-  box-shadow:0 7px 22px rgba(91,140,255,.42)}
-.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
-.btn.ghost{flex:0 0 auto;background:transparent;color:var(--muted);
-  border:1px solid var(--line);box-shadow:none}
-.btn.ghost:hover{color:var(--ink);border-color:var(--dim);transform:none}
+.btn{padding:11px 22px;font-size:14px;font-weight:550;border-radius:var(--radius);
+  border:1px solid transparent;cursor:pointer;transition:.12s;font-family:inherit}
+.btn-primary{background:var(--ink);color:#fff}
+.btn-primary:hover:not(:disabled){background:#000}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-ghost{background:var(--surface);color:var(--ink-2);border-color:#d6d9e0}
+.btn-ghost:hover{background:var(--line-2);color:var(--ink)}
+.actions{display:flex;gap:10px;margin-top:22px;padding-top:20px;
+  border-top:1px solid var(--line-2)}
 
-/* 示例 */
-.examples{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;align-items:center}
-.examples span{font-size:12.5px;color:var(--dim);margin-right:2px}
-.examples button{padding:5px 11px;font-size:12.5px;border-radius:99px;
-  border:1px solid var(--line);background:var(--bg2);color:var(--muted);
-  cursor:pointer;font-family:inherit;transition:.15s}
-.examples button:hover{border-color:var(--accent);color:var(--accent)}
+.examples{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.examples span{font-size:12px;color:var(--faint);margin-right:3px}
+.examples button{padding:4px 10px;font-size:12px;border-radius:4px;
+  border:1px solid var(--line);background:var(--surface);color:var(--muted);
+  cursor:pointer;font-family:inherit;transition:.12s}
+.examples button:hover{border-color:#c9cdd6;color:var(--ink)}
 
 /* ── 状态 ── */
-.alert{border-radius:11px;padding:14px 16px;margin-bottom:16px;font-size:14px;
-  border:1px solid;line-height:1.6}
-.alert.err{background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.32);
-  color:#fecaca}
-.alert.warn{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.3);
-  color:#fde68a}
-.alert.ok{background:rgba(52,211,153,.07);border-color:rgba(52,211,153,.28);
-  color:#a7f3d0}
-.alert.info{background:rgba(96,165,250,.07);border-color:rgba(96,165,250,.28);
-  color:#bfdbfe}
-.alert b{color:#fff;font-weight:650}
+.note{border-radius:var(--radius);padding:13px 15px;font-size:13.5px;
+  border:1px solid var(--line);background:var(--surface);margin-bottom:14px;
+  line-height:1.65}
+.note.err{background:#fef3f2;border-color:#fecdca;color:#7a271a}
+.note.warn{background:#fffaeb;border-color:#fedf89;color:#93370d}
+.note.ok{background:#ecfdf3;border-color:#abefc6;color:#054f31}
+.note b{font-weight:600}
 
-.progress{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
-  padding:20px 22px;margin-bottom:16px}
-.pg-head{display:flex;align-items:center;gap:11px;margin-bottom:14px}
-.pg-head strong{font-size:15px}
-.pg-track{height:6px;border-radius:3px;background:var(--bg2);overflow:hidden;
+.progress{background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius);padding:20px 22px;margin-bottom:14px}
+.pg-head{display:flex;align-items:center;gap:9px;margin-bottom:15px;
+  font-size:14px;font-weight:500}
+.spin{width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--accent);
+  border-radius:50%;animation:sp .7s linear infinite;flex:0 0 auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+.pg-track{height:3px;background:var(--line-2);border-radius:2px;overflow:hidden;
   margin-bottom:12px}
-.pg-track>i{display:block;height:100%;width:32%;border-radius:3px;
-  background:linear-gradient(90deg,var(--accent),var(--accent2));
-  animation:slide 1.5s ease-in-out infinite}
-@keyframes slide{0%{margin-left:-32%}100%{margin-left:100%}}
-.pg-log{font-size:13px;color:var(--muted);display:flex;justify-content:space-between;
+.pg-track>i{display:block;height:100%;width:30%;background:var(--accent);
+  animation:sl 1.6s ease-in-out infinite}
+@keyframes sl{0%{margin-left:-30%}100%{margin-left:100%}}
+.pg-log{display:flex;justify-content:space-between;font-size:12.5px;
+  color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* ── 结果：分数用横条与大数字，不用环形发光 ── */
+.headline{background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius);padding:24px;margin-bottom:16px}
+.hl-top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+  margin-bottom:20px}
+.hl-score{font-size:46px;font-weight:600;letter-spacing:-2px;line-height:1}
+.hl-score.g1{color:var(--ok-1)} .hl-score.g2{color:var(--ok-2)}
+.hl-score.g3{color:var(--ok-3)} .hl-score.g4{color:var(--crit)}
+.hl-verdict{font-size:16px;font-weight:550}
+.hl-meta{font-size:13px;color:var(--muted);margin-left:auto;
   font-variant-numeric:tabular-nums}
 
-/* ── 分数 ── */
-.score{display:flex;gap:26px;align-items:center;flex-wrap:wrap;
-  background:linear-gradient(180deg,var(--card),var(--card2));
-  border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);
-  padding:24px;margin-bottom:16px}
-.ring{width:112px;height:112px;flex:0 0 auto;position:relative;display:grid;
-  place-items:center}
-.ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
-.ring circle{fill:none;stroke-width:9;stroke-linecap:round}
-.ring .bgc{stroke:var(--bg2)}
-.ring .fgc{stroke:var(--accent);transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1)}
-.ring b{font-size:31px;font-weight:700;letter-spacing:-1px;line-height:1}
-.ring small{position:absolute;bottom:22px;font-size:10.5px;color:var(--dim)}
-.score.good .fgc,.score.good b{stroke:var(--good);color:var(--good)}
-.score.ok .fgc,.score.ok b{stroke:var(--ok);color:var(--ok)}
-.score.warn .fgc,.score.warn b{stroke:var(--warn);color:var(--warn)}
-.score.bad .fgc,.score.bad b{stroke:var(--crit);color:var(--crit)}
+.meter{height:6px;background:var(--line-2);border-radius:3px;overflow:hidden;
+  margin-bottom:20px}
+.meter>i{display:block;height:100%;border-radius:3px;transition:width .7s ease}
+.meter>i.g1{background:var(--ok-1)} .meter>i.g2{background:var(--ok-2)}
+.meter>i.g3{background:var(--ok-3)} .meter>i.g4{background:var(--crit)}
 
-.score-meta{flex:1;min-width:240px}
-.score-meta h2{margin:0 0 4px;font-size:19px;font-weight:650}
-.score-meta .dom{color:var(--muted);font-size:13.5px;margin:0 0 14px}
-.bars{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:9px}
-.bar-i{background:var(--bg2);border-radius:8px;padding:8px 10px}
-.bar-i label{display:block;font-size:11px;color:var(--dim);margin-bottom:5px;
-  text-transform:uppercase;letter-spacing:.3px}
-.bar-i .t{height:4px;border-radius:2px;background:var(--line);overflow:hidden}
-.bar-i .t>i{display:block;height:100%;border-radius:2px;background:var(--accent)}
-.bar-i em{font-style:normal;font-size:12.5px;color:var(--muted);
+.dims{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
+  gap:1px;background:var(--line-2);border:1px solid var(--line-2);border-radius:4px;
+  overflow:hidden}
+.dim{background:var(--surface);padding:11px 12px}
+.dim label{display:block;font-size:11px;color:var(--faint);margin-bottom:5px}
+.dim .t{height:3px;background:var(--line-2);border-radius:2px;overflow:hidden;
+  margin-bottom:6px}
+.dim .t>i{display:block;height:100%;background:var(--ink-2)}
+.dim em{font-style:normal;font-size:12.5px;font-weight:550;
   font-variant-numeric:tabular-nums}
 
-/* ── 筛选 ── */
-.filters{display:flex;gap:7px;flex-wrap:wrap;margin:22px 0 14px;align-items:center}
-.filters .lb{font-size:12.5px;color:var(--dim);margin-right:3px}
-.f{padding:6px 13px;font-size:13px;border-radius:99px;cursor:pointer;
-  border:1px solid var(--line);background:var(--card);color:var(--muted);
-  font-family:inherit;transition:.15s}
-.f:hover{border-color:var(--dim);color:var(--ink)}
-.f.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
-.f.critical.on{background:var(--crit);border-color:var(--crit)}
-.f.high.on{background:var(--high);border-color:var(--high)}
-.f.medium.on{background:var(--warn);border-color:var(--warn);color:#1a1200}
-.f.low.on{background:var(--info);border-color:var(--info)}
-.f.info.on{background:var(--dim);border-color:var(--dim);color:#fff}
+/* 筛选 */
+.filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:26px 0 12px}
+.filters .lb{font-size:12px;color:var(--faint);margin-right:4px}
+.f{padding:5px 11px;font-size:12.5px;border-radius:4px;cursor:pointer;
+  border:1px solid var(--line);background:var(--surface);color:var(--muted);
+  font-family:inherit;transition:.12s}
+.f:hover{border-color:#c9cdd6;color:var(--ink)}
+.f.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:500}
+.f.on b{font-weight:600}
 
-/* ── 问题卡 ── */
-.issue{background:var(--card);border:1px solid var(--line);border-radius:12px;
-  margin-bottom:9px;overflow:hidden;transition:border-color .15s}
-.issue:hover{border-color:var(--dim)}
-.issue>summary{cursor:pointer;padding:13px 16px;display:flex;gap:11px;
+/* 问题条目：像 issue tracker，不用彩色药丸 */
+.issue{background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radius);margin-bottom:8px;transition:border-color .12s}
+.issue:hover{border-color:#d0d4dc}
+.issue[open]{border-color:#d0d4dc}
+.issue>summary{cursor:pointer;padding:13px 16px;display:flex;gap:12px;
   align-items:center;list-style:none}
 .issue>summary::-webkit-details-marker{display:none}
-.issue[open]>summary{border-bottom:1px solid var(--line)}
-.sev{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:5px;
-  text-transform:uppercase;letter-spacing:.5px;color:#0b0e14;flex:0 0 auto}
-.sev.critical{background:var(--crit);color:#fff}
-.sev.high{background:var(--high);color:#1a1005}
-.sev.medium{background:var(--warn);color:#1a1200}
-.sev.low{background:var(--info)}
-.sev.info{background:var(--dim);color:#fff}
-.ttl{flex:1;font-size:14.5px;font-weight:550;min-width:0}
-.cnt{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums;flex:0 0 auto}
-.arrow{color:var(--dim);font-size:11px;transition:transform .18s;flex:0 0 auto}
-.issue[open] .arrow{transform:rotate(90deg)}
+.issue[open]>summary{border-bottom:1px solid var(--line-2)}
+.sev{font-size:11px;font-weight:600;padding:2px 7px;border-radius:3px;
+  flex:0 0 auto;letter-spacing:.2px;border:1px solid}
+.sev.critical{color:var(--crit);border-color:#fecdca;background:#fef3f2}
+.sev.high{color:var(--high);border-color:#fedf89;background:#fffaeb}
+.sev.medium{color:var(--med);border-color:#fde9c3;background:#fffcf5}
+.sev.low{color:var(--low);border-color:#b2ddff;background:#eff8ff}
+.sev.info{color:var(--info);border-color:var(--line);background:var(--line-2)}
+.ttl{flex:1;font-size:14px;font-weight:500;min-width:0}
+.cnt{font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums;flex:0 0 auto}
+.caret{color:var(--faint);font-size:10px;transition:transform .15s;flex:0 0 auto}
+.issue[open] .caret{transform:rotate(90deg)}
 
-.body{padding:14px 16px;font-size:14px;color:var(--muted);line-height:1.7}
-.body p{margin:0 0 10px}
-.body .lbl{color:var(--dim);font-size:11.5px;text-transform:uppercase;
-  letter-spacing:.4px;font-weight:600;margin-bottom:4px}
-.fix{background:var(--bg2);border:1px solid var(--line);border-left:3px solid var(--accent);
-  border-radius:0 8px 8px 0;padding:11px 13px;color:var(--ink);font-size:13.5px}
+.body{padding:14px 16px;font-size:13.5px;color:var(--ink-2);line-height:1.7}
+.body p{margin:0 0 12px}
+.blabel{font-size:11px;color:var(--faint);margin-bottom:5px;
+  letter-spacing:.3px;text-transform:uppercase;font-weight:600}
+.fix{background:#f8f9fb;border:1px solid var(--line-2);border-left:2px solid var(--accent);
+  border-radius:0 4px 4px 0;padding:10px 12px;color:var(--ink);font-size:13.5px}
+pre{margin:0;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:12.5px}
 .code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
-  color:var(--dim);background:var(--bg2);padding:2px 7px;border-radius:5px;
-  border:1px solid var(--line)}
+  color:var(--ink-2);background:var(--line-2);padding:2px 6px;border-radius:3px}
 .url{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
-  color:var(--info);word-break:break-all}
+  color:var(--low);word-break:break-all}
 
-/* ── 页脚 ── */
-footer{margin-top:44px;padding-top:22px;border-top:1px solid var(--line);
-  color:var(--dim);font-size:12.5px;text-align:center;line-height:1.9}
-footer b{color:var(--muted);font-weight:600}
-
+footer{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);
+  color:var(--faint);font-size:12.5px;text-align:center;line-height:1.9}
 .hidden{display:none!important}
-.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(14px);
-  background:var(--card2);border:1px solid var(--line);color:var(--ink);
-  padding:10px 18px;border-radius:99px;font-size:13.5px;box-shadow:var(--shadow);
-  opacity:0;pointer-events:none;transition:.22s;z-index:50}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,10px);
+  background:var(--ink);color:#fff;padding:9px 16px;border-radius:var(--radius);
+  font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:50}
+.toast.show{opacity:1;transform:translate(-50%,0)}
 </style>
 </head>
 <body>
 <div class="wrap">
 
 <header>
-  <div class="brand"><span class="logo">🔍</span><b>SEOClaw</b></div>
-  <h1 class="tagline">输入网址，扫一遍，<em>告诉你先改哪几件</em>。</h1>
-  <p class="sub">43 项确定性检查 · 每条都带证据 · 没把握的它会闭嘴，而不是猜一个结论给你。</p>
+  <div class="brand">
+    <span class="mark">S</span><b>SEOClaw</b><span>站点 SEO 体检</span>
+  </div>
+  <h1>扫一遍，告诉你<em>先改哪几件</em></h1>
+  <p class="lede">43 项确定性检查，每条结论都能追到原文证据。没把握的会直接标注，不猜。</p>
 </header>
 
-<!-- 提交表单 -->
-<form class="panel" id="f">
-  <label class="field">
-    <span>网址</span>
-    <input type="text" id="url" placeholder="example.com" autocomplete="off"
-           spellcheck="false" required>
-  </label>
+<form class="card" id="f">
+  <div class="card-hd">开始体检</div>
+  <div class="card-bd">
 
-  <div class="grid">
     <label class="field">
-      <span>抓取页数</span>
-      <select id="max_pages">
-        <option value="10">10 页 · 快速看看</option>
-        <option value="30" selected>30 页 · 够看结构</option>
-        <option value="80">80 页 · 更全</option>
-        <option value="200">200 页 · 较慢</option>
-      </select>
+      <span class="lbl">网址</span>
+      <input type="text" id="url" placeholder="example.com" autocomplete="off"
+             spellcheck="false" required>
     </label>
-    <div class="field">
-      <span>抓取深度</span>
-      <div class="seg">
-        <label><input type="radio" name="depth" value="1"><span>仅首页</span></label>
-        <label><input type="radio" name="depth" value="2" checked><span>2 层</span></label>
-        <label><input type="radio" name="depth" value="6"><span>全站</span></label>
+
+    <div class="cols">
+      <label class="field">
+        <span class="lbl">抓取页数</span>
+        <select id="max_pages">
+          <option value="10">10 页 · 快速看看</option>
+          <option value="30" selected>30 页 · 够看结构</option>
+          <option value="80">80 页 · 更全</option>
+          <option value="200">200 页 · 较慢</option>
+        </select>
+      </label>
+      <div class="field">
+        <span class="lbl">抓取深度</span>
+        <div class="seg">
+          <label><input type="radio" name="depth" value="1"><span>仅首页</span></label>
+          <label><input type="radio" name="depth" value="2" checked><span>2 层</span></label>
+          <label><input type="radio" name="depth" value="6"><span>全站</span></label>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="field">
-    <span>市场</span>
-    <select id="market">
-      <option value="base" selected>通用（Google 系）</option>
-      <option value="google">Google 生态</option>
-      <option value="baidu">百度生态</option>
-      <option value="cnh_eco">中文生态（微信等）</option>
-    </select>
-  </div>
+    <div class="cols">
+      <label class="field">
+        <span class="lbl">市场</span>
+        <select id="market">
+          <option value="base" selected>通用（Google 系）</option>
+          <option value="google">Google 生态</option>
+          <option value="baidu">百度生态</option>
+          <option value="cnh_eco">中文生态（微信等）</option>
+        </select>
+      </label>
+      <div class="field">
+        <span class="lbl">选项</span>
+        <label class="opt">
+          <input type="checkbox" id="render_js">
+          <span><b>渲染 JavaScript</b>
+          <small>SPA / 前端渲染的站点建议开，慢很多</small></span>
+        </label>
+        <label class="opt">
+          <input type="checkbox" id="robots" checked>
+          <span><b>遵守 robots.txt</b>
+          <small>关掉可扫到不该扫的页面，仅自测用</small></span>
+        </label>
+      </div>
+    </div>
 
-  <div class="field">
-    <span>选项</span>
-    <label class="switch">
-      <input type="checkbox" id="render_js">
-      <span>渲染 JavaScript<small>SPA / 前端渲染的站点建议开，慢很多</small></span>
-    </label>
-    <label class="switch">
-      <input type="checkbox" id="robots" checked>
-      <span>遵守 robots.txt<small>关掉可以扫到不该扫的页面，仅自测用</small></span>
-    </label>
-  </div>
+    <div class="actions">
+      <button class="btn btn-primary" id="go" type="submit">开始体检</button>
+      <button class="btn btn-ghost" id="reset" type="button">重置</button>
+    </div>
 
-  <div class="actions">
-    <button class="btn" id="go" type="submit">开始体检</button>
-    <button class="btn ghost" id="reset" type="button" title="清空输入与结果">重置</button>
-  </div>
+    <div class="examples">
+      <span>试试</span>
+      <button type="button" data-u="example.com">example.com</button>
+      <button type="button" data-u="www.rust-lang.org">rust-lang.org</button>
+      <button type="button" data-u="www.python.org">python.org</button>
+      <button type="button" data-u="go.dev">go.dev</button>
+    </div>
 
-  <div class="examples">
-    <span>试试：</span>
-    <button type="button" data-u="example.com">example.com</button>
-    <button type="button" data-u="www.rust-lang.org">rust-lang.org</button>
-    <button type="button" data-u="www.python.org">python.org</button>
-    <button type="button" data-u="go.dev">go.dev</button>
   </div>
 </form>
 
 <div id="out"></div>
 
 <footer>
-  <b>SEOClaw</b> · 规则永不依赖 LLM，每条结论都能追到原文证据<br>
+  规则永不依赖 LLM · 每条结论都能追到原文证据<br>
   没抓到页面 ≠ 没问题 · 没覆盖到的检查项一律不装作查过了
 </footer>
 
@@ -300,282 +310,201 @@ footer b{color:var(--muted);font-weight:600}
 <div class="toast" id="toast"></div>
 
 <script>
-const $ = (id) => document.getElementById(id);
-const out = $('out'), goBtn = $('go');
-const SEV = ['critical','high','medium','low','info'];
-const SEV_CN = {critical:'致命',high:'高',medium:'中',low:'低',info:'提示'};
-const DIM_CN = {
-  crawlability:'可抓取',architecture:'结构',content:'内容',
-  performance:'性能','structured_data':'结构化数据',trust:'信任'
-};
-let activeFilter = 'all';
-let lastReport = null;
-let pollTimer = null;
+const $=id=>document.getElementById(id);
+const out=$('out'), goBtn=$('go');
+const SEV=['critical','high','medium','low','info'];
+const SEV_CN={critical:'致命',high:'高',medium:'中',low:'低',info:'提示'};
+const DIM_CN={crawlability:'可抓取',architecture:'结构',content:'内容',
+  performance:'性能',structured_data:'结构化数据',trust:'信任'};
+let filter='all', last=null, timer=null;
 
-function esc(s){
-  return String(s==null?'':s).replace(/[&<>"']/g,c=>
-    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-function toast(msg){
-  const t=$('toast'); t.textContent=msg; t.classList.add('show');
-  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200);
-}
-function el(html){const d=document.createElement('div');d.innerHTML=html.trim();return d.firstChild;}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function el(h){const d=document.createElement('div');d.innerHTML=h.trim();return d.firstChild;}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');
+  clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2100);}
 
-/* ── 示例按钮 ── */
-document.querySelectorAll('.examples button').forEach(b=>{
-  b.addEventListener('click',()=>{ $('url').value=b.dataset.u; $('url').focus(); });
-});
+document.querySelectorAll('.examples button').forEach(b=>b.addEventListener('click',()=>{
+  $('url').value=b.dataset.u;$('url').focus();}));
 
-/* ── 重置 ── */
 $('reset').addEventListener('click',()=>{
-  if(pollTimer){clearTimeout(pollTimer);pollTimer=null;}
-  $('url').value=''; out.innerHTML=''; lastReport=null;
-  goBtn.disabled=false; goBtn.textContent='开始体检';
+  if(timer){clearTimeout(timer);timer=null;}
+  clearInterval(window._tk);
+  $('url').value='';out.innerHTML='';last=null;
+  goBtn.disabled=false;goBtn.textContent='开始体检';
 });
 
-/* ── 提交 ── */
-$('f').addEventListener('submit', async (e)=>{
+$('f').addEventListener('submit',async e=>{
   e.preventDefault();
-  const url = $('url').value.trim();
-  if(!url){ toast('先填个网址'); return; }
+  const url=$('url').value.trim();
+  if(!url){toast('先填个网址');return;}
+  if(timer){clearTimeout(timer);timer=null;}
 
-  if(pollTimer){clearTimeout(pollTimer);pollTimer=null;}
-  goBtn.disabled=true; goBtn.textContent='正在提交…';
-  out.innerHTML='';
+  goBtn.disabled=true;goBtn.textContent='提交中…';
+  out.innerHTML=loading('正在提交…','连接服务');
+  window._t0=Date.now();startClock();
 
-  const payload = {
-    url,
-    max_pages: Number($('max_pages').value),
-    market: $('market').value,
-    max_depth: Number(document.querySelector('input[name=depth]:checked').value),
-    respect_robots: $('robots').checked,
-    render_js: $('render_js').checked,
-  };
-
-  out.appendChild(el(`
-    <div class="progress">
-      <div class="pg-head"><span class="dot"></span><strong>正在提交…</strong></div>
-      <div class="pg-track"><i></i></div>
-      <div class="pg-log"><span>连接服务</span><span id="el">0s</span></div>
-    </div>`));
-  startDot('.pg-head .dot');
-
-  let jobId;
   try{
-    const r = await fetch('/api/v1/web/quick-scan',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
+    const r=await fetch('/api/v1/web/quick-scan',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        url,
+        max_pages:Number($('max_pages').value),
+        market:$('market').value,
+        max_depth:Number(document.querySelector('input[name=depth]:checked').value),
+        respect_robots:$('robots').checked,
+        render_js:$('render_js').checked,
+      })
     });
-    let data = null;
-    try { data = await r.json(); } catch(_) {}
-    if(!r.ok){
-      throw new Error((data && data.detail) ? String(data.detail) : ('HTTP '+r.status));
-    }
-    jobId = data.job_id;
-    showProgress(data.domain, jobId);
-    poll(jobId, 0);
+    let d=null;try{d=await r.json();}catch(_){}
+    if(!r.ok)throw new Error((d&&d.detail)?String(d.detail):('HTTP '+r.status));
+    out.innerHTML=loading('正在扫描 '+esc(d.domain),'已排队，正在抓取页面…');
+    poll(d.job_id,0);
   }catch(err){
+    clearInterval(window._tk);
     out.innerHTML='';
-    out.appendChild(el(`<div class="alert err"><b>提交失败：</b>${esc(err.message)}</div>`));
-    goBtn.disabled=false; goBtn.textContent='开始体检';
+    out.appendChild(el(`<div class="note err"><b>提交失败：</b>${esc(err.message)}</div>`));
+    goBtn.disabled=false;goBtn.textContent='开始体检';
   }
 });
 
-function startDot(sel){
-  const d=document.querySelector(sel);
-  if(d) d.style.cssText='width:9px;height:9px;border-radius:50%;background:var(--accent);animation:pulse 1.2s infinite';
-  const st=document.createElement('style');
-  st.textContent='@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}';
-  document.head.appendChild(st);
+function loading(title,note){
+  return `<div class="progress">
+    <div class="pg-head"><span class="spin"></span>${title}</div>
+    <div class="pg-track"><i></i></div>
+    <div class="pg-log"><span id="pg-note">${note}</span><span id="el">0s</span></div>
+  </div>`;
 }
-
-function showProgress(domain, jobId){
-  out.innerHTML='';
-  out.appendChild(el(`
-    <div class="progress">
-      <div class="pg-head">
-        <span style="width:9px;height:9px;border-radius:50%;background:var(--accent);
-          display:inline-block;animation:pulse 1.2s infinite"></span>
-        <strong>正在扫描 ${esc(domain)}</strong>
-      </div>
-      <div class="pg-track"><i></i></div>
-      <div class="pg-log">
-        <span id="pg-note">已排队，正在抓取页面…</span>
-        <span id="el">0s</span>
-      </div>
-    </div>`));
-  window._t0 = Date.now();
-  clearInterval(window._tick);
-  window._tick = setInterval(()=>{
+function startClock(){
+  clearInterval(window._tk);
+  window._tk=setInterval(()=>{
     const e=$('el');
-    if(e) e.textContent = Math.round((Date.now()-window._t0)/1000)+'s';
-  }, 500);
+    if(e)e.textContent=Math.round((Date.now()-window._t0)/1000)+'s';
+  },500);
 }
 
-/* ── 轮询 ── */
-async function poll(jobId, tries){
-  const started = window._t0 || Date.now();
-  if(Date.now()-started > 5*60*1000){
-    clearInterval(window._tick);
+async function poll(jobId,tries){
+  const started=window._t0||Date.now();
+  if(Date.now()-started>5*60*1000){
+    clearInterval(window._tk);
     out.innerHTML='';
-    out.appendChild(el(`<div class="alert warn">
-      <b>等太久了，这次没等到结果。</b><br>
-      站点可能在拦自动化访问，或者页面特别多。可以把「抓取页数」调到 10 再试。
-    </div>`));
-    goBtn.disabled=false; goBtn.textContent='开始体检';
+    out.appendChild(el(`<div class="note warn"><b>等太久了，这次没等到结果。</b><br>
+      站点可能在拦自动化访问，或者页面特别多。把「抓取页数」调到 10 再试。</div>`));
+    goBtn.disabled=false;goBtn.textContent='开始体检';
     return;
   }
-  const notes=['已排队，正在抓取页面…','正在解析页面…','正在跑 43 项检查…','快好了…'];
+  const steps=['已排队，正在抓取页面…','正在解析页面…','正在跑 43 项检查…','快好了…'];
   const n=$('pg-note');
-  if(n && tries%3===0 && notes[Math.min(3,Math.floor(tries/3))])
-    n.textContent = notes[Math.min(3,Math.floor(tries/3))];
+  if(n&&tries%3===0)n.textContent=steps[Math.min(3,Math.floor(tries/3))];
 
   try{
-    const r = await fetch('/api/v1/web/jobs/'+jobId);
-    if(!r.ok) throw new Error('任务不存在或服务已重启');
-    const d = await r.json();
-    if(d.status==='done'){ clearInterval(window._tick); render(d.report); return; }
+    const r=await fetch('/api/v1/web/jobs/'+jobId);
+    if(!r.ok)throw new Error('任务不存在或服务已重启');
+    const d=await r.json();
+    if(d.status==='done'){clearInterval(window._tk);render(d.report);return;}
     if(d.status==='failed'){
-      clearInterval(window._tick);
-      out.innerHTML='';
-      out.appendChild(el(`<div class="alert err"><b>扫描失败：</b>${esc(d.error||'未知错误')}</div>`));
-      goBtn.disabled=false; goBtn.textContent='开始体检';
-      return;
+      clearInterval(window._tk);out.innerHTML='';
+      out.appendChild(el(`<div class="note err"><b>扫描失败：</b>${esc(d.error||'未知错误')}</div>`));
+      goBtn.disabled=false;goBtn.textContent='开始体检';return;
     }
-    pollTimer = setTimeout(()=>poll(jobId, tries+1), 1100);
+    timer=setTimeout(()=>poll(jobId,tries+1),1100);
   }catch(err){
-    clearInterval(window._tick);
-    out.innerHTML='';
-    out.appendChild(el(`<div class="alert warn">${esc(err.message)}——请重新发起一次。</div>`));
-    goBtn.disabled=false; goBtn.textContent='开始体检';
+    clearInterval(window._tk);out.innerHTML='';
+    out.appendChild(el(`<div class="note warn">${esc(err.message)}——请重新发起一次。</div>`));
+    goBtn.disabled=false;goBtn.textContent='开始体检';
   }
 }
 
-/* ── 渲染 ── */
 function render(rep){
-  goBtn.disabled=false; goBtn.textContent='重新体检';
+  goBtn.disabled=false;goBtn.textContent='重新体检';
   out.innerHTML='';
+  if(!rep){out.appendChild(el('<div class="note warn">没有拿到报告。</div>'));return;}
 
-  if(!rep){ out.appendChild(el('<div class="alert warn">没有拿到报告。</div>')); return; }
-
-  // ⚠️ 一页没抓到时 health_score 是 null，不是 0。
-  // 「什么都没看到」和「抓到了但问题多」必须分开说。
-  if(rep.health_score == null){
-    out.appendChild(el(`<div class="alert warn">
-      <b>一页都没抓到，所以给不出分数。</b><br>
+  // 一页没抓到时 health_score 是 null，不是 0。
+  // 「什么都没看到」跟「抓到了但问题多」必须分开说。
+  if(rep.health_score==null){
+    out.appendChild(el(`<div class="note warn"><b>一页都没抓到，所以给不出分数。</b><br>
       常见原因：站点屏蔽了自动化访问、需要 JS 渲染，或 robots.txt 不允许。<br>
-      可以试试打开上面的「渲染 JavaScript」再扫一次。
-      <br><span style="color:var(--dim)">这不是「你的网站没问题」，只是我们什么都没看到。</span>
-    </div>`));
+      可以试试打开上面的「渲染 JavaScript」再扫一次。<br>
+      <span style="color:var(--faint)">这不是「你的网站没问题」，只是我们什么都没看到。</span></div>`));
     return;
   }
 
-  lastReport = rep;
-  const s = Math.round(rep.health_score);
-  const C = 2*Math.PI*48;
-  out.appendChild(el(`
-    <div class="score ${s>=90?'good':s>=70?'ok':s>=40?'warn':'bad'}">
-      <div class="ring">
-        <svg viewBox="0 0 112 112">
-          <circle class="bgc" cx="56" cy="56" r="48"></circle>
-          <circle class="fgc" cx="56" cy="56" r="48"
-            stroke-dasharray="${C}" stroke-dashoffset="${C*(1-s/100)}"></circle>
-        </svg>
-        <b>${s}</b><small>健康分</small>
-      </div>
-      <div class="score-meta">
-        <h2>${s>=90?'状态不错':s>=70?'有一些要改':s>=40?'问题不少':'亟需处理'}</h2>
-        <p class="dom">${esc(rep.domain)} · 抓取 ${rep.pages_crawled} 页 ·
-           发现 ${rep.pages_discovered} 个 URL · 用时 ${rep.duration_seconds}s</p>
-        <div class="bars">
-          ${Object.entries(rep.score_breakdown?.dimension_scores||{}).map(([k,v])=>`
-            <div class="bar-i">
-              <label>${esc(DIM_CN[k]||k)}</label>
-              <div class="t"><i style="width:${Math.max(0,Math.min(100,v))}%"></i></div>
-              <em>${Math.round(v)}</em>
-            </div>`).join('')}
-        </div>
-      </div>
-    </div>`));
+  last=rep;
+  const s=Math.round(rep.health_score);
+  const g=s>=90?'g1':s>=70?'g2':s>=40?'g3':'g4';
+  const verdict=s>=90?'状态不错':s>=70?'有一些要改':s>=40?'问题不少':'亟需处理';
 
-  const counts = rep.score_breakdown?.severity_counts || {};
-  const total = rep.issue_count || 0;
+  out.appendChild(el(`<div class="headline">
+    <div class="hl-top">
+      <span class="hl-score ${g}">${s}</span>
+      <span class="hl-verdict">${verdict}</span>
+      <span class="hl-meta">${esc(rep.domain)} · ${rep.pages_crawled} 页 ·
+        ${rep.pages_discovered} URL · ${rep.duration_seconds}s</span>
+    </div>
+    <div class="meter"><i class="${g}" style="width:${Math.max(0,Math.min(100,s))}%"></i></div>
+    <div class="dims">
+      ${Object.entries(rep.score_breakdown?.dimension_scores||{}).map(([k,v])=>`
+        <div class="dim"><label>${esc(DIM_CN[k]||k)}</label>
+          <div class="t"><i style="width:${Math.max(0,Math.min(100,v))}%"></i></div>
+          <em>${Math.round(v)}</em></div>`).join('')}
+    </div>
+  </div>`));
 
+  const counts=rep.score_breakdown?.severity_counts||{};
+  const total=rep.issue_count||0;
   if(!total){
-    out.appendChild(el(`<div class="alert ok">
-      <b>这次没查出问题。</b><br>
-      <span style="color:var(--dim)">但这不等于你的网站一定没问题——只覆盖了这次抓到的
-      ${rep.pages_crawled} 个页面，而且只跑了当前选中的市场那套规则。</span>
-    </div>`));
+    out.appendChild(el(`<div class="note ok"><b>这次没查出问题。</b><br>
+      <span style="color:var(--muted)">但这不等于你的网站一定没问题——只覆盖了这次抓到的
+      ${rep.pages_crawled} 个页面，而且只跑了当前选中的市场那套规则。</span></div>`));
     return;
   }
 
-  // 筛选条
-  const f = el(`<div class="filters">
+  const f=el(`<div class="filters">
     <span class="lb">筛选</span>
     <button class="f on" data-f="all">全部 <b>${total}</b></button>
     ${SEV.filter(k=>counts[k]).map(k=>
-      `<button class="f ${k}" data-f="${k}">${SEV_CN[k]} <b>${counts[k]}</b></button>`).join('')}
+      `<button class="f" data-f="${k}">${SEV_CN[k]} <b>${counts[k]}</b></button>`).join('')}
   </div>`);
-  f.querySelectorAll('.f').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      activeFilter = btn.dataset.f;
-      f.querySelectorAll('.f').forEach(x=>x.classList.remove('on'));
-      btn.classList.add('on');
-      paintIssues();
-    });
-  });
+  f.querySelectorAll('.f').forEach(btn=>btn.addEventListener('click',()=>{
+    filter=btn.dataset.f;
+    f.querySelectorAll('.f').forEach(x=>x.classList.remove('on'));
+    btn.classList.add('on');paint();
+  }));
   out.appendChild(f);
-
-  const holder = el('<div id="list"></div>');
-  out.appendChild(holder);
-  paintIssues();
+  out.appendChild(el('<div id="list"></div>'));
+  paint();
 }
 
-function paintIssues(){
-  const holder = $('list');
-  if(!holder || !lastReport) return;
-  const issues = (lastReport.issues||[])
-    .slice()
+function paint(){
+  const box=$('list');
+  if(!box||!last)return;
+  const all=(last.issues||[]).slice()
     .sort((a,b)=>SEV.indexOf(a.severity)-SEV.indexOf(b.severity));
-  const shown = activeFilter==='all' ? issues
-    : issues.filter(i=>i.severity===activeFilter);
-
-  holder.innerHTML='';
-  if(!shown.length){
-    holder.appendChild(el('<div class="alert info">这个级别没有问题。</div>'));
-    return;
-  }
-  shown.forEach(i=>holder.appendChild(issueCard(i)));
-  holder.appendChild(el(`<div style="color:var(--dim);font-size:12.5px;
-    text-align:center;margin-top:18px">
-    共 ${shown.length} 条 · 每条都可在报告里追到原文证据</div>`));
+  const shown=filter==='all'?all:all.filter(i=>i.severity===filter);
+  box.innerHTML='';
+  if(!shown.length){box.appendChild(el('<div class="note">这个级别没有问题。</div>'));return;}
+  shown.forEach(i=>box.appendChild(card(i)));
+  box.appendChild(el(`<div style="color:var(--faint);font-size:12px;text-align:center;
+    margin-top:16px">共 ${shown.length} 条 · 每条都可在报告里追到原文证据</div>`));
 }
 
-function issueCard(i){
-  const url = i.url
-    ? `<div class="lbl">出问题的页面</div><div class="url">${esc(i.url)}</div>`
-    : '';
-  const fix = i.fix_hint
-    ? `<div class="lbl">怎么改</div><div class="fix">${esc(i.fix_hint)}</div>`
-    : '';
-  const ex = i.fix_example
-    ? `<div class="lbl">示例</div><div class="fix"><pre
-        style="margin:0;white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace">${esc(i.fix_example)}</pre></div>`
-    : '';
+function card(i){
   return el(`<details class="issue">
     <summary>
       <span class="sev ${esc(i.severity)}">${esc(SEV_CN[i.severity]||i.severity)}</span>
       <span class="ttl">${esc(i.title)}</span>
-      <span class="cnt">${i.affected_pages>1 ? i.affected_pages+' 页受影响' : ''}</span>
-      <span class="arrow">▶</span>
+      <span class="cnt">${i.affected_pages>1?i.affected_pages+' 页':''}</span>
+      <span class="caret">▶</span>
     </summary>
     <div class="body">
-      ${i.description ? `<p>${esc(i.description)}</p>` : ''}
-      ${fix}${ex}${url}
-      <div class="lbl" style="margin-top:12px">规则</div>
+      ${i.description?`<p>${esc(i.description)}</p>`:''}
+      ${i.fix_hint?`<div class="blabel">怎么改</div><div class="fix">${esc(i.fix_hint)}</div>`:''}
+      ${i.fix_example?`<div class="blabel" style="margin-top:12px">示例</div>
+        <div class="fix"><pre>${esc(i.fix_example)}</pre></div>`:''}
+      ${i.url?`<div class="blabel" style="margin-top:12px">出问题的页面</div>
+        <div class="url">${esc(i.url)}</div>`:''}
+      <div class="blabel" style="margin-top:12px">规则</div>
       <span class="code">${esc(i.code)}</span>
     </div>
   </details>`);
