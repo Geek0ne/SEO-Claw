@@ -4,283 +4,383 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SEOClaw —— 站点 SEO 体检</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 /*
- * 设计取向：现代企业级。
- *   浅色底、克制的单色强调、真实的分隔线、大量留白。
- *   不用渐变、不发光、不用紫蓝——那是「AI 生成感」的来源。
+ * SEOClaw 设计系统 —— 投影自仓库根目录 DESIGN.md。
+ * 改样式前先改 DESIGN.md，两边冲突以 DESIGN.md 为准。
+ *
+ * 审美：审计报告 / 计量仪器。纸白底、墨黑字、等宽规则编号、刻度线、印章红点缀。
+ * 刻意不做：蓝紫渐变、发光阴影、圆角气泡、居中 hero + 三张卡片。
  */
 :root{
-  --bg:#fbfbfc; --surface:#fff; --ink:#16181d; --ink-2:#3f444e;
-  --muted:#6b7280; --faint:#9aa1ad; --line:#e8eaee; --line-2:#f1f2f5;
-  --accent:#1a56db; --accent-soft:#eef2ff;
-  --crit:#b42318; --high:#b54708; --med:#a15c07; --low:#175cd3; --info:#475467;
-  --ok-1:#067647; --ok-2:#b54708; --ok-3:#b42318;
-  --radius:6px;
+  /* 色板：OKLCH，绕开蓝紫红海。60-30-10 —— 纸白与墨黑约 85%，琥珀 <10%，印章红 <2% */
+  --bg:        oklch(0.985 0.002 90);
+  --surface:   oklch(1 0 0);
+  --fg:        oklch(0.21 0.01 90);
+  --fg-2:      oklch(0.42 0.01 90);
+  --muted:     oklch(0.58 0.008 90);
+  --line:      oklch(0.91 0.004 90);
+  --line-2:    oklch(0.955 0.003 90);
+  --accent:    oklch(0.52 0.115 62);
+  --accent-bg: oklch(0.955 0.022 70);
+  --stamp:     oklch(0.48 0.16 25);
+  --stamp-bg:  oklch(0.962 0.018 25);
+  --ok:        oklch(0.48 0.09 150);
+  --warn:      oklch(0.55 0.11 70);
+  --err:       oklch(0.50 0.16 25);
+
+  /* 间距基数 4px：组内紧，组间松 */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+
+  /* 圆角只有两个：不给胶囊 */
+  --r-sm:2px; --r-md:4px;
+
+  /* 动效：只两处有意义。默认 ease-out，<300ms，只动 transform/opacity */
+  --ease:cubic-bezier(.2,.8,.3,1);
+  --dur:120ms;
+
+  /* 字体：IBM Plex 家族三层。回退栈必须完整可用 —— 本机可能拉不到 CDN */
+  --sans:"IBM Plex Sans","IBM Plex Sans SC","PingFang SC","Microsoft YaHei",
+         -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
-*{box-sizing:border-box}
-html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+*{box-sizing:border-box;-webkit-font-smoothing:antialiased}
 body{
-  margin:0;background:var(--bg);color:var(--ink);
-  font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","Inter",
-  "PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  margin:0;background:var(--bg);color:var(--fg);
+  font:400 14.5px/1.65 var(--sans);
 }
-.wrap{max-width:940px;margin:0 auto;padding:0 24px 88px}
+.wrap{max-width:940px;margin:0 auto;padding:0 var(--s5) var(--s7)}
 a{color:var(--accent)}
 
-/* ── 顶栏：一条线，不是发光卡片 ── */
-header{padding:44px 0 30px;border-bottom:1px solid var(--line)}
-.brand{display:flex;align-items:baseline;gap:10px;margin-bottom:22px}
-.mark{width:22px;height:22px;border-radius:5px;background:var(--ink);
-  color:#fff;font-size:12px;display:grid;place-items:center;font-weight:600;
-  align-self:center}
-.brand b{font-size:15px;font-weight:600;letter-spacing:-.1px}
-.brand span{font-size:12.5px;color:var(--faint)}
-h1{font-size:30px;font-weight:600;letter-spacing:-.7px;line-height:1.25;margin:0 0 10px}
-h1 em{font-style:normal;color:var(--accent)}
-.lede{color:var(--muted);margin:0;font-size:15px}
-
-/* ── 表单：卡片用真边框，不用阴影堆叠 ── */
-.card{background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--radius);margin:24px 0 16px}
-.card-hd{padding:16px 22px;border-bottom:1px solid var(--line-2);
-  font-size:13px;font-weight:600;letter-spacing:.2px}
-.card-bd{padding:22px}
-
-.field{display:block;margin-bottom:18px}
-.field:last-of-type{margin-bottom:0}
-.lbl{display:block;font-size:12px;font-weight:500;color:var(--ink-2);
-  margin-bottom:7px;letter-spacing:.1px}
-.hint{color:var(--faint);font-size:11.5px;font-weight:400;margin-left:6px}
-
-input[type=text]{
-  width:100%;padding:11px 13px;font-size:14.5px;color:var(--ink);
-  border:1px solid #d6d9e0;border-radius:var(--radius);background:var(--surface);
-  transition:border-color .12s,box-shadow .12s;
+/* ── 顶栏 ── */
+header{padding:var(--s7) 0 var(--s6);border-bottom:1px solid var(--line)}
+.mark{display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s5)}
+.mark .box{
+  width:24px;height:24px;border-radius:var(--r-sm);background:var(--fg);
+  color:var(--surface);font:600 12px/24px var(--mono);text-align:center;
 }
-input[type=text]::placeholder{color:var(--faint)}
-input[type=text]:focus{outline:none;border-color:var(--accent);
-  box-shadow:0 0 0 3px rgba(26,86,219,.10)}
+.mark b{font-size:14px;font-weight:600;letter-spacing:-.01em}
+.mark .sep{width:1px;height:12px;background:var(--line)}
+.mark span{font:500 11px/1 var(--mono);color:var(--muted);
+  letter-spacing:.06em;text-transform:uppercase}
+h1{
+  font-size:32px;font-weight:600;letter-spacing:-.02em;line-height:1.2;
+  margin:0 0 var(--s2);
+}
+h1 .hl{color:var(--accent)}
+.lede{margin:0;color:var(--fg-2);font-size:14.5px;max-width:62ch}
 
-select{width:100%;padding:10px 12px;font-size:14px;color:var(--ink);
-  border:1px solid #d6d9e0;border-radius:var(--radius);background:var(--surface);
-  cursor:pointer;appearance:none;
-  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%236b7280' d='M0 0h10L5 6z'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 12px center}
-select:focus{outline:none;border-color:var(--accent);
-  box-shadow:0 0 0 3px rgba(26,86,219,.10)}
+/* ── 卡片：层级只靠 1px 边框和留白，全系统零阴影 ── */
+.card{background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r-md);margin:var(--s5) 0 var(--s4)}
+.card-hd{
+  padding:var(--s3) var(--s5);border-bottom:1px solid var(--line-2);
+  font:500 11px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);
+}
+.card-bd{padding:var(--s5)}
 
-.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:660px){.cols{grid-template-columns:1fr}}
+.grid{display:grid;grid-template-columns:1.6fr 1fr;gap:var(--s5)}
+@media(max-width:680px){.grid{grid-template-columns:1fr;gap:var(--s4)}}
+.field{display:block;margin-bottom:var(--s4)}
+.field:last-child{margin-bottom:0}
+.lbl{display:block;font:500 12px/1.4 var(--mono);letter-spacing:.04em;
+  color:var(--fg-2);margin-bottom:var(--s2);text-transform:uppercase}
 
-/* 分段控件：像系统设置里那种，不是彩色胶囊 */
-.seg{display:flex;border:1px solid #d6d9e0;border-radius:var(--radius);
+/* ── 表单控件：全状态矩阵 ── */
+input[type=text]{
+  width:100%;min-height:44px;padding:11px 13px;font:400 15px/1.4 var(--sans);
+  color:var(--fg);background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--r-sm);
+  transition:border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease);
+}
+input[type=text]::placeholder{color:var(--muted);opacity:.75}
+input[type=text]:hover{border-color:oklch(0.83 0.005 90)}
+input[type=text]:focus-visible{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-bg)}
+input[type=text]:disabled{background:var(--line-2);color:var(--muted);cursor:not-allowed}
+
+select{
+  width:100%;min-height:44px;padding:10px 30px 10px 12px;
+  font:400 14px/1.4 var(--sans);color:var(--fg);background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--r-sm);cursor:pointer;
+  appearance:none;transition:border-color var(--dur) var(--ease);
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5'%3E%3Cpath fill='none' stroke='%236b7280' stroke-width='1.4' d='M0 0l4.5 5L9 0'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+}
+select:hover{border-color:oklch(0.83 0.005 90)}
+select:focus-visible{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-bg)}
+select:disabled{background:var(--line-2);color:var(--muted);cursor:not-allowed}
+
+/* 分段控件：像仪器上的档位选择 */
+.seg{display:flex;border:1px solid var(--line);border-radius:var(--r-sm);
   overflow:hidden;background:var(--surface)}
-.seg label{flex:1;text-align:center;padding:9px 4px;font-size:13px;
-  color:var(--muted);cursor:pointer;transition:.12s;user-select:none;
-  border-right:1px solid var(--line)}
+.seg label{
+  flex:1;min-height:42px;display:flex;align-items:center;justify-content:center;
+  font:400 13px/1 var(--sans);color:var(--fg-2);cursor:pointer;
+  border-right:1px solid var(--line);transition:background var(--dur) var(--ease),
+  color var(--dur) var(--ease);user-select:none;
+}
 .seg label:last-child{border-right:0}
 .seg label:hover{background:var(--line-2)}
-.seg input{position:absolute;opacity:0;pointer-events:none}
-.seg input:checked+span{color:var(--accent);font-weight:600}
-.seg label:has(input:checked){background:var(--accent-soft)}
+.seg label:has(input:checked){background:var(--accent-bg);color:var(--accent)}
+.seg label:has(input:focus-visible){box-shadow:inset 0 0 0 2px var(--accent)}
+.seg input{position:absolute;opacity:0;width:0;height:0}
+.seg input:checked+span{font-weight:600}
 
-/* 勾选项：原生 checkbox，不自绘圆角胶囊 */
-.opt{display:flex;gap:10px;align-items:flex-start;padding:11px 0;
-  border-top:1px solid var(--line-2);cursor:pointer}
-.opt:first-child{border-top:0}
-.opt input{width:15px;height:15px;margin:2px 0 0;accent-color:var(--accent);
+/* 勾选项：原生 checkbox，不自绘 */
+.opt{display:flex;gap:10px;align-items:flex-start;padding:10px 0;
+  border-top:1px solid var(--line-2);cursor:pointer;min-height:42px}
+.opt:first-of-type{border-top:0}
+.opt input{width:16px;height:16px;margin:2px 0 0;accent-color:var(--accent);
   cursor:pointer;flex:0 0 auto}
-.opt b{display:block;font-size:13.5px;font-weight:500}
-.opt small{display:block;color:var(--faint);font-size:12px;margin-top:1px}
+.opt input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.opt b{display:block;font-weight:500;font-size:13.5px}
+.opt small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
 
-.btn{padding:11px 22px;font-size:14px;font-weight:550;border-radius:var(--radius);
-  border:1px solid transparent;cursor:pointer;transition:.12s;font-family:inherit}
-.btn-primary{background:var(--ink);color:#fff}
-.btn-primary:hover:not(:disabled){background:#000}
+/* 按钮按重要性排名，不按含义配色 */
+.actions{display:flex;gap:var(--s2);margin-top:var(--s5);
+  padding-top:var(--s5);border-top:1px solid var(--line-2)}
+.btn{
+  min-height:44px;padding:0 var(--s5);border-radius:var(--r-sm);
+  font:600 14px/1 var(--sans);cursor:pointer;
+  border:1px solid transparent;
+  transition:background var(--dur) var(--ease),color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease);
+}
+.btn-primary{background:var(--fg);color:var(--surface)}
+.btn-primary:hover:not(:disabled){background:oklch(0.15 0.01 90)}
+.btn-primary:active:not(:disabled){background:oklch(0.11 0.01 90)}
+.btn-primary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .btn-primary:disabled{opacity:.4;cursor:not-allowed}
-.btn-ghost{background:var(--surface);color:var(--ink-2);border-color:#d6d9e0}
-.btn-ghost:hover{background:var(--line-2);color:var(--ink)}
-.actions{display:flex;gap:10px;margin-top:22px;padding-top:20px;
-  border-top:1px solid var(--line-2)}
+.btn-ghost{background:var(--surface);color:var(--fg-2);border-color:var(--line)}
+.btn-ghost:hover{background:var(--line-2);color:var(--fg)}
+.btn-ghost:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-.examples{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:16px}
-.examples span{font-size:12px;color:var(--faint);margin-right:3px}
-.examples button{padding:4px 10px;font-size:12px;border-radius:4px;
-  border:1px solid var(--line);background:var(--surface);color:var(--muted);
-  cursor:pointer;font-family:inherit;transition:.12s}
-.examples button:hover{border-color:#c9cdd6;color:var(--ink)}
+.examples{display:flex;gap:var(--s1);flex-wrap:wrap;align-items:center;margin-top:var(--s4)}
+.examples .t{font:500 11px/1 var(--mono);letter-spacing:.06em;color:var(--muted);
+  text-transform:uppercase;margin-right:var(--s1)}
+.examples button{
+  min-height:28px;padding:0 10px;border:1px solid var(--line);border-radius:var(--r-sm);
+  background:var(--surface);color:var(--fg-2);font:400 12px/1 var(--mono);
+  cursor:pointer;transition:border-color var(--dur) var(--ease),color var(--dur) var(--ease);
+}
+.examples button:hover{border-color:var(--accent);color:var(--accent)}
+.examples button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-/* ── 状态 ── */
-.note{border-radius:var(--radius);padding:13px 15px;font-size:13.5px;
-  border:1px solid var(--line);background:var(--surface);margin-bottom:14px;
-  line-height:1.65}
-.note.err{background:#fef3f2;border-color:#fecdca;color:#7a271a}
-.note.warn{background:#fffaeb;border-color:#fedf89;color:#93370d}
-.note.ok{background:#ecfdf3;border-color:#abefc6;color:#054f31}
-.note b{font-weight:600}
+/* ── 状态提示 ── */
+.note{
+  border:1px solid var(--line);border-left:2px solid var(--muted);
+  background:var(--surface);border-radius:var(--r-sm);
+  padding:var(--s3) var(--s4);margin-bottom:var(--s3);
+  font-size:13.5px;line-height:1.7;color:var(--fg-2);
+}
+.note b{color:var(--fg);font-weight:600}
+.note.err{border-left-color:var(--err);background:var(--stamp-bg)}
+.note.warn{border-left-color:var(--warn);background:oklch(0.98 0.014 75)}
+.note.ok{border-left-color:var(--ok);background:oklch(0.97 0.016 150)}
+.note code{font:400 12px var(--mono)}
 
 .progress{background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--radius);padding:20px 22px;margin-bottom:14px}
-.pg-head{display:flex;align-items:center;gap:9px;margin-bottom:15px;
-  font-size:14px;font-weight:500}
-.spin{width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--accent);
-  border-radius:50%;animation:sp .7s linear infinite;flex:0 0 auto}
+  border-radius:var(--r-md);padding:var(--s5);margin-bottom:var(--s3)}
+.pg-head{display:flex;align-items:center;gap:10px;margin-bottom:var(--s4);
+  font-weight:500}
+.spin{width:14px;height:14px;border:1.5px solid var(--line);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:sp .8s linear infinite;flex:0 0 auto}
 @keyframes sp{to{transform:rotate(360deg)}}
-.pg-track{height:3px;background:var(--line-2);border-radius:2px;overflow:hidden;
-  margin-bottom:12px}
-.pg-track>i{display:block;height:100%;width:30%;background:var(--accent);
-  animation:sl 1.6s ease-in-out infinite}
-@keyframes sl{0%{margin-left:-30%}100%{margin-left:100%}}
-.pg-log{display:flex;justify-content:space-between;font-size:12.5px;
-  color:var(--muted);font-variant-numeric:tabular-nums}
+.pg-bar{height:2px;background:var(--line-2);border-radius:var(--r-sm);
+  overflow:hidden;margin-bottom:var(--s3)}
+.pg-bar>i{display:block;height:100%;width:30%;background:var(--accent);
+  animation:slide 1.8s var(--ease) infinite}
+@keyframes slide{0%{margin-left:-30%}100%{margin-left:100%}}
+.pg-log{display:flex;justify-content:space-between;
+  font:400 12px/1 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
 
-/* ── 结果：分数用横条与大数字，不用环形发光 ── */
-.headline{background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--radius);padding:24px;margin-bottom:16px}
-.hl-top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
-  margin-bottom:20px}
-.hl-score{font-size:46px;font-weight:600;letter-spacing:-2px;line-height:1}
-.hl-score.g1{color:var(--ok-1)} .hl-score.g2{color:var(--ok-2)}
-.hl-score.g3{color:var(--ok-3)} .hl-score.g4{color:var(--crit)}
-.hl-verdict{font-size:16px;font-weight:550}
-.hl-meta{font-size:13px;color:var(--muted);margin-left:auto;
+/* ── 签名动作①：带刻度的量规 ── */
+.report{background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r-md);margin-bottom:var(--s4);overflow:hidden}
+.rpt-hd{display:flex;align-items:flex-end;gap:var(--s4);
+  padding:var(--s5) var(--s5) var(--s4);flex-wrap:wrap}
+.rpt-score{font:500 56px/0.9 var(--mono);letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums}
+.rpt-score.g1{color:var(--ok)} .rpt-score.g2{color:var(--warn)}
+.rpt-score.g3{color:var(--stamp)} .rpt-score.g4{color:var(--err)}
+.rpt-verdict{font-size:16px;font-weight:600;padding-bottom:5px}
+.rpt-meta{margin-left:auto;text-align:right;
+  font:400 12px/1.7 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* 刻度尺：11 道主刻度 + 中间短刻度，墨黑标记指到得分处 */
+.gauge{padding:0 var(--s5) var(--s5);position:relative}
+.gauge svg{display:block;width:100%;height:26px;overflow:visible}
+.gauge .track{stroke:var(--line);stroke-width:1}
+.gauge .major{stroke:var(--fg-2);stroke-width:1}
+.gauge .minor{stroke:var(--line);stroke-width:1}
+.gauge .fill{stroke:var(--accent);stroke-width:2}
+.gauge .marker{stroke:var(--fg);stroke-width:2}
+.gauge .num{font:400 9.5px var(--mono);fill:var(--muted);
+  text-anchor:middle;font-variant-numeric:tabular-nums}
+
+/* 维度：六格以 1px 间隙相连，不做六张独立卡片 */
+.dims{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;
+  background:var(--line-2);border-top:1px solid var(--line-2)}
+@media(max-width:680px){.dims{grid-template-columns:repeat(3,1fr)}}
+.dim{background:var(--surface);padding:10px var(--s3) 11px}
+.dim label{display:block;font:400 10.5px/1.4 var(--sans);color:var(--muted);
+  margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dim .t{height:2px;background:var(--line-2);border-radius:var(--r-sm);
+  overflow:hidden;margin-bottom:6px}
+.dim .t>i{display:block;height:100%;background:var(--fg-2)}
+.dim em{font:500 12.5px/1 var(--mono);font-style:normal;
   font-variant-numeric:tabular-nums}
 
-.meter{height:6px;background:var(--line-2);border-radius:3px;overflow:hidden;
-  margin-bottom:20px}
-.meter>i{display:block;height:100%;border-radius:3px;transition:width .7s ease}
-.meter>i.g1{background:var(--ok-1)} .meter>i.g2{background:var(--ok-2)}
-.meter>i.g3{background:var(--ok-3)} .meter>i.g4{background:var(--crit)}
+/* ── 筛选 ── */
+.filters{display:flex;gap:var(--s1);flex-wrap:wrap;align-items:center;
+  margin:var(--s5) 0 var(--s3)}
+.filters .t{font:500 11px/1 var(--mono);letter-spacing:.06em;color:var(--muted);
+  text-transform:uppercase;margin-right:var(--s1)}
+.f{
+  min-height:30px;padding:0 11px;border:1px solid var(--line);border-radius:var(--r-sm);
+  background:var(--surface);color:var(--fg-2);font:400 12.5px/1 var(--sans);
+  cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+  transition:border-color var(--dur) var(--ease),background var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+.f:hover{border-color:oklch(0.8 0.005 90)}
+.f:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.f.on{background:var(--fg);border-color:var(--fg);color:var(--surface);font-weight:500}
+.f .n{font-family:var(--mono);font-variant-numeric:tabular-nums;opacity:.7}
 
-.dims{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
-  gap:1px;background:var(--line-2);border:1px solid var(--line-2);border-radius:4px;
-  overflow:hidden}
-.dim{background:var(--surface);padding:11px 12px}
-.dim label{display:block;font-size:11px;color:var(--faint);margin-bottom:5px}
-.dim .t{height:3px;background:var(--line-2);border-radius:2px;overflow:hidden;
-  margin-bottom:6px}
-.dim .t>i{display:block;height:100%;background:var(--ink-2)}
-.dim em{font-style:normal;font-size:12.5px;font-weight:550;
-  font-variant-numeric:tabular-nums}
-
-/* 筛选 */
-.filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:26px 0 12px}
-.filters .lb{font-size:12px;color:var(--faint);margin-right:4px}
-.f{padding:5px 11px;font-size:12.5px;border-radius:4px;cursor:pointer;
-  border:1px solid var(--line);background:var(--surface);color:var(--muted);
-  font-family:inherit;transition:.12s}
-.f:hover{border-color:#c9cdd6;color:var(--ink)}
-.f.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:500}
-.f.on b{font-weight:600}
-
-/* 问题条目：像 issue tracker，不用彩色药丸 */
+/* ── 问题条目：像审计报告条目，带等宽编号 ── */
 .issue{background:var(--surface);border:1px solid var(--line);
-  border-radius:var(--radius);margin-bottom:8px;transition:border-color .12s}
-.issue:hover{border-color:#d0d4dc}
-.issue[open]{border-color:#d0d4dc}
-.issue>summary{cursor:pointer;padding:13px 16px;display:flex;gap:12px;
-  align-items:center;list-style:none}
+  border-radius:var(--r-sm);margin-bottom:var(--s2);
+  transition:border-color var(--dur) var(--ease)}
+.issue:hover{border-color:oklch(0.82 0.005 90)}
+.issue[open]{border-color:oklch(0.82 0.005 90)}
+.issue>summary{cursor:pointer;display:flex;gap:var(--s3);align-items:center;
+  padding:var(--s3) var(--s4);min-height:48px;list-style:none}
 .issue>summary::-webkit-details-marker{display:none}
+.issue>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .issue[open]>summary{border-bottom:1px solid var(--line-2)}
-.sev{font-size:11px;font-weight:600;padding:2px 7px;border-radius:3px;
-  flex:0 0 auto;letter-spacing:.2px;border:1px solid}
-.sev.critical{color:var(--crit);border-color:#fecdca;background:#fef3f2}
-.sev.high{color:var(--high);border-color:#fedf89;background:#fffaeb}
-.sev.medium{color:var(--med);border-color:#fde9c3;background:#fffcf5}
-.sev.low{color:var(--low);border-color:#b2ddff;background:#eff8ff}
-.sev.info{color:var(--info);border-color:var(--line);background:var(--line-2)}
-.ttl{flex:1;font-size:14px;font-weight:500;min-width:0}
-.cnt{font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums;flex:0 0 auto}
-.caret{color:var(--faint);font-size:10px;transition:transform .15s;flex:0 0 auto}
+/* 严重度：颜色 + 文字双重编码，不靠颜色单独传意 */
+.sev{
+  font:600 10.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;
+  padding:4px 7px;border-radius:var(--r-sm);border:1px solid;flex:0 0 auto;
+  white-space:nowrap;
+}
+.sev.critical{color:var(--stamp);border-color:oklch(0.85 0.05 25);background:var(--stamp-bg)}
+.sev.high{color:var(--err);border-color:oklch(0.87 0.04 45);background:oklch(0.975 0.012 45)}
+.sev.medium{color:var(--warn);border-color:oklch(0.86 0.05 75);background:oklch(0.98 0.015 78)}
+.sev.low{color:var(--accent);border-color:oklch(0.85 0.04 75);background:oklch(0.975 0.02 80)}
+.sev.info{color:var(--muted);border-color:var(--line);background:var(--line-2)}
+/* 签名动作②：等宽体规则编号 */
+.idx{font:500 11px/1 var(--mono);color:var(--muted);flex:0 0 auto;
+  min-width:46px;font-variant-numeric:tabular-nums}
+.ttl{flex:1;font-weight:500;font-size:14px;min-width:0}
+.cnt{font:400 11.5px/1 var(--mono);color:var(--muted);flex:0 0 auto;
+  font-variant-numeric:tabular-nums}
+.caret{color:var(--muted);font-size:9px;flex:0 0 auto;
+  transition:transform var(--dur) var(--ease)}
 .issue[open] .caret{transform:rotate(90deg)}
 
-.body{padding:14px 16px;font-size:13.5px;color:var(--ink-2);line-height:1.7}
-.body p{margin:0 0 12px}
-.blabel{font-size:11px;color:var(--faint);margin-bottom:5px;
-  letter-spacing:.3px;text-transform:uppercase;font-weight:600}
-.fix{background:#f8f9fb;border:1px solid var(--line-2);border-left:2px solid var(--accent);
-  border-radius:0 4px 4px 0;padding:10px 12px;color:var(--ink);font-size:13.5px}
-pre{margin:0;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-  font-size:12.5px}
-.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
-  color:var(--ink-2);background:var(--line-2);padding:2px 6px;border-radius:3px}
-.url{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
-  color:var(--low);word-break:break-all}
+.body{padding:var(--s4);font-size:13.5px;line-height:1.75;color:var(--fg-2)}
+.body p{margin:0 0 var(--s4)}
+.bl{font:500 10.5px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:var(--s1)}
+.fix{background:var(--bg);border:1px solid var(--line-2);
+  border-left:2px solid var(--accent);border-radius:0 var(--r-sm) var(--r-sm) 0;
+  padding:10px var(--s3);color:var(--fg);font-size:13.5px}
+pre{margin:0;white-space:pre-wrap;font:400 12.5px/1.7 var(--mono)}
+code,.code{font:400 12px/1.5 var(--mono);
+  background:var(--line-2);padding:2px 5px;border-radius:var(--r-sm);color:var(--fg-2)}
+.url{font:400 12px/1.6 var(--mono);color:var(--accent);word-break:break-all}
 
-footer{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);
-  color:var(--faint);font-size:12.5px;text-align:center;line-height:1.9}
-.hidden{display:none!important}
-.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,10px);
-  background:var(--ink);color:#fff;padding:9px 16px;border-radius:var(--radius);
-  font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:50}
+footer{margin-top:var(--s6);padding-top:var(--s5);border-top:1px solid var(--line);
+  color:var(--muted);font-size:12px;line-height:2;text-align:center}
+.toast{
+  position:fixed;left:50%;bottom:var(--s5);transform:translate(-50%,10px);
+  background:var(--fg);color:var(--surface);padding:9px var(--s4);
+  border-radius:var(--r-sm);font-size:13px;opacity:0;pointer-events:none;
+  transition:opacity var(--dur) var(--ease),transform var(--dur) var(--ease);
+  z-index:50;
+}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;
+    animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+@media print{.actions,.filters,.examples,.toast{display:none}}
 </style>
 </head>
 <body>
 <div class="wrap">
 
 <header>
-  <div class="brand">
-    <span class="mark">S</span><b>SEOClaw</b><span>站点 SEO 体检</span>
+  <div class="mark">
+    <span class="box">SC</span><b>SEOClaw</b><span class="sep"></span>
+    <span>SEO Audit</span>
   </div>
-  <h1>扫一遍，告诉你<em>先改哪几件</em></h1>
-  <p class="lede">43 项确定性检查，每条结论都能追到原文证据。没把握的会直接标注，不猜。</p>
+  <h1>扫一遍，告诉你<span class="hl">先改哪几件</span></h1>
+  <p class="lede">43 项确定性检查，每条结论都能追到原文证据。没把握的直接标注，不猜。</p>
 </header>
 
 <form class="card" id="f">
-  <div class="card-hd">开始体检</div>
+  <div class="card-hd">体检目标</div>
   <div class="card-bd">
-
     <label class="field">
       <span class="lbl">网址</span>
       <input type="text" id="url" placeholder="example.com" autocomplete="off"
              spellcheck="false" required>
     </label>
 
-    <div class="cols">
-      <label class="field">
-        <span class="lbl">抓取页数</span>
-        <select id="max_pages">
-          <option value="10">10 页 · 快速看看</option>
-          <option value="30" selected>30 页 · 够看结构</option>
-          <option value="80">80 页 · 更全</option>
-          <option value="200">200 页 · 较慢</option>
-        </select>
-      </label>
-      <div class="field">
-        <span class="lbl">抓取深度</span>
-        <div class="seg">
-          <label><input type="radio" name="depth" value="1"><span>仅首页</span></label>
-          <label><input type="radio" name="depth" value="2" checked><span>2 层</span></label>
-          <label><input type="radio" name="depth" value="6"><span>全站</span></label>
+    <div class="grid">
+      <div>
+        <label class="field">
+          <span class="lbl">抓取页数</span>
+          <select id="max_pages">
+            <option value="10">10 页 · 快速看看</option>
+            <option value="30" selected>30 页 · 够看结构</option>
+            <option value="80">80 页 · 更全</option>
+            <option value="200">200 页 · 较慢</option>
+          </select>
+        </label>
+        <div class="field">
+          <span class="lbl">抓取深度</span>
+          <div class="seg" role="radiogroup" aria-label="抓取深度">
+            <label><input type="radio" name="depth" value="1"><span>仅首页</span></label>
+            <label><input type="radio" name="depth" value="2" checked><span>2 层</span></label>
+            <label><input type="radio" name="depth" value="6"><span>全站</span></label>
+          </div>
         </div>
+      </div>
+      <div>
+        <label class="field">
+          <span class="lbl">市场</span>
+          <select id="market">
+            <option value="base" selected>通用 · Google 系</option>
+            <option value="google">Google 生态</option>
+            <option value="baidu">百度生态</option>
+            <option value="cnh_eco">中文生态 · 微信等</option>
+          </select>
+        </label>
       </div>
     </div>
 
-    <div class="cols">
-      <label class="field">
-        <span class="lbl">市场</span>
-        <select id="market">
-          <option value="base" selected>通用（Google 系）</option>
-          <option value="google">Google 生态</option>
-          <option value="baidu">百度生态</option>
-          <option value="cnh_eco">中文生态（微信等）</option>
-        </select>
+    <div class="field">
+      <span class="lbl">选项</span>
+      <label class="opt">
+        <input type="checkbox" id="render_js">
+        <span><b>渲染 JavaScript</b><small>SPA / 前端渲染的站点建议开，慢很多</small></span>
       </label>
-      <div class="field">
-        <span class="lbl">选项</span>
-        <label class="opt">
-          <input type="checkbox" id="render_js">
-          <span><b>渲染 JavaScript</b>
-          <small>SPA / 前端渲染的站点建议开，慢很多</small></span>
-        </label>
-        <label class="opt">
-          <input type="checkbox" id="robots" checked>
-          <span><b>遵守 robots.txt</b>
-          <small>关掉可扫到不该扫的页面，仅自测用</small></span>
-        </label>
-      </div>
+      <label class="opt">
+        <input type="checkbox" id="robots" checked>
+        <span><b>遵守 robots.txt</b><small>关掉可扫到不该扫的页面，仅自测用</small></span>
+      </label>
     </div>
 
     <div class="actions">
@@ -289,13 +389,12 @@ footer{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);
     </div>
 
     <div class="examples">
-      <span>试试</span>
+      <span class="t">试试</span>
       <button type="button" data-u="example.com">example.com</button>
       <button type="button" data-u="www.rust-lang.org">rust-lang.org</button>
       <button type="button" data-u="www.python.org">python.org</button>
       <button type="button" data-u="go.dev">go.dev</button>
     </div>
-
   </div>
 </form>
 
@@ -305,9 +404,8 @@ footer{margin-top:44px;padding-top:20px;border-top:1px solid var(--line);
   规则永不依赖 LLM · 每条结论都能追到原文证据<br>
   没抓到页面 ≠ 没问题 · 没覆盖到的检查项一律不装作查过了
 </footer>
-
 </div>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 const $=id=>document.getElementById(id);
@@ -315,7 +413,7 @@ const out=$('out'), goBtn=$('go');
 const SEV=['critical','high','medium','low','info'];
 const SEV_CN={critical:'致命',high:'高',medium:'中',low:'低',info:'提示'};
 const DIM_CN={crawlability:'可抓取',architecture:'结构',content:'内容',
-  performance:'性能',structured_data:'结构化数据',trust:'信任'};
+  performance:'性能',structured_data:'结构化',trust:'信任'};
 let filter='all', last=null, timer=null;
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>
@@ -339,11 +437,9 @@ $('f').addEventListener('submit',async e=>{
   const url=$('url').value.trim();
   if(!url){toast('先填个网址');return;}
   if(timer){clearTimeout(timer);timer=null;}
-
   goBtn.disabled=true;goBtn.textContent='提交中…';
   out.innerHTML=loading('正在提交…','连接服务');
   window._t0=Date.now();startClock();
-
   try{
     const r=await fetch('/api/v1/web/quick-scan',{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -361,8 +457,7 @@ $('f').addEventListener('submit',async e=>{
     out.innerHTML=loading('正在扫描 '+esc(d.domain),'已排队，正在抓取页面…');
     poll(d.job_id,0);
   }catch(err){
-    clearInterval(window._tk);
-    out.innerHTML='';
+    clearInterval(window._tk);out.innerHTML='';
     out.appendChild(el(`<div class="note err"><b>提交失败：</b>${esc(err.message)}</div>`));
     goBtn.disabled=false;goBtn.textContent='开始体检';
   }
@@ -371,7 +466,7 @@ $('f').addEventListener('submit',async e=>{
 function loading(title,note){
   return `<div class="progress">
     <div class="pg-head"><span class="spin"></span>${title}</div>
-    <div class="pg-track"><i></i></div>
+    <div class="pg-bar"><i></i></div>
     <div class="pg-log"><span id="pg-note">${note}</span><span id="el">0s</span></div>
   </div>`;
 }
@@ -386,17 +481,15 @@ function startClock(){
 async function poll(jobId,tries){
   const started=window._t0||Date.now();
   if(Date.now()-started>5*60*1000){
-    clearInterval(window._tk);
-    out.innerHTML='';
+    clearInterval(window._tk);out.innerHTML='';
     out.appendChild(el(`<div class="note warn"><b>等太久了，这次没等到结果。</b><br>
-      站点可能在拦自动化访问，或者页面特别多。把「抓取页数」调到 10 再试。</div>`));
+      站点可能在拦自动化访问，或页面特别多。把「抓取页数」调到 10 再试。</div>`));
     goBtn.disabled=false;goBtn.textContent='开始体检';
     return;
   }
   const steps=['已排队，正在抓取页面…','正在解析页面…','正在跑 43 项检查…','快好了…'];
   const n=$('pg-note');
   if(n&&tries%3===0)n.textContent=steps[Math.min(3,Math.floor(tries/3))];
-
   try{
     const r=await fetch('/api/v1/web/jobs/'+jobId);
     if(!r.ok)throw new Error('任务不存在或服务已重启');
@@ -415,6 +508,26 @@ async function poll(jobId,tries){
   }
 }
 
+/* 签名动作：带刻度的量规。0–100，每 10 分长刻度并标数，每 2 分短刻度，
+   琥珀填充到得分处，墨黑标记指到得分处。 */
+function gauge(score){
+  const W=100,H=22,pad=1.2;
+  let ticks='';
+  for(let v=0;v<=100;v+=2){
+    const major=v%10===0;
+    ticks+=`<line class="${major?'major':'minor'}" x1="${v}" y1="${major?0:11}"
+      x2="${v}" y2="${major?18:15}"/>`;
+    if(major) ticks+=`<text class="num" x="${v}" y="26">${v}</text>`;
+  }
+  return `<svg viewBox="-2 -2 ${W+4} ${H+8}" preserveAspectRatio="none"
+    role="img" aria-label="健康分 ${Math.round(score)}，满分 100">
+    <line class="track" x1="0" y1="9" x2="${W}" y2="9"/>
+    ${ticks}
+    <line class="fill" x1="0" y1="9" x2="${Math.max(pad,score)}" y2="9"/>
+    <line class="marker" x1="${score}" y1="-2" x2="${score}" y2="20"/>
+  </svg>`;
+}
+
 function render(rep){
   goBtn.disabled=false;goBtn.textContent='重新体检';
   out.innerHTML='';
@@ -426,28 +539,29 @@ function render(rep){
     out.appendChild(el(`<div class="note warn"><b>一页都没抓到，所以给不出分数。</b><br>
       常见原因：站点屏蔽了自动化访问、需要 JS 渲染，或 robots.txt 不允许。<br>
       可以试试打开上面的「渲染 JavaScript」再扫一次。<br>
-      <span style="color:var(--faint)">这不是「你的网站没问题」，只是我们什么都没看到。</span></div>`));
+      <span style="color:var(--muted)">这不是「你的网站没问题」，只是我们什么都没看到。</span></div>`));
     return;
   }
 
   last=rep;
-  const s=Math.round(rep.health_score);
+  const s=rep.health_score, v=Math.max(0,Math.min(100,s));
   const g=s>=90?'g1':s>=70?'g2':s>=40?'g3':'g4';
   const verdict=s>=90?'状态不错':s>=70?'有一些要改':s>=40?'问题不少':'亟需处理';
 
-  out.appendChild(el(`<div class="headline">
-    <div class="hl-top">
-      <span class="hl-score ${g}">${s}</span>
-      <span class="hl-verdict">${verdict}</span>
-      <span class="hl-meta">${esc(rep.domain)} · ${rep.pages_crawled} 页 ·
-        ${rep.pages_discovered} URL · ${rep.duration_seconds}s</span>
+  const dims=Object.entries(rep.score_breakdown?.dimension_scores||{});
+  out.appendChild(el(`<div class="report">
+    <div class="rpt-hd">
+      <span class="rpt-score ${g}">${Math.round(s)}</span>
+      <span class="rpt-verdict">${verdict}</span>
+      <span class="rpt-meta">${esc(rep.domain)}<br>
+        ${rep.pages_crawled} 页 · ${rep.pages_discovered} URL · ${rep.duration_seconds}s</span>
     </div>
-    <div class="meter"><i class="${g}" style="width:${Math.max(0,Math.min(100,s))}%"></i></div>
+    <div class="gauge">${gauge(v)}</div>
     <div class="dims">
-      ${Object.entries(rep.score_breakdown?.dimension_scores||{}).map(([k,v])=>`
-        <div class="dim"><label>${esc(DIM_CN[k]||k)}</label>
-          <div class="t"><i style="width:${Math.max(0,Math.min(100,v))}%"></i></div>
-          <em>${Math.round(v)}</em></div>`).join('')}
+      ${dims.map(([k,val])=>`<div class="dim">
+        <label>${esc(DIM_CN[k]||k)}</label>
+        <div class="t"><i style="width:${Math.max(0,Math.min(100,val))}%"></i></div>
+        <em>${Math.round(val)}</em></div>`).join('')}
     </div>
   </div>`));
 
@@ -461,10 +575,10 @@ function render(rep){
   }
 
   const f=el(`<div class="filters">
-    <span class="lb">筛选</span>
-    <button class="f on" data-f="all">全部 <b>${total}</b></button>
+    <span class="t">筛选</span>
+    <button class="f on" data-f="all">全部 <span class="n">${total}</span></button>
     ${SEV.filter(k=>counts[k]).map(k=>
-      `<button class="f" data-f="${k}">${SEV_CN[k]} <b>${counts[k]}</b></button>`).join('')}
+      `<button class="f" data-f="${k}">${SEV_CN[k]} <span class="n">${counts[k]}</span></button>`).join('')}
   </div>`);
   f.querySelectorAll('.f').forEach(btn=>btn.addEventListener('click',()=>{
     filter=btn.dataset.f;
@@ -484,27 +598,30 @@ function paint(){
   const shown=filter==='all'?all:all.filter(i=>i.severity===filter);
   box.innerHTML='';
   if(!shown.length){box.appendChild(el('<div class="note">这个级别没有问题。</div>'));return;}
-  shown.forEach(i=>box.appendChild(card(i)));
-  box.appendChild(el(`<div style="color:var(--faint);font-size:12px;text-align:center;
-    margin-top:16px">共 ${shown.length} 条 · 每条都可在报告里追到原文证据</div>`));
+  const w=String(shown.length).padStart(3,'0');
+  shown.forEach((i,n)=>box.appendChild(card(i,'R-'+String(n+1).padStart(3,'0'),w)));
+  box.appendChild(el(`<div style="color:var(--muted);font:400 12px/1 var(--mono);
+    text-align:center;margin-top:var(--s4);letter-spacing:.04em">
+    共 ${shown.length} 条 · 每条都可在报告里追到原文证据</div>`));
 }
 
-function card(i){
+function card(i,idx){
   return el(`<details class="issue">
     <summary>
       <span class="sev ${esc(i.severity)}">${esc(SEV_CN[i.severity]||i.severity)}</span>
+      <span class="idx">${idx}</span>
       <span class="ttl">${esc(i.title)}</span>
       <span class="cnt">${i.affected_pages>1?i.affected_pages+' 页':''}</span>
       <span class="caret">▶</span>
     </summary>
     <div class="body">
       ${i.description?`<p>${esc(i.description)}</p>`:''}
-      ${i.fix_hint?`<div class="blabel">怎么改</div><div class="fix">${esc(i.fix_hint)}</div>`:''}
-      ${i.fix_example?`<div class="blabel" style="margin-top:12px">示例</div>
+      ${i.fix_hint?`<div class="bl">怎么改</div><div class="fix">${esc(i.fix_hint)}</div>`:''}
+      ${i.fix_example?`<div class="bl" style="margin-top:var(--s3)">示例</div>
         <div class="fix"><pre>${esc(i.fix_example)}</pre></div>`:''}
-      ${i.url?`<div class="blabel" style="margin-top:12px">出问题的页面</div>
+      ${i.url?`<div class="bl" style="margin-top:var(--s3)">出问题的页面</div>
         <div class="url">${esc(i.url)}</div>`:''}
-      <div class="blabel" style="margin-top:12px">规则</div>
+      <div class="bl" style="margin-top:var(--s3)">规则</div>
       <span class="code">${esc(i.code)}</span>
     </div>
   </details>`);
