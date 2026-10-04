@@ -89,9 +89,20 @@ def _remember(job_id: int, payload: dict[str, Any]) -> None:
 
 
 class QuickScanRequest(BaseModel):
+    """一次体检的入参。
+
+    ⚠️ 这几个开关不能只做在界面上：界面上摆一个「渲染 JS」的勾选框、
+    后端不接，用户勾了发现跟没勾一样——那比没有这个框更糟。
+    这里声明了就一路传到 ``run_scan``，前后端对得上。
+    """
+
     url: str = Field(min_length=4, max_length=500)
     max_pages: int = Field(default=30, ge=1, le=500)
     market: str = Field(default="base")
+    max_depth: int = Field(default=6, ge=1, le=12)
+    # 前端单页很便宜（靠后端内存态），给得比 CLI 更宽松。
+    respect_robots: bool = True
+    render_js: bool = False
 
 
 class QuickScanAccepted(BaseModel):
@@ -197,14 +208,29 @@ async def quick_scan(body: QuickScanRequest, request: Request) -> QuickScanAccep
     # done_callback 是唯一的兜底：任何没进 _run 内部 try 的异常
     # （包括 import 失败）都会走到这里，变成前端看得见的 failed。
     task = asyncio.create_task(
-        _run(job_id, site_id, url, body.max_pages, body.market)
+        _run(
+            job_id, site_id, url, body.max_pages, body.market,
+            max_depth=body.max_depth,
+            respect_robots=body.respect_robots,
+            render_js=body.render_js,
+        )
     )
     _JOB_OF_TASK[id(task)] = job_id
     task.add_done_callback(_on_task_done)
     return QuickScanAccepted(job_id=job_id, site_id=site_id, domain=domain)
 
 
-async def _run(job_id: int, site_id: int, url: str, max_pages: int, market: str) -> None:
+async def _run(
+    job_id: int,
+    site_id: int,
+    url: str,
+    max_pages: int,
+    market: str,
+    *,
+    max_depth: int = 6,
+    respect_robots: bool = True,
+    render_js: bool = False,
+) -> None:
     """后台跑一次体检，把进度与终态写进 ``_TASKS``。
 
     ⚠️ 自己开 session：请求早已返回、它那个 session 已被关闭，
@@ -220,6 +246,9 @@ async def _run(job_id: int, site_id: int, url: str, max_pages: int, market: str)
                 url=url,
                 markets=[market],
                 max_pages=max_pages,
+                max_depth=max_depth,
+                respect_robots=respect_robots,
+                render_js=render_js,
             )
             # ⚠️ run_scan 自己不提交（它的调用方 API 层靠 deps 的 finally 提交）。
             # 这里没有 deps，必须自己 commit，否则页面拿到的是空报告——

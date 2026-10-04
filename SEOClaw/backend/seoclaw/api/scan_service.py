@@ -76,6 +76,43 @@ def _issue_to_row(i: Issue, *, job_id: int, page_id: Optional[int] = None) -> di
     }
 
 
+def _issue_to_dict(i: Issue, affected: int = 1) -> dict[str, Any]:
+    """给前端/CLI 用的紧凑问题视图。
+
+    ⚠️ 不要把 evidence 原样塞进去：sitemap.missing 那条会把 5 个探测路径
+    全列出来，单条就能撑爆一屏 JSON。证据在 HTML 报告里按需展开。
+    """
+    return {
+        "code": i.code,
+        "severity": i.severity.value,
+        "market": i.market.value,
+        "scope": i.scope.value,
+        "title": i.title,
+        "description": i.description,
+        "fix_hint": i.fix_hint,
+        "fix_example": i.fix_example,
+        "url": i.url,
+        "affected_pages": affected,
+    }
+
+
+def _group_issues(issues: list[Issue], cap: int = 200) -> list[dict[str, Any]]:
+    """按 fingerprint 聚成行动项。
+
+    一条 Issue 记录 = 一个受影响页面；同根因的 300 条不该在界面上占 300 行。
+    数量记在 ``affected_pages`` 上——用户要回答的是「一共多少页受影响」，
+    拿不到这个数字的列表没法当行动清单用。
+    """
+    by_fp: dict[str, list[Issue]] = {}
+    for i in issues:
+        key = i.evidence.get("fingerprint") or f"{i.code}|{i.url or ''}"
+        by_fp.setdefault(key, []).append(i)
+    out: list[dict[str, Any]] = []
+    for group in list(by_fp.values())[:cap]:
+        out.append(_issue_to_dict(group[0], affected=len(group)))
+    return out
+
+
 def _crawl_and_audit(
     url: str,
     *,
@@ -195,6 +232,10 @@ async def run_scan(
             "health_score": health,
             "score_breakdown": breakdown,
             "issue_count": len(issues),
+            # ⚠️ 界面的问题列表全靠这个字段。以前这里只回 issue_count，
+            # 前端去读 rep.issues 永远是 undefined —— 页面显示一个分数，
+            # 下面列表永远空白，看着像「没问题」。这个字段不能省。
+            "issues": _group_issues(issues),
             "top_actions": [i.code for i in _prioritize(issues, len(ok_pages))],
             "site_facts": site_facts,
         }
