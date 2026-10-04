@@ -219,11 +219,17 @@ async def report(site_id: int, uow=__import__("fastapi").Depends(get_uow)) -> Re
 
 
 def _latest_score(jobs) -> float | None:
-    breakdown = None
-    if jobs.items:
-        breakdown = getattr(jobs.items[0], "score_breakdown", None)
-    if isinstance(breakdown, dict):
-        v = breakdown.get("health_score")
-        if isinstance(v, (int, float)):
-            return float(v)
-    return None
+    """取最近一次扫描的健康分。
+
+    ⚠️ 以前这里读 ``job.score_breakdown`` 字典，而 crawl_jobs **压根没有
+    这一列**（已由 0002_job_scores 补上，但老数据还是 null）→ 属性读不到
+    → 返回 None → 接口 health_score 恒为 null → 前端按「一页都没抓到」
+    渲染。**分数算了、接口也返回了，却从没存下来。**
+
+    现在读 ``job.health_score`` 这条真列。老库没跑过迁移时它不存在，
+    故用 getattr 兜底成 None，而不是直接抛 AttributeError 把接口打挂。
+    """
+    if not jobs.items:
+        return None
+    v = getattr(jobs.items[0], "health_score", None)
+    return float(v) if isinstance(v, (int, float)) else None

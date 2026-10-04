@@ -216,12 +216,17 @@ async def run_scan(
             (_issue_to_row(i, job_id=job.id, page_id=page_ids.get(i.url or "")) for i in issues),
         )
 
+        # ⚠️ 分数必须**跟着这一轮扫描**存进 crawl_jobs。issues 表是最新快照
+        # ——上一轮的问题已被这一轮覆盖，事后再拿 issues 重算，算出来的
+        # 不是那一轮的分数。分数是历史事实，要跟产生它的那次 job 一起存。
         await repo.finish_job(
             session,
             job.id,
             status=DbJobStatus.SUCCEEDED,
             url_count=discovered,
             pages_crawled=len(ok_pages),
+            health_score=health,
+            score_breakdown=breakdown,
         )
         return {
             "job_id": job.id,

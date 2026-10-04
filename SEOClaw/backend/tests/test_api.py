@@ -230,6 +230,31 @@ def test_report_counts_cover_all_severities(client):
     assert all(isinstance(v, int) for v in rep["counts"].values())
 
 
+def test_scan_persists_health_score(client):
+    """分数必须**跟着这一轮扫描存进 crawl_jobs**。
+
+    ⚠️ 以前 crawl_jobs 压根没有 health_score / score_breakdown 两列，
+    而 `/report` 的 `_latest_score()` 去读 `job.score_breakdown` ——
+    读不到就返回 None，于是这个接口的健康分**恒为 null**，前端一律按
+    「一页都没抓到」渲染。分数算了、接口也返回了，却从没存下来：
+    这比没实现更坏，因为接口看着是通的，只是答案恒为空。
+
+    不能事后拿 issues 重算 —— issues 表是**最新快照**，上一轮的问题已被
+    这一轮覆盖，算出来的不是那一轮的分数。分数是历史事实。
+    """
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+
+    # 只走 API，不绕库断言：当初漏掉的就是「分数算了却没存」这一段，
+    # 而这个接口正是读库那一侧的消费者。它报 null = 分数没落库，一句话。
+    # 另起一条查库断言只会把同一个 bug 用两套口径测两遍。
+    assert client.get(f"/api/v1/sites/{site['id']}/jobs").json(), "扫描后应有任务记录"
+    rep = client.get(f"/api/v1/sites/{site['id']}/report").json()
+    assert rep["pages_crawled"] > 0
+    assert rep["health_score"] is not None, "扫过了却报 null = 分数没落库"
+    assert 0 <= rep["health_score"] <= 100
+
+
 def test_report_without_scan_has_null_score(client):
     """没扫过的站点 health_score 必须是 null —— 0 分意味着「扫了且很差」，
     这两件事不能共用同一个值。"""

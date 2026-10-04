@@ -256,6 +256,16 @@ class CrawlJob(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
 
+    # ── 本次扫描的健康分与评分明细 ──
+    # ⚠️ 这两列以前不存在，于是 `/sites/{id}/report` 的 `_latest_score()`
+    # 去读 `job.score_breakdown` 永远读不到 → health_score 恒为 null →
+    # 前端按「一页都没抓到」渲染。**分数算了、显示了，却根本没存。**
+    # 这是「查出来的结论没有落库」，比没实现更坏：接口看着是通的。
+    health_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    score_breakdown: Mapped[Optional[dict[str, Any]]] = mapped_column(
+        JSONType, nullable=True
+    )
+
     site: Mapped[Site] = relationship(back_populates="jobs")
 
     @property

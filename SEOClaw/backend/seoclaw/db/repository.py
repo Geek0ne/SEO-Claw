@@ -314,7 +314,16 @@ class CrawlJobRepository:
         url_count: int = 0,
         pages_crawled: int = 0,
         error: Optional[str] = None,
+        health_score: Optional[float] = None,
+        score_breakdown: Optional[dict[str, Any]] = None,
     ) -> Optional[m.CrawlJob]:
+        """收尾一次扫描。
+
+        ⚠️ ``health_score`` / ``score_breakdown`` 只在**显式传入**时写，
+        且显式传入 ``None`` 也会写（存 null）。理由：失败路径重试调用
+        ``finish`` 时不能把上一轮算好的分数悄悄抹掉；而一轮扫描从 PENDING
+        到 SUCCEEDED 只结一次账，null 表示「这次确实没算出分数」。
+        """
         job = await self.session.get(m.CrawlJob, job_id)
         if job is None:
             return None
@@ -323,6 +332,10 @@ class CrawlJobRepository:
         job.url_count = url_count
         job.pages_crawled = pages_crawled
         job.error = error
+        if health_score is not None:
+            job.health_score = health_score
+        if score_breakdown is not None:
+            job.score_breakdown = score_breakdown
         await self.session.flush()
         return job
 
