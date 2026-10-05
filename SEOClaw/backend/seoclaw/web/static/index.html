@@ -293,6 +293,9 @@ const API = {
   deleteSite:   (id)   => API.req("DELETE", `/api/v1/sites/${id}`),
   verification: (id)   => API.get(`/api/v1/sites/${id}/verification`),
   startVerification: (id) => API.post(`/api/v1/sites/${id}/verification`),
+  listKeys:      ()     => API.get("/api/v1/keys"),
+  createKey:     ()     => API.post("/api/v1/keys"),
+  revokeKey:     (kid)  => API.post(`/api/v1/keys/${kid}/revoke`),
   checkVerification: (id, method) =>
                     API.post(`/api/v1/sites/${id}/verification/check?method=${method}`),
   me:           ()     => API.get("/api/v1/me"),
@@ -995,30 +998,103 @@ function openKeySettings() {
   const cur = apiKey();
   const inp = el("input", {type:"text", placeholder:"sk-seoclaw-…",
     value:cur, style:"width:100%"});
-  const out = el("div", {style:"margin-top:12px"});
+  const listBox = el("div", {style:"margin-top:16px"});
+  const issued = el("div", {style:"margin-top:12px"});
+
   const m = modal("访问钥匙", el("div", {},
     el("div", {class:"fld"},
-      el("label", {}, "X-API-Key"),
+      el("label", {}, "本机使用的钥匙（X-API-Key）"),
       inp,
       el("div", {class:"hint"},
         "单机部署可以留空。多个租户时，每个租户一把钥匙，只能看到自己的站点。")),
-    el("div", {style:"display:flex;gap:8px"},
+    el("div", {style:"display:flex;gap:8px;flex-wrap:wrap"},
       el("button", {class:"btn btn-p", onclick: () => {
         const v = inp.value.trim();
         setApiKey(v);
         m.close();
         toast(v ? "钥匙已保存，正在按新归属重新加载" : "已清除钥匙");
-        S.sites = [];
-        S.siteId = null;
+        S.sites = []; S.siteId = null;
         boot();
       }}, "保存"),
       cur ? el("button", {class:"btn btn-g", onclick: () => {
         setApiKey(""); m.close();
         toast("已清除钥匙");
         S.sites = []; S.siteId = null; boot();
-      }}, "清除") : null),
-    out));
-  void out;
+      }}, "清除") : null,
+      el("button", {class:"btn", onclick: () => mintKey(issued)}, "签发新钥匙")),
+    issued,
+    listBox));
+
+  void issued; void listBox;
+  refreshKeys(listBox);
+  void m;
+}
+
+/** 签发一把钥匙。⚠️ 明文只在这里出现一次 —— 服务端只存哈希，丢了找不回。 */
+async function mintKey(out) {
+  out.textContent = "签发中…";
+  try {
+    const r = await API.createKey();
+    out.textContent = "";
+    const box = el("code", {
+      style:"display:block;margin-top:6px;padding:10px;font-size:13px;word-break:break-all",
+    }, r.key);
+    out.append(
+      el("div", {class:"err", style:"background:var(--bg-sunken);border-color:var(--medium)"},
+        el("div", {class:"t"}, "这是唯一一次显示完整钥匙"),
+        el("div", {class:"n"}, r.warning),
+        box,
+        el("div", {style:"margin-top:8px"},
+          el("button", {class:"btn btn-sm", onclick: () => {
+            // Clipboard API 在非 https 下可能不可用，所以给回退
+            const done = () => toast("已复制");
+            if (navigator.clipboard && navigator.clipboard.writeText)
+              navigator.clipboard.writeText(r.key).then(done).catch(() => toast("复制失败，请手动选中", "error"));
+            else { toast("浏览器不允许复制，请手动选中", "error"); }
+          }}, "复制"))));
+    toast("已签发");
+  } catch (e) {
+    out.textContent = "";
+    out.append(errBox(e, "开鉴权后签发需要管理令牌（服务端 SEO_CLAW_ADMIN_TOKEN）。"));
+  }
+}
+
+/** 已签发的钥匙列表。⚠️ 只回前缀 —— 完整钥匙不在库里，也没理由展示。 */
+async function refreshKeys(box) {
+  box.textContent = "加载中…";
+  try {
+    const ks = await API.listKeys();
+    box.textContent = "";
+    if (!ks.length) {
+      box.append(el("div", {style:"color:var(--fg-faint);font-size:12px;padding:8px 0"},
+        "还没有签发过钥匙。"));
+      return;
+    }
+    const rows = ks.map(k => el("tr", {},
+      el("td", {style:"font:500 12px/1.4 var(--mono)"}, k.key_prefix + "…"),
+      el("td", {}, k.name),
+      el("td", {style:"font:400 12px/1.4 var(--mono);color:var(--fg-faint)"},
+        k.revoked ? "已撤销" : (k.last_used_at
+          ? new Date(k.last_used_at).toLocaleString("zh-CN") : "从未使用")),
+      el("td", {}, k.revoked
+        ? el("span", {class:"tag"}, "已撤销")
+        : el("button", {class:"btn btn-sm", onclick: async () => {
+            if (!window.confirm(`撤销 ${k.key_prefix}…？\n\n撤销后这把钥匙立刻失效，无法恢复。`)) return;
+            try { await API.revokeKey(k.id); toast("已撤销"); refreshKeys(box); }
+            catch (e) { toast(e.message || String(e), "error"); }
+          }}, "撤销"))));
+    box.append(
+      el("div", {style:"font:600 11px/1 var(--mono);color:var(--fg-muted);margin:14px 0 6px"},
+        "已签发的钥匙"),
+      el("table", {},
+        el("thead", {}, el("tr", {},
+          el("th", {}, "前缀"), el("th", {}, "名称"),
+          el("th", {}, "最后使用"), el("th", {}, ""))),
+        el("tbody", {}, rows)));
+  } catch (e) {
+    box.textContent = "";
+    box.append(errBox(e));
+  }
 }
 
 /* ══════════════════════════════════════════════════════════
