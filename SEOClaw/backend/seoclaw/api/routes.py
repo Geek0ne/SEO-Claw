@@ -525,32 +525,60 @@ async def report_summary(
     """报告的 AI 总结。
 
     ⚠️ **没配 key 就明确说没配**，而不是返回 null 让前端显示成空白 ——
-    「还没接AI」和「AI 说了但没内容」对用户是两件完全不同的事。
+    「还没接 AI」和「AI 说了但没内容」对用户是两件完全不同的事。
 
-    走 ``llm.summarize``：它内部吞掉所有异常返回 None，理由是 AI 总结是
-    锦上添花、规则引擎报告才是主结果，**总结失败绝不能让报告整个消失**。
-    这里要区分失败原因，所以改用 ``chat`` 拿异常。
+    ⚠️ 这里刻意**不用** ``llm.summarize``：它内部吞掉所有异常返回 None，
+    而这里要把失败原因告诉用户（key 无效？模型不可用？超时？）。
+    代价是要自己接异常，但少了「为什么失败」这个信息。
     """
-    from ..llm import LLMConfig, LLMNotConfigured, chat
+    import asyncio
 
-    await _require_site(uow, site_id)
+    from ..llm import LLMConfig, LLMNotConfigured, _build_prompt, chat
+
+    site = await _require_site(uow, site_id)
     cfg = LLMConfig.from_env()
     if not cfg.api_key:
         return SummaryOut(
-            reason="未配置 LLM key（设 SEO_CLAW_LLM_API_KEY 后本端点才可用）"
+            reason="未配置 LLM key。设 SEO_CLAW_LLM_API_KEY 后本端点才可用；"
+                   "报告本身不受影响，规则引擎结果才是主结果。"
         )
+
     page = await uow.issues.list(site_id, limit=200)
+    # ⚠️ _latest_score 收的是 **jobs 列表**，返回 float —— 我第一版按
+    # 「(uow, site_id) → 对象」去调，端点直接 500。
+    # 今天在「凭印象写签名」上栽的次数最多，这里改成照第 687 行的用法走。
+    # ⚠️⚠️ 这里我连着错了两次签名：先当 (uow, site_id)，再当返回 list。
+    # 实际是：list_for_site 返回 **Page**，_latest_score 也吃 **Page**
+    # （它内部读 jobs.items[0]）。两次都是「凭印象写」造成的，
+    # 所以这次照第 687 行的既有用法照抄，不再自己编。
+    jobs_page = await uow.jobs.list_for_site(site_id, limit=1)
+    job = jobs_page.items[0] if jobs_page.items else None
+    health = _latest_score(jobs_page)
+
+    # ⚠️ _build_prompt 要的是「报告对象」，这里手上只有 issues 分页。
+    # 拼一个薄壳而不是改 _build_prompt 的签名 —— 那个函数 CLI 也在用，
+    # 改签名要同步改两处调用点，而它们要的字段其实是一样的。
+    class _Shim:
+        domain = site.domain
+        issues = page.items
+        pages_crawled = getattr(job, "pages_crawled", None) or page.total
+        pages_discovered = page.total
+        health_score = health
+        score_breakdown = getattr(job, "score_breakdown", None) or {}
+
+    prompt = _build_prompt(_Shim(), max_issues=12)
+
     try:
-        text = chat(
-            f"用中文为这个 SEO 体检报告写 3-5 句总结，指出最该先改的一处。"
-            f"问题共 {page.total} 条，最严重的几条："
-            + "；".join(f"{i.title}" for i in page.items[:5]),
-            config=cfg,
-        )
-    except LLMNotConfigured:
-        return SummaryOut(reason="LLM key 无效或模型不可用")
+        # ⚠️ 必须 to_thread：chat() 是同步 httpx，直接在 async 端点里调
+        # 会把整个事件循环卡住 —— 一个 60 秒超时的模型请求足以让这个服务
+        # 对**所有用户**无响应。我今天已经在验证脚本里犯过一次这个错。
+        text = await asyncio.to_thread(chat, prompt, config=cfg)
+    except LLMNotConfigured as exc:
+        return SummaryOut(reason=f"LLM 未就绪：{exc}")
     except Exception as exc:  # noqa: BLE001
         return SummaryOut(reason=f"调用失败：{type(exc).__name__}: {exc}")
+    if not (text or "").strip():
+        return SummaryOut(reason="模型返回了空内容，可换个模型再试。")
     return SummaryOut(summary=text, model=cfg.model)
 
 

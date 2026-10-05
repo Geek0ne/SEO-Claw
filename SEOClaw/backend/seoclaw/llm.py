@@ -101,18 +101,25 @@ class LLMConfig:
             if v:
                 key = v
                 break
+        # ⚠️ 原来写的是：
+        #     os.getenv("SEO_CLAW_LLM_BASE_URL" or os.getenv("SEO_AGENT_...") or DEFAULT)
+        # 那条 or 链**恒取第一个字面量**（非空字符串永远为真），所以
+        # SEO_AGENT_* 那一路是死代码 —— 配了也不生效。
+        # 「配个 key 就能跑」最容易翻车的恰恰是这种：用户配了变量，
+        # 程序却当没配，最后报「模型不可用」，而真因是变量名拼错/用旧名。
+        def pick(*names: str) -> Optional[str]:
+            for n in names:
+                v = os.getenv(n)
+                if v:
+                    return v
+            return None
+
         return cls(
             api_key=key,
-            base_url=os.getenv(
-            "SEO_CLAW_LLM_BASE_URL"
-            or os.getenv("SEO_AGENT_LLM_BASE_URL")
-            or DEFAULT_BASE_URL,
-        ),
-            model=os.getenv(
-                "SEO_CLAW_LLM_MODEL"
-                or os.getenv("SEO_AGENT_LLM_MODEL")
-                or DEFAULT_MODEL,
-            ),
+            base_url=pick("SEO_CLAW_LLM_BASE_URL",
+                          "SEO_AGENT_LLM_BASE_URL") or DEFAULT_BASE_URL,
+            model=pick("SEO_CLAW_LLM_MODEL",
+                       "SEO_AGENT_LLM_MODEL") or DEFAULT_MODEL,
             **kw,
         )
 
