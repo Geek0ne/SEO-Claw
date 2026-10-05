@@ -224,7 +224,10 @@ code{font:400 12px/1.5 var(--mono);background:var(--bg-sunken);
       <div class="side-h">站点</div>
       <div id="siteList"></div>
     </div>
-    <div class="side-foot"><button class="btn" id="btnAdd" style="width:100%;justify-content:center">+ 接入站点</button></div>
+    <div class="side-foot" style="display:flex;gap:6px">
+      <button class="btn" id="btnAdd" style="flex:1;justify-content:center">+ 接入站点</button>
+      <button class="btn btn-g" id="btnKey" title="访问钥匙" style="flex:none">🔑</button>
+    </div>
   </aside>
 
   <!-- ══ 主区 ══ -->
@@ -236,9 +239,18 @@ code{font:400 12px/1.5 var(--mono);background:var(--bg-sunken);
 /* ══════════════════════════════════════════════════════════
    API 层 —— 全部照 backend OpenAPI 契约，不凭印象
    ══════════════════════════════════════════════════════════ */
+/* 钥匙存在 localStorage。⚠️ 明文钥匙只在浏览器里存在，服务端只存哈希，
+   所以**丢了只能重新签发**——这页会明确告诉用户，别让人以为能找回。*/
+const KEY_STORE = "seoclaw.api_key";
+const apiKey = () => { try { return localStorage.getItem(KEY_STORE) || ""; } catch { return ""; } };
+function setApiKey(v) {
+  try { v ? localStorage.setItem(KEY_STORE, v) : localStorage.removeItem(KEY_STORE); } catch {}
+}
+
 const API = {
   async req(method, path, body) {
-    const opt = { method, headers: {} };
+    const k = apiKey();
+    const opt = { method, headers: k ? {"X-API-Key": k} : {} };
     if (body !== undefined) {
       opt.headers["Content-Type"] = "application/json";
       opt.body = JSON.stringify(body);
@@ -278,6 +290,12 @@ const API = {
   rankDrops:    (id,b) => API.post(`/api/v1/sites/${id}/rank-drops`, b),
   ackDrops:     (id,keys) => API.post(`/api/v1/sites/${id}/rank-drops/ack`, {alert_keys:keys}),
   usage:        (id)   => API.get(`/api/v1/sites/${id}/usage`),
+  deleteSite:   (id)   => API.req("DELETE", `/api/v1/sites/${id}`),
+  verification: (id)   => API.get(`/api/v1/sites/${id}/verification`),
+  startVerification: (id) => API.post(`/api/v1/sites/${id}/verification`),
+  checkVerification: (id, method) =>
+                    API.post(`/api/v1/sites/${id}/verification/check?method=${method}`),
+  me:           ()     => API.get("/api/v1/me"),
 };
 
 /* ══════════════════════════════════════════════════════════
@@ -424,7 +442,8 @@ function render() {
   const body = el("div",{style:"padding-top:20px"});
   main.append(body);
   ({ overview: viewOverview, issues: viewIssues, trend: viewTrend,
-     keywords: viewKeywords, brief: viewBrief, ranks: viewRanks, usage: viewUsage
+     keywords: viewKeywords, brief: viewBrief, ranks: viewRanks,
+     usage: viewUsage, verify: viewVerify
    }[S.tab] || viewOverview)(body, site);
 }
 
@@ -451,12 +470,14 @@ function siteHeader(site) {
       el("div",{class:"sub"}, (site.markets||[]).join(" · ") || "未指定市场")),
     el("div",{class:"spacer"}),
     busy ? el("span",{class:"tag"},"扫描进行中…")
-         : el("button",{class:"btn btn-p",onclick:()=>openScan(site)},"开始体检"));
+         : el("button",{class:"btn btn-p",onclick:()=>openScan(site)},"开始体检"),
+    el("button",{class:"btn btn-g",onclick:()=>deleteSite(site)},"删除站点"));
 }
 
 const TABS = [
   ["overview","概览"],["issues","问题"],["trend","趋势"],
-  ["keywords","关键词"],["brief","内容 Brief"],["ranks","排名告警"],["usage","用量"],
+  ["keywords","关键词"],["brief","内容 Brief"],["ranks","排名告警"],
+  ["usage","用量"],["verify","归属验证"],
 ];
 function tabBar(site) {
   const bar = el("div",{class:"tabs"});
@@ -816,10 +837,13 @@ async function viewRanks(host, site) {
 
 /* ── 用量 ─────────────────────────────────────────────── */
 async function viewUsage(host, site) {
-  let u;
+  let u, me = null;
   try { u = await API.usage(site.id); } catch (e) { host.append(errBox(e)); return; }
+  // ⚠️ 额度**从 /me 读，不在前端写死**。写死 2000 的后果是：改成 3000 时
+  // 前端还显示 2000，而用户以为看到的是真账 —— 额度显示错了比不显示更糟。
+  // 单机模式下 /me 返回 limit: null，含义是「不限量」，不是「额度是 0」。
+  try { me = await API.me(); } catch { /* 拿不到就只展示口径 */ }
 
-  const FREE = 2000;
   const stat = (k, v, x) => el("div", {class:"stat"},
     el("div", {class:"k"}, k),
     el("div", {class:"v"}, v),
@@ -827,22 +851,174 @@ async function viewUsage(host, site) {
 
   const statsRow = el("div", {class:"stats"},
     stat("累计计量", String(u.total)),
-    stat("免费额度", `${FREE} 页/月`));
+    me && me.quota.limit !== null
+      ? stat("本月已用", `${me.quota.used}/${me.quota.limit} 页`)
+      : stat("本月已用", me ? `${me.quota.used} 页` : "—"));
+  if (me && me.quota.limit === null) {
+    statsRow.append(stat("计费状态", "单机模式，不限量"));
+  }
   for (const [k, v] of Object.entries(u.by_kind || {})) {
     statsRow.append(stat(k, String(v)));
   }
 
   const note = el("div",
     {style:"margin-top:14px;color:var(--fg-muted);font-size:12px;line-height:1.7"},
-    "成本与抓取的页数成正比，与「扫了几次」无关。所以额度按页算：",
-    el("br"),
-    "小站随便扫、天天扫都行；大站才贵。按次数限制反而会挡住还没体验到价值的用户。");
+    me && me.quota.enforced
+      ? "成本与抓取的页数成正比，与「扫了几次」无关，所以额度按页算。用完会在提交扫描时直接拒绝 —— 按请求页数拦，不是等爬到一半才停。"
+      : "当前是单机部署模式，不计量、不拦额度。配了访问钥匙并让服务端开鉴权后，按每月 2000 页计量。");
 
   const body = el("div", {class:"panel-b"}, statsRow, note);
   const head = el("div", {class:"panel-h"},
     el("h2", {}, "用量"),
     el("span", {class:"n"}, "免费额度按页算，不按次数"));
   host.append(el("div", {class:"panel"}, head, body));
+}
+
+/* ── 归属验证：这个站凭什么算你的 ─────────────────────────── */
+async function viewVerify(host, site) {
+  const wrap = el("div"); host.append(wrap);
+  let v;
+  try { v = await API.verification(site.id); }
+  catch (e) { wrap.append(errBox(e)); return; }
+
+  const done = v.status === "verified";
+
+  if (done) {
+    wrap.append(el("div", {class:"panel"},
+      el("div", {class:"panel-h"}, el("h2", {}, "已验证")),
+      el("div", {class:"panel-b"},
+        el("p", {style:"margin:0 0 6px;font-size:13px;line-height:1.7"},
+          "这个站点已证明归你所有，可以进监控和告警。"),
+        el("dl", {class:"kv"},
+          el("dt", {}, "验证方式"),
+          el("dd", {}, v.verify_method === "dns" ? "DNS TXT" :
+                      v.verify_method === "meta" ? "首页 meta 标签" : (v.verify_method || "—")),
+          el("dt", {}, "验证时间"),
+          el("dd", {style:"font-family:var(--mono);font-size:12px"},
+            v.verified_at ? new Date(v.verified_at).toLocaleString("zh-CN") : "—")))));
+    return;
+  }
+
+  const tokBox = v.token
+    ? el("code", {style:"display:block;margin-top:6px;padding:8px 10px;font-size:13px;word-break:break-all"},
+        v.token)
+    : el("div", {style:"color:var(--fg-muted);font-size:13px;margin-top:6px"},
+        "还没有生成 token。先点右边的「生成 token」。");
+
+  const dnsBox = el("pre", {
+    style:"margin:6px 0 0;padding:10px;background:var(--bg-sunken);border:1px solid var(--border);border-radius:var(--r-ctl);font:400 12px/1.6 var(--mono);white-space:pre-wrap",
+  }, v.dns_instructions || "（先生成 token）");
+
+  const metaBox = el("pre", {
+    style:"margin:6px 0 0;padding:10px;background:var(--bg-sunken);border:1px solid var(--border);border-radius:var(--r-ctl);font:400 12px/1.6 var(--mono);white-space:pre-wrap",
+  }, v.meta_instructions || "（先生成 token）");
+
+  const out = el("div", {style:"margin-top:12px"});
+
+  const checkBtn = (method, label) => el("button", {
+    class:"btn", style:"margin-top:10px;margin-right:8px",
+    onclick: async (e) => {
+      const btn = e.target; btn.disabled = true; btn.textContent = "查询中…";
+      try {
+        const r = await API.checkVerification(site.id, method);
+        out.textContent = "";
+        if (r.status === "verified") {
+          out.append(el("div", {class:"err", style:"background:var(--bg-raised);border-color:var(--accent)"},
+            el("div", {class:"t"}, "验证通过"), el("div", {class:"d"}, "这个站点现在可以进监控和告警。")));
+          render();
+        } else {
+          out.append(el("div", {class:"err"},
+            el("div", {class:"t"}, "还没验证通过"),
+            el("div", {class:"d"}, "确认记录已经加上，并且等它生效（DNS 通常几分钟）。")));
+        }
+      } catch (e2) {
+        out.textContent = ""; out.append(errBox(e2));
+      } finally { btn.disabled = false; btn.textContent = label; }
+    },
+  }, label);
+
+  wrap.append(el("div", {class:"panel"},
+    el("div", {class:"panel-h"},
+      el("h2", {}, "站点归属验证"),
+      el("span", {class:"n"}, "未验证"),
+      el("div", {class:"spacer"}),
+      el("button", {class:"btn btn-sm", onclick: async () => {
+        try { await API.startVerification(site.id); render(); }
+        catch (e) { toast(e.message || String(e), "error"); }
+      }}, "生成 token")),
+    el("div", {class:"panel-b"},
+      el("p", {style:"margin:0 0 10px;color:var(--fg-muted);font-size:13px;line-height:1.7"},
+        "这条通道存在，是因为「一把钥匙只能说明你是谁，说明不了这个站是你的」。",
+        el("br"),
+        "未验证的站点可以照常体检，但**不能进监控和告警** —— 告警要持续抓取，",
+        "不验证就等于提供免费爬虫跳板。"),
+      el("div", {style:"margin-top:12px"},
+        el("div", {style:"font:600 11px/1 var(--mono);color:var(--fg-muted)"}, "TOKEN"),
+        tokBox),
+      el("div", {style:"margin-top:14px"},
+        el("div", {style:"font:600 11px/1 var(--mono);color:var(--fg-muted)"}, "方式一：DNS TXT"),
+        el("div", {style:"color:var(--fg-faint);font-size:12px;margin-top:3px"},
+          "有 DNS 权限就用这个。最难伪造。"), dnsBox,
+        checkBtn("dns", "检查 DNS")),
+      el("div", {style:"margin-top:14px"},
+        el("div", {style:"font:600 11px/1 var(--mono);color:var(--fg-muted)"}, "方式二：首页 meta"),
+        el("div", {style:"color:var(--fg-faint);font-size:12px;margin-top:3px"},
+          "WordPress 用户装个插件就行。"), metaBox,
+        checkBtn("meta", "检查 meta")),
+      out)));
+
+  void tokBox;
+}
+
+/* ── 删除站点 ─────────────────────────────────────────── */
+async function deleteSite(site) {
+  // ⚠️ 删除连带清掉这个站的页面、问题、关键词、计量记录，不可逆。
+  // 所以必须二次确认，且**把连带删掉的东西说出来** ——
+  // 只问「确定吗」等于没问。
+  const ok = window.confirm(
+    `删除 ${site.domain}？\n\n` +
+    `这会连带删除它的所有体检页面、问题记录、关键词和用量记录，**无法撤销**。\n\n` +
+    `确定要删吗？`
+  );
+  if (!ok) return;
+  try {
+    await API.deleteSite(site.id);
+    S.siteId = null;
+    S.sites = await API.sites().catch(() => S.sites.filter(x => x.id !== site.id));
+    toast(`已删除 ${site.domain}`);
+    render();
+  } catch (e) { toast(e.message || String(e), "error"); }
+}
+
+/* ── 访问钥匙设置 ─────────────────────────────────────── */
+function openKeySettings() {
+  const cur = apiKey();
+  const inp = el("input", {type:"text", placeholder:"sk-seoclaw-…",
+    value:cur, style:"width:100%"});
+  const out = el("div", {style:"margin-top:12px"});
+  const m = modal("访问钥匙", el("div", {},
+    el("div", {class:"fld"},
+      el("label", {}, "X-API-Key"),
+      inp,
+      el("div", {class:"hint"},
+        "单机部署可以留空。多个租户时，每个租户一把钥匙，只能看到自己的站点。")),
+    el("div", {style:"display:flex;gap:8px"},
+      el("button", {class:"btn btn-p", onclick: () => {
+        const v = inp.value.trim();
+        setApiKey(v);
+        m.close();
+        toast(v ? "钥匙已保存，正在按新归属重新加载" : "已清除钥匙");
+        S.sites = [];
+        S.siteId = null;
+        boot();
+      }}, "保存"),
+      cur ? el("button", {class:"btn btn-g", onclick: () => {
+        setApiKey(""); m.close();
+        toast("已清除钥匙");
+        S.sites = []; S.siteId = null; boot();
+      }}, "清除") : null),
+    out));
+  void out;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -967,6 +1143,7 @@ function openScan(site) {
    启动
    ══════════════════════════════════════════════════════════ */
 $("#btnAdd").addEventListener("click", openAdd);
+$("#btnKey").addEventListener("click", openKeySettings);
 (async function boot() {
   try {
     S.sites = await API.sites();

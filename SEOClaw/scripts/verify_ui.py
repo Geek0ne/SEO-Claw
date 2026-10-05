@@ -46,6 +46,10 @@ PROBE = r"""
     ring: q('.ring'),
     stats: q('.stat'),
     prio: q('.prio-i'),
+    verifyTab: [...document.querySelectorAll('.tab')].some(n => n.textContent.includes('归属验证')),
+    keyBtn: !!document.querySelector('#btnKey'),
+    delBtn: [...document.querySelectorAll('button')].some(n => n.textContent.trim() === '删除站点'),
+    hasKeyHeader: !!localStorage.getItem('seoclaw.api_key') || 'unset',
     emptyBoxes: q('.empty'),
     h1: [...document.querySelectorAll('h1')].map(n => n.textContent.trim()),
     domains: [...document.querySelectorAll('.site-item .d')].map(n => n.textContent.trim()),
@@ -114,7 +118,8 @@ async def main() -> int:
                 return 1
             d = json.loads(val)
             print(json.dumps(d, ensure_ascii=False, indent=2))
-            ok = d["siteButtons"] > 0 and d["tabs"] >= 5 and d["errBoxes"] == 0 and d["mainLen"] > 400
+            ok = (d["siteButtons"] > 0 and d["tabs"] >= 8 and d["errBoxes"] == 0
+      and d["mainLen"] > 400 and d["verifyTab"] and d["keyBtn"] and d["delBtn"])
             print("\n  判定：", "✓ 前端渲染成功" if ok else "✗ 有问题")
             return 0 if ok else 1
     finally:
