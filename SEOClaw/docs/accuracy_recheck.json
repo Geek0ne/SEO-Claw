@@ -1,0 +1,30 @@
+{
+  "true_positive": 221,
+  "false_positive": 6,
+  "inconclusive": 136,
+  "adjudicable": 227,
+  "precision_on_adjudicable": 0.9736,
+  "precision_if_inconclusive_all_true": 0.9835,
+  "precision_if_inconclusive_all_false": 0.9736,
+  "false_positive_by_code": {
+    "h1.missing": 3,
+    "title.missing": 2,
+    "meta.missing": 1
+  },
+  "inconclusive_by_code": {
+    "title.too_long": 32,
+    "soft404": 17,
+    "img.alt.missing": 15,
+    "meta.duplicate": 15,
+    "title.duplicate": 13,
+    "link.noanchor": 12,
+    "title.too_short": 10,
+    "canonical.conflict": 9,
+    "http.mixed_content": 6,
+    "h1.missing": 3,
+    "title.missing": 1,
+    "meta.missing": 1,
+    "h1.multiple": 1,
+    "img.alt.generic": 1
+  }
+}
