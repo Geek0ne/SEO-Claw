@@ -75,13 +75,49 @@ _LOGO_H1 = re.compile(r"logo|brand|wordmark|site-?name", re.I)
 
 
 def r_has_h1(h):
-    for m in re.finditer(r"<h1\b([^>]*)>", h, re.I):
-        if not _LOGO_H1.search(m.group(1)):
+    """⚠️ logo 型 H1 不算内容标题，**空 H1 也不算**。
+
+    forever21/nature/ifeng/smashingmagazine 把 logo 塞进
+    `<h1 class="header__logo">`；qzone 是 `<h1><i class="...logo"></i></h1>`；
+    chinaz 是 `<h1><a><img src=...></h1>`。这三种页面确实没有内容级 H1，
+    规则判「没有」是对的。
+    """
+    for m in re.finditer(r"<h1\b([^>]*)>(.*?)</h1>", h, re.I | re.S):
+        attrs, inner = m.group(1), m.group(2)
+        if _LOGO_H1.search(attrs) or _LOGO_H1.search(inner):
+            continue
+        text = re.sub(r"<[^>]+>", "", inner).strip()
+        if text:
+            return True
+        # 内容只有一个 <img>/<svg>/<i> 且没有可读文字 → 仍是图标，不是标题
+        if re.fullmatch(r"""\s*(?:<a[^>]*>)?\s*<(?:img|svg|i|span)\b[^>]*>\s*(?:</(?:img|svg|i|span)>)?\s*(?:</a>)?\s*""",
+                        inner, re.I | re.S):
+            continue
+        if re.search(r"""<(?:img|svg|i)\b""", inner, re.I):
+            continue
+    return False
+def r_has_title(h):
+    """⚠️ 必须判**内容**，不能只判标签在不在。
+
+    实跑抓到 ganji.com / ele.me：`<title></title>` —— 标签在，内容空。
+    空的 title **就是没有 title**，规则判对了，是我第一版复核器
+    「见到 <title 就放过」把它算成误报。
+    """
+    for m in re.finditer(r"<title\b[^>]*>(.*?)</title>", h, re.I | re.S):
+        if m.group(1).strip():
             return True
     return False
-def r_has_title(h):   return bool(re.search(r"<title\b", h, re.I))
-def r_has_meta(h):    return bool(re.search(
-    r"""<meta[^>]+name\s*=\s*["']description["']""", h, re.I))
+def r_has_meta(h):
+    """⚠️ 同 title：`<meta name="description" content="">` 是**空描述**，
+    等于没有。gitlink / dedao / mailchimp 三条都是这个形态。"""
+    for m in re.finditer(r"""<meta[^>]*>""", h, re.I):
+        tag = m.group(0)
+        if not re.search(r"""name\s*=\s*["']description["']""", tag, re.I):
+            continue
+        c = re.search(r"""content\s*=\s*["']([^"']*)["']""", tag, re.I)
+        if c and c.group(1).strip():
+            return True
+    return False
 def r_has_viewport(h): return bool(re.search(
     r"""<meta[^>]+name\s*=\s*["']viewport["']""", h, re.I))
 def r_has_canonical(h): return bool(re.search(

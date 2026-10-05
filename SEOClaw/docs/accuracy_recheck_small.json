@@ -1,15 +1,13 @@
 {
-  "true_positive": 91,
-  "false_positive": 7,
+  "true_positive": 96,
+  "false_positive": 2,
   "inconclusive": 45,
   "adjudicable": 98,
-  "precision_on_adjudicable": 0.9286,
-  "precision_if_inconclusive_all_true": 0.951,
-  "precision_if_inconclusive_all_false": 0.9286,
+  "precision_on_adjudicable": 0.9796,
+  "precision_if_inconclusive_all_true": 0.986,
+  "precision_if_inconclusive_all_false": 0.9796,
   "false_positive_by_code": {
-    "meta.missing": 3,
-    "h1.missing": 2,
-    "title.missing": 2
+    "h1.missing": 2
   },
   "inconclusive_by_code": {
     "title.too_long": 13,
