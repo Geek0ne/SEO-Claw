@@ -1,0 +1,2943 @@
+{
+  "summary": {
+    "sites_total": 114,
+    "sites_ok": 90,
+    "sites_error": 24,
+    "pages_crawled": 84,
+    "issues_reported": 143,
+    "auto_checked": 100,
+    "true_positive": 93,
+    "false_positive": 7,
+    "needs_human": 39,
+    "unreachable": 4,
+    "precision": 0.93,
+    "false_positive_by_code": {
+      "meta.missing": 3,
+      "h1.missing": 2,
+      "title.missing": 2
+    },
+    "top_falses": [
+      [
+        "meta.missing",
+        3
+      ],
+      [
+        "h1.missing",
+        2
+      ],
+      [
+        "title.missing",
+        2
+      ]
+    ]
+  },
+  "results": [
+    {
+      "domain": "www.xiuqi.com.cn",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "HTTPStatusError: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8077/api/v1/sites'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "elapsed": 0.1,
+      "findings": []
+    },
+    {
+      "domain": "www.51test.net",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 1.6,
+      "findings": []
+    },
+    {
+      "domain": "www.chinaz.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 7,
+      "auto_checked": 6,
+      "true_pos": 5,
+      "false_pos": 1,
+      "human": 1,
+      "unreachable": 0,
+      "false_by_code": {
+        "h1.missing": 1
+      },
+      "error": "",
+      "elapsed": 4.6,
+      "findings": [
+        {
+          "domain": "www.chinaz.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://chinaz.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.chinaz.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://zcm.chinaz.com/?ref=newsindex",
+          "verdict": "false",
+          "note": "回源 HTML 证据与判定相反（matched=True）"
+        },
+        {
+          "domain": "www.chinaz.com",
+          "code": "http.mixed_content",
+          "severity": "high",
+          "url": "https://zcm.chinaz.com/?ref=newsindex",
+          "verdict": "needs_human",
+          "note": ""
+        },
+        {
+          "domain": "www.chinaz.com",
+          "code": "canonical.missing",
+          "severity": "medium",
+          "url": "https://zcm.chinaz.com/?ref=newsindex",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.chinaz.com",
+          "code": "img.alt.missing",
+          "severity": "medium",
+          "url": "https://chinaz.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.chinaz.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://chinaz.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.chinaz.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://zcm.chinaz.com/?ref=newsindex",
+          "verdict": "true",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.tool.chinaz.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 7,
+      "auto_checked": 7,
+      "true_pos": 7,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 2.1,
+      "findings": [
+        {
+          "domain": "www.tool.chinaz.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://chinaz.com",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.tool.chinaz.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://tool.chinaz.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.tool.chinaz.com",
+          "code": "canonical.missing",
+          "severity": "medium",
+          "url": "https://chinaz.com",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.tool.chinaz.com",
+          "code": "img.alt.missing",
+          "severity": "medium",
+          "url": "https://chinaz.com",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.tool.chinaz.com",
+          "code": "img.alt.missing",
+          "severity": "medium",
+          "url": "https://tool.chinaz.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.tool.chinaz.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://chinaz.com",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.tool.chinaz.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://tool.chinaz.com/",
+          "verdict": "true",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.wd.ceshi.cn",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 4.0,
+      "findings": []
+    },
+    {
+      "domain": "www.hao123.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 1.3,
+      "findings": []
+    },
+    {
+      "domain": "www.hudong.com",
+      "status": "ok",
+      "pages": 1,
+      "total_issues": 1,
+      "auto_checked": 1,
+      "true_pos": 1,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 3.6,
+      "findings": [
+        {
+          "domain": "www.hudong.com",
+          "code": "meta.missing",
+          "severity": "high",
+          "url": "https://hudong.com/",
+          "verdict": "true",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.duowan.com",
+      "status": "ok",
+      "pages": 1,
+      "total_issues": 1,
+      "auto_checked": 1,
+      "true_pos": 1,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 1.2,
+      "findings": [
+        {
+          "domain": "www.duowan.com",
+          "code": "meta.missing",
+          "severity": "high",
+          "url": "https://duowan.com/",
+          "verdict": "true",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.csdn.net.cn",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 4.4,
+      "findings": []
+    },
+    {
+      "domain": "www.it165.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 3.5,
+      "findings": []
+    },
+    {
+      "domain": "www.chinabyte.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 7,
+      "auto_checked": 7,
+      "true_pos": 7,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 4.2,
+      "findings": [
+        {
+          "domain": "www.chinabyte.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://chinabyte.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.chinabyte.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://server.chinabyte.com",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.chinabyte.com",
+          "code": "canonical.missing",
+          "severity": "medium",
+          "url": "https://server.chinabyte.com",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.chinabyte.com",
+          "code": "img.alt.missing",
+          "severity": "medium",
+          "url": "https://chinabyte.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.chinabyte.com",
+          "code": "img.alt.missing",
+          "severity": "medium",
+          "url": "https://server.chinabyte.com",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.chinabyte.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://chinabyte.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.chinabyte.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://server.chinabyte.com",
+          "verdict": "true",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.jb51.net",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 4,
+      "auto_checked": 3,
+      "true_pos": 3,
+      "false_pos": 0,
+      "human": 1,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 3.2,
+      "findings": [
+        {
+          "domain": "www.jb51.net",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://jb51.net/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.jb51.net",
+          "code": "canonical.missing",
+          "severity": "medium",
+          "url": "http://s.jb51.net",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.jb51.net",
+          "code": "img.alt.missing",
+          "severity": "medium",
+          "url": "http://s.jb51.net",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.jb51.net",
+          "code": "title.too_long",
+          "severity": "medium",
+          "url": "http://s.jb51.net",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.verychan.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 1.9,
+      "findings": []
+    },
+    {
+      "domain": "www.xiangjiesuo.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 2.7,
+      "findings": []
+    },
+    {
+      "domain": "www.114la.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 6,
+      "auto_checked": 4,
+      "true_pos": 4,
+      "false_pos": 0,
+      "human": 2,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 6.9,
+      "findings": [
+        {
+          "domain": "www.114la.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://114la.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.114la.com",
+          "code": "canonical.missing",
+          "severity": "medium",
+          "url": "https://114la.com/news/261831.html",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.114la.com",
+          "code": "img.alt.missing",
+          "severity": "medium",
+          "url": "https://114la.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.114la.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://114la.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.114la.com",
+          "code": "title.too_long",
+          "severity": "medium",
+          "url": "https://114la.com/",
+          "verdict": "needs_human",
+          "note": ""
+        },
+        {
+          "domain": "www.114la.com",
+          "code": "title.too_long",
+          "severity": "medium",
+          "url": "https://114la.com/news/261831.html",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.qzone.qq.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 5,
+      "auto_checked": 3,
+      "true_pos": 2,
+      "false_pos": 1,
+      "human": 2,
+      "unreachable": 0,
+      "false_by_code": {
+        "h1.missing": 1
+      },
+      "error": "",
+      "elapsed": 2.5,
+      "findings": [
+        {
+          "domain": "www.qzone.qq.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "http://qz.qzone.qq.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.qzone.qq.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://qzone.qq.com/",
+          "verdict": "false",
+          "note": "回源 HTML 证据与判定相反（matched=True）"
+        },
+        {
+          "domain": "www.qzone.qq.com",
+          "code": "canonical.missing",
+          "severity": "medium",
+          "url": "http://qz.qzone.qq.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.qzone.qq.com",
+          "code": "soft404",
+          "severity": "medium",
+          "url": "http://qz.qzone.qq.com/",
+          "verdict": "needs_human",
+          "note": ""
+        },
+        {
+          "domain": "www.qzone.qq.com",
+          "code": "soft404",
+          "severity": "info",
+          "url": "https://qzone.qq.com/",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.iqiyi.com",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.5dyd.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 1.9,
+      "findings": []
+    },
+    {
+      "domain": "www.ylrz.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 74.5,
+      "findings": []
+    },
+    {
+      "domain": "www.weidian.com",
+      "status": "ok",
+      "pages": 1,
+      "total_issues": 4,
+      "auto_checked": 2,
+      "true_pos": 2,
+      "false_pos": 0,
+      "human": 2,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 2.4,
+      "findings": [
+        {
+          "domain": "www.weidian.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://weidian.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.weidian.com",
+          "code": "meta.missing",
+          "severity": "high",
+          "url": "https://weidian.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.weidian.com",
+          "code": "soft404",
+          "severity": "high",
+          "url": "https://weidian.com/",
+          "verdict": "needs_human",
+          "note": ""
+        },
+        {
+          "domain": "www.weidian.com",
+          "code": "title.too_short",
+          "severity": "low",
+          "url": "https://weidian.com/",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.manmanbuy.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 10.4,
+      "findings": []
+    },
+    {
+      "domain": "www.smzdm.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 5,
+      "auto_checked": 4,
+      "true_pos": 4,
+      "false_pos": 0,
+      "human": 1,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 8.2,
+      "findings": [
+        {
+          "domain": "www.smzdm.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://smzdm.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.smzdm.com",
+          "code": "meta.missing",
+          "severity": "high",
+          "url": "https://www.smzdm.com/fenlei/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.smzdm.com",
+          "code": "img.alt.missing",
+          "severity": "medium",
+          "url": "https://smzdm.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.smzdm.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://smzdm.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.smzdm.com",
+          "code": "title.too_short",
+          "severity": "low",
+          "url": "https://www.smzdm.com/fenlei/",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.ganji.com",
+      "status": "ok",
+      "pages": 1,
+      "total_issues": 4,
+      "auto_checked": 3,
+      "true_pos": 2,
+      "false_pos": 1,
+      "human": 1,
+      "unreachable": 0,
+      "false_by_code": {
+        "title.missing": 1
+      },
+      "error": "",
+      "elapsed": 1.2,
+      "findings": [
+        {
+          "domain": "www.ganji.com",
+          "code": "title.missing",
+          "severity": "critical",
+          "url": "https://ganji.com/",
+          "verdict": "false",
+          "note": "回源 HTML 证据与判定相反（matched=True）"
+        },
+        {
+          "domain": "www.ganji.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://ganji.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.ganji.com",
+          "code": "meta.missing",
+          "severity": "high",
+          "url": "https://ganji.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.ganji.com",
+          "code": "soft404",
+          "severity": "high",
+          "url": "https://ganji.com/",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.58.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 6,
+      "auto_checked": 6,
+      "true_pos": 6,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 2.7,
+      "findings": [
+        {
+          "domain": "www.58.com",
+          "code": "title.missing",
+          "severity": "critical",
+          "url": "http://www.58.com/sitemap.xml",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.58.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "http://www.58.com/sitemap.xml",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.58.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://58.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.58.com",
+          "code": "meta.missing",
+          "severity": "high",
+          "url": "http://www.58.com/sitemap.xml",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.58.com",
+          "code": "canonical.missing",
+          "severity": "medium",
+          "url": "http://www.58.com/sitemap.xml",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.58.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://58.com/",
+          "verdict": "true",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.kanzhun.com",
+      "status": "ok",
+      "pages": 1,
+      "total_issues": 1,
+      "auto_checked": 1,
+      "true_pos": 1,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 2.0,
+      "findings": [
+        {
+          "domain": "www.kanzhun.com",
+          "code": "meta.missing",
+          "severity": "high",
+          "url": "https://kanzhun.com/",
+          "verdict": "true",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.laodongfa.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 0.9,
+      "findings": []
+    },
+    {
+      "domain": "www.chinahr.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 4,
+      "auto_checked": 4,
+      "true_pos": 4,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 2.4,
+      "findings": [
+        {
+          "domain": "www.chinahr.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://chinahr.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.chinahr.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://chinahr.com/job",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.chinahr.com",
+          "code": "canonical.missing",
+          "severity": "medium",
+          "url": "https://chinahr.com/job",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.chinahr.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://chinahr.com/",
+          "verdict": "true",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.jobui.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 41.0,
+      "findings": []
+    },
+    {
+      "domain": "www.job51.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 81.1,
+      "findings": []
+    },
+    {
+      "domain": "www.zhipin.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 4,
+      "auto_checked": 4,
+      "true_pos": 4,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 3.8,
+      "findings": [
+        {
+          "domain": "www.zhipin.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://zhipin.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.zhipin.com",
+          "code": "meta.missing",
+          "severity": "high",
+          "url": "https://www.zhipin.com/web/geek/jobs",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.zhipin.com",
+          "code": "canonical.missing",
+          "severity": "medium",
+          "url": "https://www.zhipin.com/web/geek/jobs",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.zhipin.com",
+          "code": "img.alt.missing",
+          "severity": "medium",
+          "url": "https://zhipin.com/",
+          "verdict": "true",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.liepin.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 4,
+      "auto_checked": 3,
+      "true_pos": 3,
+      "false_pos": 0,
+      "human": 1,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 3.1,
+      "findings": [
+        {
+          "domain": "www.liepin.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://liepin.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.liepin.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://www.liepin.com/citylist/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.liepin.com",
+          "code": "canonical.missing",
+          "severity": "medium",
+          "url": "https://www.liepin.com/citylist/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.liepin.com",
+          "code": "title.too_short",
+          "severity": "low",
+          "url": "https://www.liepin.com/citylist/",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.gongzuochang.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 0.7,
+      "findings": []
+    },
+    {
+      "domain": "www.k.sina.com.cn",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 6,
+      "auto_checked": 3,
+      "true_pos": 3,
+      "false_pos": 0,
+      "human": 3,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 7.7,
+      "findings": [
+        {
+          "domain": "www.k.sina.com.cn",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://k.sina.com.cn/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.k.sina.com.cn",
+          "code": "http.mixed_content",
+          "severity": "high",
+          "url": "https://k.sina.com.cn/article_7879995911_1d5af320706802pek4.html",
+          "verdict": "needs_human",
+          "note": ""
+        },
+        {
+          "domain": "www.k.sina.com.cn",
+          "code": "canonical.conflict",
+          "severity": "medium",
+          "url": "https://k.sina.com.cn/article_7879995911_1d5af320706802pek4.html",
+          "verdict": "needs_human",
+          "note": ""
+        },
+        {
+          "domain": "www.k.sina.com.cn",
+          "code": "img.alt.missing",
+          "severity": "medium",
+          "url": "https://k.sina.com.cn/article_7879995911_1d5af320706802pek4.html",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.k.sina.com.cn",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://k.sina.com.cn/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.k.sina.com.cn",
+          "code": "title.too_long",
+          "severity": "medium",
+          "url": "https://k.sina.com.cn/article_7879995911_1d5af320706802pek4.html",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.iqiyi.cn",
+      "status": "ok",
+      "pages": 1,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 0.8,
+      "findings": []
+    },
+    {
+      "domain": "www.youku.cn",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 0.7,
+      "findings": []
+    },
+    {
+      "domain": "www.tudou.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 5,
+      "auto_checked": 3,
+      "true_pos": 3,
+      "false_pos": 0,
+      "human": 2,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 4.4,
+      "findings": [
+        {
+          "domain": "www.tudou.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://compaign.tudou.com/down?pub=cc8a86d9ccd48187",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.tudou.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://tudou.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.tudou.com",
+          "code": "title.duplicate",
+          "severity": "high",
+          "url": "https://www.www.tudou.com/",
+          "verdict": "needs_human",
+          "note": ""
+        },
+        {
+          "domain": "www.tudou.com",
+          "code": "canonical.missing",
+          "severity": "medium",
+          "url": "https://compaign.tudou.com/down?pub=cc8a86d9ccd48187",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.tudou.com",
+          "code": "meta.duplicate",
+          "severity": "medium",
+          "url": "https://www.www.tudou.com/",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.xiangrikundianping.com",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "HTTPStatusError: Server error '500 Internal Server Error' for url 'http://127.0.0.1:8077/api/v1/sites'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.dianping.com",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.1,
+      "findings": []
+    },
+    {
+      "domain": "www.meituan.com",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.waimai.meituan.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 0.9,
+      "findings": []
+    },
+    {
+      "domain": "www.gome.com.cn",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.suning.cn",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 0.4,
+      "findings": []
+    },
+    {
+      "domain": "www.jd.cn",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 3,
+      "auto_checked": 2,
+      "true_pos": 2,
+      "false_pos": 0,
+      "human": 1,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 2.6,
+      "findings": [
+        {
+          "domain": "www.jd.cn",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://list.jd.com/list.html?cat=37462",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.jd.cn",
+          "code": "canonical.missing",
+          "severity": "medium",
+          "url": "https://list.jd.com/list.html?cat=37462",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.jd.cn",
+          "code": "title.too_long",
+          "severity": "medium",
+          "url": "https://jd.cn/",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.tmall.cn",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 0.9,
+      "findings": []
+    },
+    {
+      "domain": "www.yhd.cn",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 6.0,
+      "findings": []
+    },
+    {
+      "domain": "www.vip.cn",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 8,
+      "auto_checked": 3,
+      "true_pos": 3,
+      "false_pos": 0,
+      "human": 5,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 22.4,
+      "findings": [
+        {
+          "domain": "www.vip.cn",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://vip.cn/slowisfast",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.vip.cn",
+          "code": "http.mixed_content",
+          "severity": "high",
+          "url": "https://vip.cn/",
+          "verdict": "needs_human",
+          "note": ""
+        },
+        {
+          "domain": "www.vip.cn",
+          "code": "http.mixed_content",
+          "severity": "high",
+          "url": "https://vip.cn/slowisfast",
+          "verdict": "needs_human",
+          "note": ""
+        },
+        {
+          "domain": "www.vip.cn",
+          "code": "meta.missing",
+          "severity": "high",
+          "url": "https://vip.cn/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.vip.cn",
+          "code": "meta.missing",
+          "severity": "high",
+          "url": "https://vip.cn/slowisfast",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.vip.cn",
+          "code": "canonical.conflict",
+          "severity": "medium",
+          "url": "https://vip.cn/slowisfast",
+          "verdict": "needs_human",
+          "note": ""
+        },
+        {
+          "domain": "www.vip.cn",
+          "code": "soft404",
+          "severity": "medium",
+          "url": "https://vip.cn/",
+          "verdict": "needs_human",
+          "note": ""
+        },
+        {
+          "domain": "www.vip.cn",
+          "code": "soft404",
+          "severity": "medium",
+          "url": "https://vip.cn/slowisfast",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.cnblogs.com",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.1,
+      "findings": []
+    },
+    {
+      "domain": "www.jianshu.com",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.zhihu.com",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.oschina.net",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.segmentfault.com",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.gitee.com",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.gitlink.org.cn",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 2,
+      "auto_checked": 2,
+      "true_pos": 1,
+      "false_pos": 1,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {
+        "meta.missing": 1
+      },
+      "error": "",
+      "elapsed": 4.9,
+      "findings": [
+        {
+          "domain": "www.gitlink.org.cn",
+          "code": "meta.missing",
+          "severity": "high",
+          "url": "https://www.gitlink.org.cn/wbtiger/redmine-mobile-mirrorgithub",
+          "verdict": "false",
+          "note": "回源 HTML 证据与判定相反（matched=True）"
+        },
+        {
+          "domain": "www.gitlink.org.cn",
+          "code": "img.alt.missing",
+          "severity": "medium",
+          "url": "https://www.gitlink.org.cn/wbtiger/redmine-mobile-mirrorgithub",
+          "verdict": "true",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.sourceforge.net",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.ctrip.com",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.qunar.com",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.tongcheng.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 0.5,
+      "findings": []
+    },
+    {
+      "domain": "www.lvmama.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 0.3,
+      "findings": []
+    },
+    {
+      "domain": "www.dfys.cn",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 0.2,
+      "findings": []
+    },
+    {
+      "domain": "www.17u.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 0.8,
+      "findings": []
+    },
+    {
+      "domain": "www.dedao.cn",
+      "status": "ok",
+      "pages": 1,
+      "total_issues": 1,
+      "auto_checked": 1,
+      "true_pos": 0,
+      "false_pos": 1,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {
+        "meta.missing": 1
+      },
+      "error": "",
+      "elapsed": 2.3,
+      "findings": [
+        {
+          "domain": "www.dedao.cn",
+          "code": "meta.missing",
+          "severity": "high",
+          "url": "https://dedao.cn/",
+          "verdict": "false",
+          "note": "回源 HTML 证据与判定相反（matched=True）"
+        }
+      ]
+    },
+    {
+      "domain": "www.dangdang.com",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.joyo.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 81.3,
+      "findings": []
+    },
+    {
+      "domain": "www.amazon.cn",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 4,
+      "auto_checked": 3,
+      "true_pos": 3,
+      "false_pos": 0,
+      "human": 1,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 3.9,
+      "findings": [
+        {
+          "domain": "www.amazon.cn",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://amazon.cn/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.amazon.cn",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://gs.amazon.cn/home?ld=AZCNSOAFooter",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.amazon.cn",
+          "code": "meta.missing",
+          "severity": "high",
+          "url": "https://amazon.cn/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.amazon.cn",
+          "code": "title.too_long",
+          "severity": "medium",
+          "url": "https://gs.amazon.cn/home?ld=AZCNSOAFooter",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.daojia.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 2,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 2,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 3.0,
+      "findings": [
+        {
+          "domain": "www.daojia.com",
+          "code": "title.duplicate",
+          "severity": "high",
+          "url": "https://www.www.daojia.com/",
+          "verdict": "needs_human",
+          "note": ""
+        },
+        {
+          "domain": "www.daojia.com",
+          "code": "meta.duplicate",
+          "severity": "medium",
+          "url": "https://www.www.daojia.com/",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.ele.me",
+      "status": "ok",
+      "pages": 1,
+      "total_issues": 3,
+      "auto_checked": 2,
+      "true_pos": 1,
+      "false_pos": 1,
+      "human": 1,
+      "unreachable": 0,
+      "false_by_code": {
+        "title.missing": 1
+      },
+      "error": "",
+      "elapsed": 3.4,
+      "findings": [
+        {
+          "domain": "www.ele.me",
+          "code": "title.missing",
+          "severity": "critical",
+          "url": "https://ele.me/",
+          "verdict": "false",
+          "note": "回源 HTML 证据与判定相反（matched=True）"
+        },
+        {
+          "domain": "www.ele.me",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://ele.me/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.ele.me",
+          "code": "soft404",
+          "severity": "high",
+          "url": "https://ele.me/",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.cainiao.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 4,
+      "auto_checked": 3,
+      "true_pos": 3,
+      "false_pos": 0,
+      "human": 1,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 2.8,
+      "findings": [
+        {
+          "domain": "www.cainiao.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://cainiao.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.cainiao.com",
+          "code": "canonical.missing",
+          "severity": "medium",
+          "url": "https://www.cainiao.com/chn-supply-chain.html",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.cainiao.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://www.cainiao.com/chn-supply-chain.html",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.cainiao.com",
+          "code": "title.too_long",
+          "severity": "medium",
+          "url": "https://www.cainiao.com/chn-supply-chain.html",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.kuaidi100.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 8,
+      "auto_checked": 5,
+      "true_pos": 5,
+      "false_pos": 0,
+      "human": 2,
+      "unreachable": 1,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 2.3,
+      "findings": [
+        {
+          "domain": "www.kuaidi100.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://kuaidi100.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.kuaidi100.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://www.kuaidi100.com/user/",
+          "verdict": "unreachable",
+          "note": "回源抓不到（403/超时/JS 注入），无法证实也无法证伪"
+        },
+        {
+          "domain": "www.kuaidi100.com",
+          "code": "meta.missing",
+          "severity": "high",
+          "url": "https://www.kuaidi100.com/user/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.kuaidi100.com",
+          "code": "canonical.missing",
+          "severity": "medium",
+          "url": "https://www.kuaidi100.com/user/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.kuaidi100.com",
+          "code": "img.alt.missing",
+          "severity": "medium",
+          "url": "https://kuaidi100.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.kuaidi100.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://kuaidi100.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.kuaidi100.com",
+          "code": "soft404",
+          "severity": "medium",
+          "url": "https://www.kuaidi100.com/user/",
+          "verdict": "needs_human",
+          "note": ""
+        },
+        {
+          "domain": "www.kuaidi100.com",
+          "code": "title.too_short",
+          "severity": "low",
+          "url": "https://www.kuaidi100.com/user/",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.japanpost.cn",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 0.2,
+      "findings": []
+    },
+    {
+      "domain": "www.asahi.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 4,
+      "auto_checked": 2,
+      "true_pos": 2,
+      "false_pos": 0,
+      "human": 1,
+      "unreachable": 1,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 74.1,
+      "findings": [
+        {
+          "domain": "www.asahi.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://asahi.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.asahi.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://asahi.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.asahi.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://www.asahi.com/articles/ASV4X4GHLV4XPTIL00HM.html",
+          "verdict": "unreachable",
+          "note": "回源抓不到（403/超时/JS 注入），无法证实也无法证伪"
+        },
+        {
+          "domain": "www.asahi.com",
+          "code": "title.too_long",
+          "severity": "medium",
+          "url": "https://www.asahi.com/articles/ASV4X4GHLV4XPTIL00HM.html",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.yomiuri.co.jp",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 80.4,
+      "findings": []
+    },
+    {
+      "domain": "www.mainichi.jp",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 80.3,
+      "findings": []
+    },
+    {
+      "domain": "www.ghost.org",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 1,
+      "auto_checked": 1,
+      "true_pos": 1,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 14.7,
+      "findings": [
+        {
+          "domain": "www.ghost.org",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://ghost.org/about/",
+          "verdict": "true",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.hashnode.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 4.6,
+      "findings": []
+    },
+    {
+      "domain": "www.dev.to",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.hackernoon.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 29.1,
+      "findings": []
+    },
+    {
+      "domain": "www.freeCodeCamp.org",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 3,
+      "auto_checked": 2,
+      "true_pos": 2,
+      "false_pos": 0,
+      "human": 1,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 20.8,
+      "findings": [
+        {
+          "domain": "www.freeCodeCamp.org",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://www.freecodecamp.org/news/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.freeCodeCamp.org",
+          "code": "meta.missing",
+          "severity": "high",
+          "url": "https://freecodecamp.org/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.freeCodeCamp.org",
+          "code": "title.too_long",
+          "severity": "medium",
+          "url": "https://www.freecodecamp.org/news/",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.smashingmagazine.com",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.css-tricks.com",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.awwwards.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 5.3,
+      "findings": []
+    },
+    {
+      "domain": "www.sitepoint.com",
+      "status": "ok",
+      "pages": 1,
+      "total_issues": 1,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 1,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 33.8,
+      "findings": [
+        {
+          "domain": "www.sitepoint.com",
+          "code": "title.too_long",
+          "severity": "medium",
+          "url": "https://www.sitepoint.com/community/t/svg-img-tag-sprite-generator-feedback/490713",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.web.dev",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.developers.google.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 80.3,
+      "findings": []
+    },
+    {
+      "domain": "www.developer.mozilla.org",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.1,
+      "findings": []
+    },
+    {
+      "domain": "www.namecheap.com",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.wp.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 3,
+      "auto_checked": 2,
+      "true_pos": 2,
+      "false_pos": 0,
+      "human": 1,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 23.8,
+      "findings": [
+        {
+          "domain": "www.wp.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://wordpress.com/zh-cn/support/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.wp.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://wordpress.com/zh-cn/support/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.wp.com",
+          "code": "title.too_long",
+          "severity": "medium",
+          "url": "https://wordpress.com/zh-cn/support/",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.wordpress.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 2,
+      "auto_checked": 2,
+      "true_pos": 2,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 13.8,
+      "findings": [
+        {
+          "domain": "www.wordpress.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://wordpress.com/tos/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.wordpress.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://wordpress.com/tos/",
+          "verdict": "true",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.ghost.io",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 11.6,
+      "findings": []
+    },
+    {
+      "domain": "www.convertkit.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 14.7,
+      "findings": []
+    },
+    {
+      "domain": "www.mailchimp.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 2,
+      "auto_checked": 1,
+      "true_pos": 0,
+      "false_pos": 1,
+      "human": 1,
+      "unreachable": 0,
+      "false_by_code": {
+        "meta.missing": 1
+      },
+      "error": "",
+      "elapsed": 17.4,
+      "findings": [
+        {
+          "domain": "www.mailchimp.com",
+          "code": "meta.missing",
+          "severity": "high",
+          "url": "https://mailchimp.com/case-studies/riot-fest-sms-marketing/",
+          "verdict": "false",
+          "note": "回源 HTML 证据与判定相反（matched=True）"
+        },
+        {
+          "domain": "www.mailchimp.com",
+          "code": "title.too_long",
+          "severity": "medium",
+          "url": "https://mailchimp.com/case-studies/riot-fest-sms-marketing/",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.brevo.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 6.8,
+      "findings": []
+    },
+    {
+      "domain": "www.hubspot.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 1,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 1,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 10.1,
+      "findings": [
+        {
+          "domain": "www.hubspot.com",
+          "code": "title.too_long",
+          "severity": "medium",
+          "url": "https://www.hubspot.com/company-news/hubspots-inbound-2013-conference-kicks-off-today-in-downtown-boston",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.tinysite.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 0.3,
+      "findings": []
+    },
+    {
+      "domain": "www.neocities.org",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 5.8,
+      "findings": []
+    },
+    {
+      "domain": "www.github.io",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.1,
+      "findings": []
+    },
+    {
+      "domain": "www.netlify.app",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 4.7,
+      "findings": []
+    },
+    {
+      "domain": "www.vercel.app",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 80.3,
+      "findings": []
+    },
+    {
+      "domain": "www.wixsite.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 80.3,
+      "findings": []
+    },
+    {
+      "domain": "www.weebly.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 2.4,
+      "findings": []
+    },
+    {
+      "domain": "www.squarespace.com",
+      "status": "error",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "StopIteration: ",
+      "elapsed": 0.0,
+      "findings": []
+    },
+    {
+      "domain": "www.smallpdf.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 9.9,
+      "findings": []
+    },
+    {
+      "domain": "www.typeform.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 3,
+      "auto_checked": 3,
+      "true_pos": 3,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 20.0,
+      "findings": [
+        {
+          "domain": "www.typeform.com",
+          "code": "h1.missing",
+          "severity": "high",
+          "url": "https://typeform.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.typeform.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://typeform.com/",
+          "verdict": "true",
+          "note": ""
+        },
+        {
+          "domain": "www.typeform.com",
+          "code": "link.noanchor",
+          "severity": "medium",
+          "url": "https://www.typeform.com/quizzes",
+          "verdict": "true",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.jotform.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 59.9,
+      "findings": []
+    },
+    {
+      "domain": "www.calendly.com",
+      "status": "ok",
+      "pages": 1,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 7.9,
+      "findings": []
+    },
+    {
+      "domain": "www.zoom.us",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 2,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 2,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 7.0,
+      "findings": [
+        {
+          "domain": "www.zoom.us",
+          "code": "title.too_short",
+          "severity": "low",
+          "url": "https://zoom.us/join",
+          "verdict": "needs_human",
+          "note": ""
+        },
+        {
+          "domain": "www.zoom.us",
+          "code": "canonical.conflict",
+          "severity": "info",
+          "url": "https://zoom.us/join",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.loom.com",
+      "status": "ok",
+      "pages": 2,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 10.8,
+      "findings": []
+    },
+    {
+      "domain": "www.grammarly.com",
+      "status": "ok",
+      "pages": 1,
+      "total_issues": 1,
+      "auto_checked": 1,
+      "true_pos": 1,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 55.0,
+      "findings": [
+        {
+          "domain": "www.grammarly.com",
+          "code": "img.alt.missing",
+          "severity": "medium",
+          "url": "https://grammarly.com/",
+          "verdict": "true",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.hemingway.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 5.7,
+      "findings": []
+    },
+    {
+      "domain": "www.quillbot.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 2.2,
+      "findings": []
+    },
+    {
+      "domain": "www.unsplash.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 4,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 2,
+      "unreachable": 2,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 70.2,
+      "findings": [
+        {
+          "domain": "www.unsplash.com",
+          "code": "img.alt.missing",
+          "severity": "medium",
+          "url": "https://unsplash.com/",
+          "verdict": "unreachable",
+          "note": "回源抓不到（403/超时/JS 注入），无法证实也无法证伪"
+        },
+        {
+          "domain": "www.unsplash.com",
+          "code": "img.alt.missing",
+          "severity": "medium",
+          "url": "https://unsplash.com/de/s/fotos/007",
+          "verdict": "unreachable",
+          "note": "回源抓不到（403/超时/JS 注入），无法证实也无法证伪"
+        },
+        {
+          "domain": "www.unsplash.com",
+          "code": "title.too_short",
+          "severity": "low",
+          "url": "https://unsplash.com/",
+          "verdict": "needs_human",
+          "note": ""
+        },
+        {
+          "domain": "www.unsplash.com",
+          "code": "title.too_short",
+          "severity": "low",
+          "url": "https://unsplash.com/de/s/fotos/007",
+          "verdict": "needs_human",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "domain": "www.pexels.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 28.5,
+      "findings": []
+    },
+    {
+      "domain": "www.pixabay.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 1.6,
+      "findings": []
+    },
+    {
+      "domain": "www.producthunt.com",
+      "status": "ok",
+      "pages": 0,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 3.8,
+      "findings": []
+    },
+    {
+      "domain": "www.indiehackers.com",
+      "status": "ok",
+      "pages": 1,
+      "total_issues": 0,
+      "auto_checked": 0,
+      "true_pos": 0,
+      "false_pos": 0,
+      "human": 0,
+      "unreachable": 0,
+      "false_by_code": {},
+      "error": "",
+      "elapsed": 16.2,
+      "findings": []
+    }
+  ]
+}

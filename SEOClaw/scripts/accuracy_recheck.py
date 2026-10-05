@@ -42,7 +42,12 @@ def has_content_h1(h: str) -> bool:
 
 
 def main() -> int:
-    rep = json.loads((ROOT / "docs" / "accuracy_report.json").read_text("utf-8"))
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--report", default=str(ROOT / "docs" / "accuracy_report.json"))
+    ap.add_argument("--out", default=str(ROOT / "docs" / "accuracy_recheck.json"))
+    a = ap.parse_args()
+    rep = json.loads(Path(a.report).read_text("utf-8"))
     con = sqlite3.connect(CACHE)
 
     tp = fp = inc = 0
@@ -89,7 +94,7 @@ def main() -> int:
         "false_positive_by_code": dict(fp_by_code.most_common()),
         "inconclusive_by_code": dict(inc_by_code.most_common()),
     }
-    (ROOT / "docs" / "accuracy_recheck.json").write_text(
+    Path(a.out).write_text(
         json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(out, ensure_ascii=False, indent=2))
     return 0

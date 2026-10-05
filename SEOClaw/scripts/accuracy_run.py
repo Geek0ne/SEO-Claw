@@ -300,8 +300,9 @@ def audit_site(domain: str, pages: int) -> SiteResult:
     return res
 
 
-def load_corpus(limit: int | None) -> list[str]:
-    out = [l.strip() for l in CORPUS.read_text(encoding="utf-8").splitlines()
+def load_corpus(limit: int | None, path: Path | None = None) -> list[str]:
+    f = path or CORPUS
+    out = [l.strip() for l in f.read_text(encoding="utf-8").splitlines()
            if l.strip() and not l.startswith("#")]
     return out[:limit] if limit else out
 
@@ -341,10 +342,13 @@ def main() -> int:
     ap.add_argument("--pages", type=int, default=2)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--out", default=str(ROOT / "docs" / "accuracy_report.json"))
+    ap.add_argument("--corpus", default=None,
+                    help="语料文件路径；默认 200 站知名站语料")
     args = ap.parse_args()
 
     init_cache()
-    sites = load_corpus(args.limit)
+    corpus = Path(args.corpus) if args.corpus else CORPUS
+    sites = load_corpus(args.limit, corpus)
     print(f"语料 {len(sites)} 站 / 每站 {args.pages} 页 / {args.workers} 并发", flush=True)
 
     results: list[SiteResult] = []
