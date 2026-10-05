@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncIterator
 
+from .api.auth import auth_middleware
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -40,6 +41,10 @@ def create_app() -> FastAPI:
         description="站点 SEO 健康审计服务",
         lifespan=lifespan,
     )
+    # ⚠️ 鉴权做成中间件而不是逐端点加参数：站点相关端点有 15 个，
+    # 逐个加意味着以后新增端点时**忘了加就会静默越权**，而漏掉的那一个
+    # 不会报错、只会放行 —— 那是最坏的失败方式。
+    app.middleware("http")(auth_middleware)
     app.include_router(router)
     app.include_router(web_router)
 

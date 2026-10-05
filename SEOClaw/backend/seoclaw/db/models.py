@@ -194,6 +194,9 @@ class Site(Base, TimestampMixin):
     """被接入的站点。租户边界，所有业务表的外键都指向它。"""
 
     __tablename__ = "sites"
+    __table_args__ = (
+        Index("ix_sites_owner", "owner"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     # 存规范化后的 host（去 www、去尾斜杠、小写）。规范化在应用层做，
@@ -208,6 +211,24 @@ class Site(Base, TimestampMixin):
         JSONType, default=dict, nullable=False
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    #: 归属租户。⚠️ 默认 "local" —— 自部署单机没有租户概念，
+    #: 把所有老数据一次性归到 local，鉴权层也因此能在未开鉴权时放行。
+    owner: Mapped[str] = mapped_column(
+        String(64), nullable=False, default="local"
+    )
+    #: 归属验证。token 由服务端生成，用户把它放进 DNS TXT 或 HTML meta，
+    #: 再回来校验 —— 见 verification.py。
+    verify_token: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    #: unverified / verified
+    verify_status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="unverified"
+    )
+    #: dns / meta —— 记录用户实际用哪种通过的，排查时有用
+    verify_method: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    verified_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     pages: Mapped[list["Page"]] = relationship(
         back_populates="site", cascade="all, delete-orphan", passive_deletes=True
@@ -616,6 +637,39 @@ class Suggestion(Base, TimestampMixin):
 # --------------------------------------------------------------------------
 
 
+class ApiKey(Base):
+    """一张访问钥匙。
+
+    ⚠️ **只存哈希，不存明文。** 库里被拖走时，攻击者拿到的仍只是
+    sha256；明文只在创建那一刻返回一次，丢了只能重发不能找回 —— 这是
+    有意的代价。若存明文，一次 SQL 注入就等于交出所有租户的钥匙。
+    """
+
+    __tablename__ = "api_keys"
+    __table_args__ = (
+        UniqueConstraint("key_hash", name="uq_api_key_hash"),
+        Index("ix_api_key_owner", "owner"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    #: 归属标识。自部署单机时恒为 "local"；SaaS 时是租户 id。
+    owner: Mapped[str] = mapped_column(String(64), nullable=False)
+    name: Mapped[str] = mapped_column(String(64), nullable=False, default="default")
+    #: 明文前 8 位，只为让用户能在列表里认出是哪一把
+    key_prefix: Mapped[str] = mapped_column(String(16), nullable=False)
+    key_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    last_used_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    #: 撤销而非删除：删了 key，历史计量就找不到归属了
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
 class RankAlertAck(Base):
     """一条排名跌幅告警的「已看过」标记。
 
@@ -751,4 +805,5 @@ __all__ = [
     "RankHistory",
     "UsageEvent",
     "RankAlertAck",
+    "ApiKey",
 ]

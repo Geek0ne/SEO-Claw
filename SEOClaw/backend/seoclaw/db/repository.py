@@ -232,11 +232,18 @@ class SiteRepository:
         return (await self.session.execute(stmt)).scalar_one_or_none()
 
     async def list(
-        self, *, limit: int = 20, offset: int = 0, active_only: bool = False
+        self, *,
+        limit: int = 20, offset: int = 0, active_only: bool = False,
+        owner: Optional[str] = None,
     ) -> Page:
         stmt = select(m.Site)
         if active_only:
             stmt = stmt.where(m.Site.is_active.is_(True))
+        # ⚠️ owner 过滤**在 WHERE 里，不在应用层**。应用层过滤要先把全部
+        # 行读出来再筛 —— 那意味着分页 total 会算上别人的站，而且站点
+        # 一多就退化成全表扫。租户边界必须在查询里就成立。
+        if owner is not None:
+            stmt = stmt.where(m.Site.owner == owner)
         stmt = stmt.order_by(m.Site.id)
         return await paginate(self.session, stmt, limit=limit, offset=offset)
 

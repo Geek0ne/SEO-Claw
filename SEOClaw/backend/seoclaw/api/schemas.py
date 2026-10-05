@@ -252,6 +252,46 @@ class RankAlertOut(BaseModel):
     alert_key: str = ""
 
 
+class QuotaOut(BaseModel):
+    used: int
+    #: None = 不限量（单机模式）
+    limit: Optional[int] = None
+    enforced: bool = False
+
+
+class MeOut(BaseModel):
+    owner: str
+    auth_enabled: bool
+    quota: QuotaOut
+
+
+class ApiKeyOut(BaseModel):
+    id: int
+    name: str
+    key_prefix: str
+    created_at: str
+    last_used_at: Optional[str] = None
+    revoked: bool = False
+
+
+class ApiKeyCreated(BaseModel):
+    """⚠️ **明文只在这里出现一次**，之后库里只有哈希，丢了只能重发。"""
+
+    key: str
+    key_prefix: str
+    name: str
+    warning: str
+
+
+class VerificationOut(BaseModel):
+    status: str
+    token: Optional[str] = None
+    dns_instructions: Optional[str] = None
+    meta_instructions: Optional[str] = None
+    verified_at: Optional[str] = None
+    verify_method: Optional[str] = None
+
+
 class UsageOut(BaseModel):
     """某站点的计量汇总。
 

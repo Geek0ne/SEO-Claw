@@ -13,9 +13,15 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 
 from ..db import models as m
+from .auth import current_auth, guard
 from .deps import get_uow
 from .summary import build_summary
 from .schemas import (
+    ApiKeyCreated,
+    ApiKeyOut,
+    MeOut,
+    QuotaOut,
+    VerificationOut,
     IssueBulkStatusIn,
     IssueOut,
     IssuePage,
@@ -88,6 +94,10 @@ async def create_site(body: SiteCreate, uow=__import__("fastapi").Depends(get_uo
     if existing is not None:
         raise HTTPException(status_code=409, detail=f"站点已存在：{body.domain}")
     site = await uow.sites.create(body.domain, markets=body.markets)
+    # ⚠️ 必须显式写 owner：列的默认值是 "local"，那是给自部署单机用的。
+    # SaaS 模式下若靠默认，新建的站会落到 local 归属，租户就看不到它了。
+    site.owner = current_auth().owner
+    await uow.session.commit()
     return SiteOut(
         id=site.id,
         domain=site.domain,
@@ -102,7 +112,13 @@ async def list_sites(
     offset: int = Query(default=0, ge=0),
     uow=__import__("fastapi").Depends(get_uow),
 ) -> list[SiteOut]:
-    page = await uow.sites.list(limit=limit, offset=offset)
+    # ⚠️ 必须按 owner 过滤。我第一版只在 _require_site 加了归属校验，
+    # 以为「15 个端点都受益」就万事大吉 —— 但列表端点根本不调
+    # _require_site，于是 tenant-a 能看到 tenant-b 的全部站点。
+    # 单站点硬闯是 404（对），列表整片泄露（错）。实跑才逮到。
+    page = await uow.sites.list(
+        limit=limit, offset=offset, owner=current_auth().owner
+    )
     return [
         SiteOut(
             id=s.id, domain=s.domain, markets=list(s.markets or []), is_active=s.is_active
@@ -131,9 +147,18 @@ def _issue_out(i: m.Issue) -> IssueOut:
 
 
 async def _require_site(uow, site_id: int) -> m.Site:
+    """取站点，并**校验归属**。
+
+    ⚠️ 归属校验放在这里而不是每个端点，是因为端点有 15 个：逐个加会
+    漏，而漏掉的那一个**不会报错、只会放行** —— 那是最坏的失败方式。
+
+    不属于当前归属时回 404 而不是 403：403 等于告诉对方「这个站存在，
+    只是你没权限」，那本身就是信息泄露。
+    """
     site = await uow.sites.get(site_id)
     if site is None:
         raise HTTPException(status_code=404, detail=f"站点不存在：{site_id}")
+    guard(current_auth(), site)
     return site
 
 
@@ -152,7 +177,16 @@ async def get_site(site_id: int, uow=__import__("fastapi").Depends(get_uow)) -> 
 
 @router.post("/sites/{site_id}/scan", response_model=dict, status_code=201)
 async def scan(site_id: int, body: ScanRequest, uow=__import__("fastapi").Depends(get_uow)) -> dict:
+    from . import quota as q
+
     site = await _require_site(uow, site_id)
+    # ⚠️ 按**请求的页数**拦，不是按已用值：否则用户可以提交一次 5000 页
+    # 的请求，穿过检查后才在扫描中途被拒 —— 那时候爬取已经开始了。
+    a = current_auth()
+    # ⚠️ 必须 await。enforce 里 raise HTTPException 是在**协程体内**发生的，
+    # 不 await 它等于这段校验根本不存在 —— 而一个「看起来拦了其实没拦」
+    # 的额度检查比没有更坏：用户会以为超额被挡住了。
+    await q.enforce(uow.session, a.owner, would_use=int(body.max_pages), enabled=a.enabled)
     url = body.url or f"https://{site.domain}"
     markets = body.markets or list(site.markets or ["base"])
     # ⚠️ 开了增量却没给 checkpoint_dir → prior 为空 → 一个条件请求都不发，
@@ -677,3 +711,228 @@ def _latest_score(jobs) -> float | None:
         return None
     v = getattr(jobs.items[0], "health_score", None)
     return float(v) if isinstance(v, (int, float)) else None
+
+# ══════════════════════════════════════════════════════════════════
+# 租户：身份、钥匙、归属验证
+#
+# 归属校验统一在 _require_site 里做（那里已经接好 current_auth），
+# 所以下面这些端点不需要各自再写一遍 —— 写了就等于两处口径。
+# ══════════════════════════════════════════════════════════════════
+
+
+@router.get("/me", response_model=MeOut)
+async def me(uow=__import__("fastapi").Depends(get_uow)) -> MeOut:
+    """我是谁 + 我还有多少免费额度。
+
+    ⚠️ 单机模式（未开鉴权）返回 ``enforced: false``，而不是 limit=0。
+    「不限量」是产品决定，「额度是 0」是配置错误，含义不同。
+    """
+    from . import quota as q
+
+    a = current_auth()
+    snap = await q.enforce(uow.session, a.owner, would_use=0, enabled=a.enabled)
+    return MeOut(owner=a.owner, auth_enabled=a.enabled, quota=QuotaOut(**snap))
+
+
+@router.post("/keys", response_model=ApiKeyCreated, status_code=201)
+async def create_key(
+    name: str = "default",
+    uow=__import__("fastapi").Depends(get_uow),
+) -> ApiKeyCreated:
+    """签发一把访问钥匙。⚠️ **明文只在这里返回一次。**
+
+    库里只存 sha256：明文丢一次就等于全库钥匙同时暴露。丢了只能
+    重新签发，找不回来 —— 这是有意的代价。
+    """
+    from datetime import datetime, timezone
+
+    from .auth import new_key
+
+    raw, prefix, key_hash = new_key()
+    row = m.ApiKey(
+        owner=current_auth().owner,
+        name=name[:64],
+        key_prefix=prefix,
+        key_hash=key_hash,
+    )
+    uow.session.add(row)
+    await uow.session.commit()
+    return ApiKeyCreated(
+        key=raw,
+        key_prefix=prefix,
+        name=row.name,
+        warning="这是唯一一次显示完整钥匙。请立刻保存；丢失后只能重新签发，无法找回。",
+    )
+
+
+@router.get("/keys", response_model=list[ApiKeyOut])
+async def list_keys(uow=__import__("fastapi").Depends(get_uow)) -> list[ApiKeyOut]:
+    """列出钥匙。只返回前缀 —— 完整钥匙不在库里，也没有理由展示。"""
+    from sqlalchemy import select
+
+    a = current_auth()
+    rows = (await uow.session.execute(
+        select(m.ApiKey).where(m.ApiKey.owner == a.owner).order_by(m.ApiKey.id)
+    )).scalars().all()
+    return [
+        ApiKeyOut(
+            id=r.id,
+            name=r.name,
+            key_prefix=r.key_prefix,
+            created_at=r.created_at.isoformat() if r.created_at else "",
+            last_used_at=r.last_used_at.isoformat() if r.last_used_at else None,
+            revoked=r.revoked_at is not None,
+        )
+        for r in rows
+    ]
+
+
+@router.post("/keys/{key_id}/revoke", response_model=ApiKeyOut)
+async def revoke_key(
+    key_id: int, uow=__import__("fastapi").Depends(get_uow)
+) -> ApiKeyOut:
+    """撤销钥匙（标记而非删除）。
+
+    ⚠️ 删掉的话历史计量就找不到归属了 —— 而计费数字必须能被追溯。
+    """
+    from datetime import datetime, timezone
+
+    from sqlalchemy import select
+
+    a = current_auth()
+    row = (await uow.session.execute(
+        select(m.ApiKey).where(m.ApiKey.id == key_id, m.ApiKey.owner == a.owner)
+    )).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail="钥匙不存在。")
+    if row.revoked_at is None:
+        row.revoked_at = datetime.now(timezone.utc)
+        await uow.session.commit()
+    return ApiKeyOut(
+        id=row.id,
+        name=row.name,
+        key_prefix=row.key_prefix,
+        created_at=row.created_at.isoformat() if row.created_at else "",
+        last_used_at=row.last_used_at.isoformat() if row.last_used_at else None,
+        revoked=True,
+    )
+
+
+# ── 归属验证：这个站凭什么算你的 ────────────────────────────
+
+
+@router.get("/sites/{site_id}/verification", response_model=VerificationOut)
+async def get_verification(
+    site_id: int, uow=__import__("fastapi").Depends(get_uow)
+) -> VerificationOut:
+    """当前验证状态；没验证过就顺带把 token 与两条通道的说明给出来。"""
+    from . import verification as V
+
+    site = await _require_site(uow, site_id)
+    return VerificationOut(
+        status=site.verify_status,
+        token=site.verify_token,
+        dns_instructions=V.dns_instructions(site.domain, site.verify_token or "")
+        if site.verify_status != "verified" else None,
+        meta_instructions=V.meta_instructions(site.verify_token or "")
+        if site.verify_status != "verified" else None,
+        verified_at=site.verified_at.isoformat() if site.verified_at else None,
+        verify_method=site.verify_method,
+    )
+
+
+@router.post("/sites/{site_id}/verification", response_model=VerificationOut)
+async def start_verification(
+    site_id: int, uow=__import__("fastapi").Depends(get_uow)
+) -> VerificationOut:
+    """生成（或重新生成）验证 token。
+
+    ⚠️ 重新生成会让旧 token 立即失效 —— 这是刻意的：token 泄露过之后
+    留着它等于把门开着，而站点所有者随时能再生成一个。
+    """
+    from . import verification as V
+
+    site = await _require_site(uow, site_id)
+    site.verify_token = V.new_token()
+    site.verify_status = "unverified"
+    site.verified_at = None
+    site.verify_method = None
+    await uow.session.commit()
+    return VerificationOut(
+        status=site.verify_status,
+        token=site.verify_token,
+        dns_instructions=V.dns_instructions(site.domain, site.verify_token),
+        meta_instructions=V.meta_instructions(site.verify_token),
+    )
+
+
+@router.post("/sites/{site_id}/verification/check", response_model=VerificationOut)
+async def check_verification(
+    site_id: int,
+    method: str = "dns",
+    uow=__import__("fastapi").Depends(get_uow),
+) -> VerificationOut:
+    """实际去查 DNS TXT 或首页 meta。
+
+    ⚠️ **查不到 ≠ 验证失败。** DNS 超时、记录未传播、首页打不开都会
+    落到 unknown，所以结果有三态。用户看到 unknown 时该做的是手动确认，
+    不是反复点重试。
+    """
+    from . import verification as V
+
+    site = await _require_site(uow, site_id)
+    if not site.verify_token:
+        raise HTTPException(
+            status_code=400, detail="还没有生成验证 token，请先点「开始验证」。"
+        )
+    if method not in ("dns", "meta"):
+        raise HTTPException(status_code=400, detail="method 只能是 dns 或 meta。")
+
+    # dig / httpx 都是阻塞的，放线程池 —— 否则会把事件循环卡住，
+    # 单个慢 DNS 就能让整个服务对所有用户无响应。
+    import asyncio
+
+    if method == "dns":
+        res = await asyncio.to_thread(
+            V.check_dns, site.domain, site.verify_token
+        )
+    else:
+        res = await asyncio.to_thread(
+            V.check_meta, site.domain, site.verify_token
+        )
+
+    if res.verdict == "yes":
+        from datetime import datetime, timezone
+
+        site.verify_status = "verified"
+        site.verify_method = method
+        site.verified_at = datetime.now(timezone.utc)
+    elif res.verdict == "unknown":
+        # ⚠️ unknown **不**改状态：查不到只是「我暂时判断不了」，
+        # 不能当成「没通过」把用户已放进去的 token 清掉。
+        pass
+    await uow.session.commit()
+
+    return VerificationOut(
+        status=site.verify_status,
+        token=site.verify_token,
+        dns_instructions=V.dns_instructions(site.domain, site.verify_token),
+        meta_instructions=V.meta_instructions(site.verify_token),
+        verified_at=site.verified_at.isoformat() if site.verified_at else None,
+        verify_method=site.verify_method,
+    )
+
+
+@router.delete("/sites/{site_id}", status_code=204)
+async def delete_site(
+    site_id: int, uow=__import__("fastapi").Depends(get_uow)
+) -> None:
+    """删除站点。⚠️ 连带删除它的所有页面、问题、关键词、计量记录。
+
+    这是不可逆的，所以端点存在不等于 UI 上就该随手给个按钮 ——
+    Web 那边会要求二次确认。
+    """
+    site = await _require_site(uow, site_id)
+    await uow.session.delete(site)
+    await uow.session.commit()
+    return None

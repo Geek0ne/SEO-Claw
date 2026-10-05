@@ -157,9 +157,22 @@ def test_homepage_served(client):
 
 
 def test_homepage_has_scan_form(client):
-    """页面得有输入框和提交按钮，否则「输网址就能用」是空话。"""
+    """页面得有接入站点的入口和发起体检的按钮，否则「输网址就能用」是空话。
+
+    ⚠️ 这条断言改过一次。原文查的是 ``quick-scan`` —— 那是老版单页表单
+    用的 ``POST /web/quick-scan``，重建后已经不存在。现在查的是**当前**
+    真实入口：侧栏的「接入站点」按钮 + 站点详情页的「开始体检」按钮 +
+    对应的 API 路径。
+
+    ⚠️ 改的是**测试不是产品**：老界面的那个端点还在（/web/quick-scan
+    仍可用），但页面不再用它。把界面退回旧版来迁就一条测试，等于
+    为了让断言变绿而牺牲已经做完的东西。
+    """
     html = client.get("/").text
-    for probe in ("quick-scan", "开始体检"):
+    # ⚠️ 查的是前端**实际写的**路径前缀。上一版我断言字面量
+    # "/api/v1/sites/{site_id}/scan"，但 JS 里是模板串 ${id} ——
+    # 断言了一个页面上根本不存在的字符串，红的是断言不是页面。
+    for probe in ("btnAdd", "接入站点", "/api/v1/sites/", "开始体检"):
         assert probe in html, f"页面里找不到 {probe!r}"
 
 
