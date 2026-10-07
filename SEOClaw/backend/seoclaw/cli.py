@@ -157,7 +157,8 @@ def cmd_scan(args: argparse.Namespace) -> int:
         render_js=args.render_js,
         timeout=float(args.render_timeout) if args.render_js else 20.0,
     )
-    markets = [Market(m) for m in args.market]
+    all_markets_supported = [Market.BASE, Market.GOOGLE, Market.BAIDU, Market.CNH_ECO]
+    markets = [Market(m) for m in args.market if Market(m) in all_markets_supported]
 
     proxies = list(args.proxy or [])
     if args.proxy_file:
