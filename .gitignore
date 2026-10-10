@@ -1,15 +1,14 @@
 # ---------------------------------------------------------------------------
 # 依赖目录：绝对不能进版本库
 # ---------------------------------------------------------------------------
-# seo-agent/.deps 有 280MB 第三方包，是 pip --target 装进去的。
+# .deps 是 `pip install --target` 装进去的（280MB+ 第三方包）。
 # 没有这条，一次 `git add .` 就会把整个依赖树提交进仓库。
-seo-agent/.deps/
 .deps/
-node_modules/
 .venv/
 venv/
+node_modules/
 
-# Python 缓存
+# Python 缓存与构建产物
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -18,6 +17,8 @@ __pycache__/
 .ruff_cache/
 htmlcov/
 .coverage
+build/
+dist/
 
 # 运行期产物
 *.log
@@ -26,7 +27,7 @@ nohup.out
 # ---------------------------------------------------------------------------
 # 敏感与机器相关
 # ---------------------------------------------------------------------------
-# OpenClaw 运行期目录（可能含配置与凭据）
+# 本地运行期目录（可能含配置与凭据）
 .openclaw/
 .env
 .env.*
@@ -35,12 +36,15 @@ nohup.out
 secrets/
 *.secret
 
-# 检查点/缓存等运行期状态
-seo-agent/checkpoints/
+# 检查点 / 缓存等运行期状态
+checkpoints/
 *.visited
 .coverage.sqlite
 *.db
 *.sqlite3
+
+# 上次提交状态的记录文件（工具运行时写，不是源码）
+.last_seen
 
 # 大二进制与媒体：体积大且与源码无关
 media/
@@ -61,3 +65,19 @@ Thumbs.db
 # 数据库本地实例
 postgres-data/
 pgdata/
+
+# ---------------------------------------------------------------------------
+# 扫描报告产物：默认不进版本库，验证证据除外
+# ---------------------------------------------------------------------------
+# reports/ 下绝大多数是批量核验的中间产物，留三份代表性证据：
+#   fp_json_v3/      最后一轮 100+ 站回源核对的 JSON 证据
+#   calib_json/      校准轮 JSON 证据
+#   verify_verdict.md 复核结论
+reports/*
+!reports/fp_json_v3/
+!reports/calib_json/
+!reports/verify_verdict.md
+
+# 批量脚本生成的一次性站点清单
+tools/fp_sites_*.txt
+tools/run_fp_*.sh
