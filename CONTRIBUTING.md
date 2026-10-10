@@ -6,7 +6,7 @@
 ## 开发环境
 
 ```bash
-git clone https://github.com/Geek0ne/SEOClaw.git
+git clone https://github.com/Geek0ne/SEO-Claw.git
 cd SEOClaw
 pip install -e ".[api,dev]"
 pytest backend/tests -q
