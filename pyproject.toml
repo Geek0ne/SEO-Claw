@@ -41,8 +41,8 @@ mcp = ["mcp>=2.0"]
 dev = ["pytest>=8.0", "pytest-cov>=5.0"]
 
 [project.urls]
-Homepage = "https://github.com/Geek0ne/SEOClaw"
-Source = "https://github.com/Geek0ne/SEOClaw"
+Homepage = "https://github.com/Geek0ne/SEO-Claw"
+Source = "https://github.com/Geek0ne/SEO-Claw"
 
 [project.scripts]
 # 发行名与 CLI 命令用连字符（SEO-Claw）；`seoclaw` 保留为兼容别名，

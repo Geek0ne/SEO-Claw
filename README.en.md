@@ -58,7 +58,7 @@ Python 3.11+ required. Source install is the supported path (not yet published
 to PyPI):
 
 ```bash
-git clone https://github.com/Geek0ne/SEOClaw.git
+git clone https://github.com/Geek0ne/SEO-Claw.git
 cd SEOClaw
 pip install -e ".[api,dev]"     # CLI + Web/API + test tooling
 ```
