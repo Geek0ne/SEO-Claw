@@ -199,12 +199,46 @@ Nginx 层按 IP 限流才是主防线，应用层这个是兜底。
 
 ---
 
+## 更新已有部署（改了代码怎么生效）
+
+⚠️ **拉了代码 ≠ 生效。** 服务加载的是**进程启动时**的代码，
+静态页面还有浏览器缓存。两层都要处理，少一层就会出现
+「怎么打开还是旧界面」：
+
+```bash
+# 方式 A：源码部署（venv / pip install -e）
+git pull
+pip install -e ".[api]"          # 依赖有变时才需要
+# 重启 uvicorn / systemd 服务 —— 不重启就还在跑旧代码
+
+# 方式 B：Docker 部署
+git pull
+docker compose up -d --build      # --build 不能省：镜像里是构建时的代码
+```
+
+浏览器侧：**Ctrl+F5（或 Cmd+Shift+R）强刷一次**——`static/index.html`
+会被浏览器缓存，普通刷新可能仍是旧页面。
+
+**怎么确认真的更新了（30 秒三步）：**
+
+1. 打开 `GET /api/v1/health` —— 字段 `stale: true` 表示
+   **磁盘代码比运行中的进程新**：你拉了代码但没重启；
+2. 看页面品牌：新版是「SEO-Claw」纸白界面，旧版是「SEOClaw」深色界面；
+3. 版本号：`seoclaw --version`（或 `python -m seoclaw.cli --version`）。
+
+⚠️ **2026-10 仓库结构扁平化提醒**：代码从 `SEOClaw/` 子目录上移到了仓库根。
+如果你的启动脚本 / systemd / Dockerfile 里写着 `.../SEOClaw/backend` 这类
+路径，pull 之后要改成 `.../backend`；`PYTHONPATH` 同理。
+
+---
+
 ## 常用命令
 
 ```bash
 ./tools/guard_smoke.sh                    # 四道闸真容器验收
 docker compose up -d                      # 起服务
 docker compose logs -f                    # 看日志
-pytest tests/ -q                          # 567 个测试
-python -m seoclaw.cli rules               # 39 条规则清单
+pytest backend/tests -q                   # 624 个测试
+python -m seoclaw.cli rules               # 规则清单（默认注册表 39 条）
+python -m seoclaw.cli --version           # 版本号
 ```
