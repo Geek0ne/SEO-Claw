@@ -44,7 +44,7 @@ def _seed_keys(rows: list[tuple[str, str]]) -> None:
     在这里另起 loop 驱动会撞 "attached to a different loop"。锁库这件事
     用只读/直写的方式最省事，也最不容易写错。
     """
-    from seoclaw.api.auth import hash_key, new_key
+    from seoclaw.api.auth import new_key
 
     con = sqlite3.connect(_db_path())
     con.execute(

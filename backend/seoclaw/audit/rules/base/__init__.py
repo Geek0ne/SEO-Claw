@@ -6,7 +6,7 @@ import re
 from typing import Iterable
 from urllib.parse import unquote, urlsplit
 
-from ....models import Issue, Market, Page, Scope, Severity
+from ....models import Issue, Page, Scope, Severity
 from ....util import contains_cjk, normalize_url, same_url_ignoring_path_case
 from ...engine import Rule, RuleContext, default_registry
 
@@ -589,9 +589,9 @@ class LinkNoAnchor(Rule):
         # 用户、读屏软件和爬虫都不构成锚文本，让用户去改等于让人改本来正确
         # 的东西。ocw.mit.edu 首页 114 个「空锚」里 96 个是这种（实测）。
         empties = [
-            l.href
-            for l in page.links
-            if l.kind.value == "internal" and not l.anchor and not l.decorative
+            link.href
+            for link in page.links
+            if link.kind.value == "internal" and not link.anchor and not link.decorative
         ]
         # 只报「本页有多个空锚」的情况：单个往往是无害的 UI 元素
         if len(empties) >= 2:
@@ -602,8 +602,10 @@ class LinkNoAnchor(Rule):
                     "sample_hrefs": empties[:5],
                     "excluded_decorative": sum(
                         1
-                        for l in page.links
-                        if l.kind.value == "internal" and not l.anchor and l.decorative
+                        for link in page.links
+                        if link.kind.value == "internal"
+                        and not link.anchor
+                        and link.decorative
                     ),
                 },
             )

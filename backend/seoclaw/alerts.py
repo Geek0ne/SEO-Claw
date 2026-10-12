@@ -11,7 +11,7 @@ notify 之前一定是这里先算对了。
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Iterable, Optional
+from typing import Optional
 
 
 @dataclass(frozen=True, slots=True)

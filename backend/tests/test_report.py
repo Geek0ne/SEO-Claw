@@ -260,7 +260,6 @@ def test_unaudited_truncates_long_lists():
 
 def test_unaudited_wired_into_markdown_report():
     """必须真的出现在报告里，而不是只有一个没人调用的函数。"""
-    from seoclaw.models import SiteReport
     rep = SiteReport(domain="x.test", pages_crawled=1, pages_discovered=1,
                      issues=[])
     md = render_markdown(rep, [Page(url="https://x.test/a", error="timeout",
@@ -274,7 +273,6 @@ def test_unaudited_not_counted_as_issue():
     混进去会让人以为「这是站点的一个问题」，而它其实是「本次抓取的一个
     缺口」——处置方式完全不同（前者改站，后者改抓取配置/网络）。
     """
-    from seoclaw.models import SiteReport
     rep = SiteReport(domain="x.test", pages_crawled=0, pages_discovered=1,
                      issues=[])
     md = render_markdown(rep, [Page(url="https://x.test/a", error="timeout",

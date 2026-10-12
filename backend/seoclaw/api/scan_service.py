@@ -22,7 +22,6 @@ from ..crawler import CrawlConfig, Crawler
 from ..db import repository as repo
 from ..db.models import JobStatus as DbJobStatus
 from ..models import Issue, Market, Page
-from ..report import render_markdown
 from ..scoring import score
 
 

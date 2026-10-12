@@ -8,7 +8,6 @@ M0 输出 Markdown —— 因为它能直接进 Git、粘进飞书、丢进 issu
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Optional
 
 from .models import Issue, Page, Severity, SiteReport
@@ -137,8 +136,8 @@ def _render_unaudited(pages: list[Page], max_urls: int = 3) -> list[str]:
     lines = [
         f"## 没审到的页面（{len(unaudited)} 个）",
         "",
-        f"> 这些页面**没有参与任何规则检查**。上面的问题清单不覆盖它们 —— "
-        f"「没审到」不等于「没问题」。",
+        "> 这些页面**没有参与任何规则检查**。上面的问题清单不覆盖它们 —— "
+        "「没审到」不等于「没问题」。",
         "",
     ]
     for p in unaudited[:max_urls]:

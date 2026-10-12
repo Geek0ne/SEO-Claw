@@ -13,7 +13,6 @@
 
 from __future__ import annotations
 
-import json
 
 from seoclaw.audit.engine import default_registry, run_audit
 from seoclaw.extract import extract_page

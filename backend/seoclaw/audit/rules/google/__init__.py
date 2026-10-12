@@ -23,9 +23,24 @@ from __future__ import annotations
 
 from typing import Iterable
 
-from ....models import Issue, Market, Page, Scope, Severity
+from ....models import Issue, Market, Page, Severity
 from ....util import is_cjk_char
 from ...engine import Rule, RuleContext, default_registry
+from .._serp_px import (
+    CURLY_QUOTES as _W_CURLY_QUOTES,
+    W_CURLY_FULL as _W_CURLY_QUOTES_FULL,
+    W_CURLY_NARROW as _W_CURLY_QUOTES_NARROW,
+    W_DIGIT as _W_DIGIT,
+    W_EMOJI as _W_EMOJI,
+    W_LOWER as _W_LOWER,
+    W_NARROW as _W_NARROW,
+    W_OTHER_ALPHA as _W_OTHER_ALPHA,
+    W_PUNCT as _W_PUNCT,
+    W_SPACE as _W_SPACE,
+    W_UPPER as _W_UPPER,
+    is_emoji_cp,
+    is_zero_width,
+)
 
 reg = default_registry()
 
@@ -123,9 +138,9 @@ class HtmlLangMismatch(Rule):
             return
 
         if expected == "latin" and cjk > latin:
-            verdict, actual = "declared_latin_but_content_cjk", "cjk"
+            mismatch, actual = "declared_latin_but_content_cjk", "cjk"
         elif expected == "cjk" and latin > cjk * 2:
-            verdict, actual = "declared_cjk_but_content_latin", "latin"
+            mismatch, actual = "declared_cjk_but_content_latin", "latin"
         else:
             return
 
@@ -135,6 +150,10 @@ class HtmlLangMismatch(Rule):
                 "html_lang": page.lang,
                 "expected_script": expected,
                 "actual_script": actual,
+                # 哪个方向对不上：declared_latin_but_content_cjk（声明拉丁、实为 CJK）
+                # / declared_cjk_but_content_latin。verdict 字段给的是结论
+                # （“可能没跟着内容改”），这个字段给的是事实方向，供用户自核。
+                "mismatch_type": mismatch,
                 "cjk_chars": cjk,
                 "latin_chars": latin,
                 "sampled_chars": cjk + latin,
@@ -409,40 +428,21 @@ def _guess_text_lang(text: str) -> str:
     return "mixed"
 
 
-# 字符宽度表（相对 16px 基准字体，单位 px）。取值来自常见无衬线 UI 字体
-# 的平均字宽，误差在 ±10% 以内——足够区分「明显超标」和「安全区」，
-# 不追求像素级精确（Google 用的是可变字体，本来也算不出来）。
-_W_NARROW = set("iljItf.,;:'!|()[]-·’‘“”\"`")  # ≈4.5px
-_W_UPPER = 10.7
-_W_LOWER = 8.0
-_W_DIGIT = 8.9
-_W_SPACE = 4.4
-_W_PUNCT = 5.5
-_W_OTHER_ALPHA = 9.0  # 西里尔、希腊等
-_W_EMOJI = 16.0  # emoji 按 1em 全宽渲染，当成标点算会窄一半
-
-# 中英文弯引号。ASCII 的 ' " 确实窄，但 “”‘’ 在 CJK 字体里是全角
-# （=1em）。按 4.5px 算会低估约 3.5px/个（真实样本：discourse 的中文标题）。
-_W_CURLY_QUOTES = set("“”‘’")
-_W_CURLY_QUOTES_NARROW = 4.5
-_W_CURLY_QUOTES_FULL = 16.0
+# 字符宽度表住在中立共享模块 `._serp_px`（曾因环引用在 google/baidu 两包
+# 各存一份并约定人工同步，见该模块 docstring；现已根治）。顶部的 `_W_*`
+# 别名即那张表，取值不变：16px 基准无衬线 UI 字体的平均字宽，误差 ±10%
+# 以内——足够区分「明显超标」和「安全区」，不追求像素级精确（Google 用
+# 可变字体，本来也算不出来）。
 
 
 def _is_emoji(ch: str) -> bool:
     """emoji / 符号类区块。这些字符实际渲染都接近全角。"""
-    cp = ord(ch)
-    return (
-        0x1F000 <= cp <= 0x1FAFF  # 各类 pictograph、emoji
-        or 0x2600 <= cp <= 0x27BF  # 杂项符号、装饰符号（✓★❤…）
-        or 0x2B00 <= cp <= 0x2BFF  # 补充箭头/星号
-        or 0x1F1E6 <= cp <= 0x1F1FF  # 区域指示符（国旗）
-    )
+    return is_emoji_cp(ord(ch))
 
 
 def _is_emoji_modifier(ch: str) -> bool:
     """变体选择符 / ZWJ：只影响相邻 glyph 形状，本身不占宽度。"""
-    cp = ord(ch)
-    return cp == 0x200D or 0xFE00 <= cp <= 0xFE0F
+    return is_zero_width(ord(ch))
 
 
 def _estimate_title_px(title: str) -> dict[str, int | float]:

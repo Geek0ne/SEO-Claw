@@ -23,7 +23,6 @@
 `User-agent: * / Disallow: /`（全站禁抓），守规矩的结果就是 0 页。
 """
 from seoclaw.models import Issue, Severity
-from seoclaw.report import render_markdown, summarize_console
 from seoclaw.scoring import score
 
 

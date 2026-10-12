@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from seoclaw.audit.engine import run_audit
 from seoclaw.extract import extract_page

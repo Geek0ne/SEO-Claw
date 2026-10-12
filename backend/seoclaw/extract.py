@@ -540,8 +540,12 @@ def _extract_links(doc: Any, page: Page, base_url: str, domain: str) -> None:
                 decorative=_is_decorative(el, anchor),
             )
         )
-    page.internal_link_count = sum(1 for l in page.links if l.kind == LinkKind.INTERNAL)
-    page.external_link_count = sum(1 for l in page.links if l.kind == LinkKind.EXTERNAL)
+    page.internal_link_count = sum(
+        1 for link in page.links if link.kind == LinkKind.INTERNAL
+    )
+    page.external_link_count = sum(
+        1 for link in page.links if link.kind == LinkKind.EXTERNAL
+    )
 
 
 def _extract_structured_data(doc: Any, page: Page) -> None:

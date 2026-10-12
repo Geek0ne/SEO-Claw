@@ -214,15 +214,18 @@ class Site(Base, TimestampMixin):
 
     #: 归属租户。⚠️ 默认 "local" —— 自部署单机没有租户概念，
     #: 把所有老数据一次性归到 local，鉴权层也因此能在未开鉴权时放行。
+    #: server_default 必须与 Python 默认同写：迁移 0006 给存量表 ADD COLUMN
+    #: NOT NULL 时用了 server_default，模型不写就与库不一致 —— `alembic check`
+    #: 会报 modify_default 漂移（这正是 2026-10-12 修掉的那条）。
     owner: Mapped[str] = mapped_column(
-        String(64), nullable=False, default="local"
+        String(64), nullable=False, default="local", server_default="local"
     )
     #: 归属验证。token 由服务端生成，用户把它放进 DNS TXT 或 HTML meta，
     #: 再回来校验 —— 见 verification.py。
     verify_token: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     #: unverified / verified
     verify_status: Mapped[str] = mapped_column(
-        String(16), nullable=False, default="unverified"
+        String(16), nullable=False, default="unverified", server_default="unverified"
     )
     #: dns / meta —— 记录用户实际用哪种通过的，排查时有用
     verify_method: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)

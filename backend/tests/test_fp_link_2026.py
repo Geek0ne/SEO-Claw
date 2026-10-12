@@ -23,7 +23,7 @@ sys.path[:0] = [str(Path(__file__).resolve().parents[2]), str(Path(__file__).res
 from seoclaw.audit.engine import RuleContext  # noqa: E402
 from seoclaw.audit.rules.base import LinkNoAnchor  # noqa: E402
 from seoclaw.extract import _is_decorative  # noqa: E402
-from seoclaw.models import LinkKind, LinkRef, Page  # noqa: E402
+from seoclaw.models import Page  # noqa: E402
 
 RULE = LinkNoAnchor()
 CTX = RuleContext(domain="ocw.mit.edu")
@@ -62,7 +62,7 @@ class TestDecorativeMustStaySilent:
             for n in range(96)
         )
         page = _mk(html)
-        assert len([l for l in page.links if l.decorative]) == 96
+        assert len([lk for lk in page.links if lk.decorative]) == 96
         assert _fire(page) == []
 
     def test_tabindex_minus_one_alone_also_silent(self):
@@ -101,9 +101,9 @@ class TestRealFindingsStillFire:
             '<a href="/a" aria-hidden="true">下载</a>'
             '<a href="/b" aria-hidden="true">注册</a>'
         )
-        assert [l.decorative for l in page.links] == [False, False]
+        assert [lk.decorative for lk in page.links] == [False, False]
         assert _fire(page) == [], "有锚文本的链接不是空锚，规则本就不该报"
-        assert all(l.anchor for l in page.links)
+        assert all(lk.anchor for lk in page.links)
 
     def test_img_alt_present_is_never_a_finding(self):
         """<img alt="MIT OpenCourseWare"> —— 提取层已采到 alt，锚文本非空。

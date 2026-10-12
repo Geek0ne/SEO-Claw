@@ -2,6 +2,37 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [未发布]
+
+### 新增
+- **CI lint 任务**（ruff check）：PLAN.md 质量保障表一直写着「ruff 零告警」，
+  但 CI 里根本没有 lint 任务，门槛写在文档里等于没写。规则集只查真问题
+  （E4/E7/E9/F），不开行长、不上格式化——注释文化经不起格式化工具重排。
+- `pyproject.toml` 的 `[tool.ruff]` 配置（含测试文件 E402 豁免：环境变量
+  必须在 import seoclaw.* 之前设，见 test_api.py 文件头）。
+
+### 修复
+- **静态检查清零：65 条告警 → 0**（未用导入 / 未用变量 / 歧义命名 `l` /
+  无占位 f-string）。其中两条不是纯卫生问题：
+  - `api/routes.py` brief 端点的 `site` 变量：`_require_site` 的返回值没接，
+    但那个调用本身就是归属校验，改为显式不接收返回值，免得后人当死代码删掉。
+  - `google` 包 lang 规则的 `verdict` 局部变量算了没用，实际方向
+    （declared_latin_but_content_cjk 等）从未进证据；现以 `mismatch_type`
+    入 evidence，用户可自核「哪个方向对不上」。
+- `scripts/accuracy_run.py` 重试循环里的 `last` 变量同 `sc`，删净。
+- **`alembic check` 模型/迁移漂移**（仓库自带，PLAN.md 却声称「零漂移」）：
+  迁移 0006 给存量 `sites` 表 ADD COLUMN 时给 `owner`/`verify_status` 设了
+  `server_default`，模型只写了 Python 侧 `default=` —— 两边不一致，
+  `alembic check` 报 modify_default。模型补 `server_default` 对齐库里实态，
+  现在 `alembic upgrade head && alembic check` 全干净。
+
+### 重构
+- **清偿技术债：像素宽度表不再两包各存一份**。上提到中立模块
+  `audit/rules/_serp_px.py`（不 import 任何规则包，不会触发
+  google.i18n → google → baidu 的环引用），google/baidu 共用同一张表，
+  删除「改 google 必须同步 baidu」的人工约定。指标值不变
+  （test_fp_baidu_2026 的像素断言钉着）。
+
 ## [0.2.0] - 2026-10-10
 
 ### 变更（Breaking-ish）

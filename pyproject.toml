@@ -59,6 +59,28 @@ package-dir = { "" = "backend" }
 where = ["backend"]
 include = ["seoclaw*"]
 
+[tool.ruff]
+# ⚠️ 只查「真问题」，不查风格——这是有意的，不是没配全。
+#
+# 这个仓库的注释文化（事故记录式长注释）经不起格式化工具重排
+# （见 .pre-commit-config.yaml 的同一判断），所以 ruff 在这里只开
+# 默认四类规则：E4 导入 / E7 语句 / E9 运行期 / F Pyflakes。
+# **不开 E501 行长、不开 format**：行长告警会逼着把长注释折行，
+# 折完的注释就不再是当时的原话了。
+#
+# 门槛对应 PLAN.md 质量保障表的「ruff 零告警」，由 CI 强制。
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# 测试模块必须在 import seoclaw.* 之前设 SEO_CLAW_DATABASE_URL
+# （见 test_api.py / test_web.py 文件头的注释：设晚了引擎会缓存到别的库），
+# 所以「import 不在文件顶部」是这类文件的**正确写法**。
+"backend/tests/*" = ["E402"]
+"scripts/*" = ["E402"]
+
 [tool.pytest.ini_options]
 # 测试全用相对导入跑，包根必须先进 path，否则收集阶段就 ImportError。
 # pythonpath 相对 rootdir（仓库根）：backend 下才是真正的包 seoclaw。

@@ -13,11 +13,10 @@ JS 渲染层测试（Playwright）。
 
 from __future__ import annotations
 
-import pytest
 
 from seoclaw.crawler import CrawlConfig, Crawler
 from seoclaw.models import Page
-from seoclaw.render import RenderConfig, RenderUnavailable, Renderer
+from seoclaw.render import RenderConfig, Renderer
 
 
 # --------------------------------------------------------------------------

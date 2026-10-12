@@ -4,9 +4,10 @@
 # 手动全量：pre-commit run --all-files
 #
 # ⚠️ 刻意只上「机械性检查」：行尾空白、文件末换行、YAML 可解析、
-# 大文件/合并冲突标记、私钥误提交。lint 规则（ruff 等）暂不进门禁——
+# 大文件/合并冲突标记、私钥误提交。lint（ruff）不在钩子里改写——
 # 这个仓库的注释文化（事故记录式长注释）会被格式化工具搅乱，
-# 在没有统一定论前，钩子只负责挡事故，不负责改写风格。
+# 钩子只负责挡事故，不负责改写风格；静态检查走 CI 的 lint 任务
+# （见 .github/workflows/ci.yml），那里只报不改，改不改由人定。
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0

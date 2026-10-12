@@ -22,7 +22,6 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from typing import (
     Any,
-    Generic,
     Iterable,
     Optional,
     Sequence,

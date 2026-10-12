@@ -456,7 +456,8 @@ async def make_brief(
     from ..brief import ContentBrief, PageSignal, SerpEntry, generate_brief
     from ..models import Market
 
-    site = await _require_site(uow, site_id)
+    # 归属校验：不是本租户的站点在这里就 404，返回值本身用不上
+    await _require_site(uow, site_id)
     caveats: list[str] = []
 
     serp_entries: list[SerpEntry] = []
@@ -833,7 +834,6 @@ async def create_key(
     库里只存 sha256：明文丢一次就等于全库钥匙同时暴露。丢了只能
     重新签发，找不回来 —— 这是有意的代价。
     """
-    from datetime import datetime, timezone
 
     from .auth import new_key
 

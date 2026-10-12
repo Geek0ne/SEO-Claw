@@ -22,14 +22,12 @@ from __future__ import annotations
 
 import asyncio
 import time
-from dataclasses import dataclass, field
 from typing import Any, Optional
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from ..db import repository as repo
 from ..db.session import get_session_factory
 from .guard import (
     BlockedTarget,

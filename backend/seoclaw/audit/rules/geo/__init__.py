@@ -45,9 +45,9 @@ GEO 这类"AI 搜索友好度"结论的证据强度远不如它，混进去会�
 from __future__ import annotations
 
 import re
-from typing import Any, Iterable
+from typing import Iterable
 
-from ....models import Issue, Market, Page, Scope, Severity
+from ....models import Issue, Page, Scope, Severity
 from ...engine import Rule, RuleContext
 
 # 疑问句式。覆盖中英两种写法：中文用问号/疑问词，英文用 ? 与疑问词开头。
@@ -282,9 +282,9 @@ class FaqStructureMismatch(Rule):
         )
 
 
-# ⚠️ 用 market = Market.BASE 只是为了让本包复用既有加载/过滤路径。
-# 本包默认不被 default_registry() 加载，必须显式开启（见模块 docstring），
-# 所以 BASE 不会让 GEO 悄悄混进常规扫描。
+# ⚠️ 各规则不写 market 属性，沿用引擎默认的 Market.BASE，只为复用既有加载/
+# 过滤路径。本包默认不被 default_registry() 加载，必须显式开启（见模块
+# docstring），所以 BASE 不会让 GEO 悄悄混进常规扫描。
 __all__ = [
     "NoQuestionHeadings",
     "NoOutboundReferences",

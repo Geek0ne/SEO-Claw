@@ -23,7 +23,7 @@ from seoclaw.api import scan_service
 from seoclaw.audit.engine import run_audit
 from seoclaw.extract import extract_page
 from seoclaw.main import app
-from seoclaw.models import Market, Page, SiteReport
+from seoclaw.models import Market, Page
 
 
 def _site_name() -> str:
@@ -527,7 +527,7 @@ def test_rescan_merges_legacy_duplicate_rows(client):
 
     # 人为造一组重复：模拟「修复前跑过多轮」留下的僵尸行
     items = first["items"]
-    dup = next(i for i in items if i["url"])
+    assert any(i["url"] for i in items), "样本里应至少有一条带 URL 的问题"
     r = client.patch(f"/api/v1/sites/{site['id']}/issues", json={})  # 422，不改状态
     assert r.status_code == 422
 

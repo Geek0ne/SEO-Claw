@@ -27,7 +27,6 @@ PLAN 的技术债写着「`hit_page_limit` 时一律不下结论，即使已抓 
 
 from __future__ import annotations
 
-import pytest
 
 from seoclaw.audit.engine import RuleContext
 from seoclaw.models import Market, Page

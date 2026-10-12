@@ -20,10 +20,10 @@ import sys
 import random
 import time
 import urllib.robotparser
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Optional
-from urllib.parse import urljoin, urlparse, urlunparse
+from typing import Optional
+from urllib.parse import urlparse, urlunparse
 
 import httpx
 

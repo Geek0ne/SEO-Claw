@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from .models import Issue, Page, Severity
+from .models import Issue, Severity
 from .util import same_site_scope
 
 # 严重度 → 基础权重（按「影响面」折算后的最终扣分）

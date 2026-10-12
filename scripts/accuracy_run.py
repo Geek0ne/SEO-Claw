@@ -276,12 +276,10 @@ def audit_site(domain: str, pages: int) -> SiteResult:
         # ⚠️ 扫描偶发 500（并发写 SQLite 时 flush 失败 → PendingRollbackError）。
         # 实测两个并发扫描都正常，所以不是必现。**重试而不是降并发** ——
         # 降并发会让 200 站跑完的时间翻倍，而重试只多花几秒。
-        last = None
         for attempt in range(3):
             sc = c.post(f"{API}/sites/{site_id}/scan", json={"max_pages": pages})
             if sc.status_code < 500:
                 break
-            last = sc
             time.sleep(2 + attempt * 3)
         sc.raise_for_status()
         res.pages = sc.json().get("pages_crawled") or 0
@@ -338,8 +336,8 @@ def audit_site(domain: str, pages: int) -> SiteResult:
 
 def load_corpus(limit: int | None, path: Path | None = None) -> list[str]:
     f = path or CORPUS
-    out = [l.strip() for l in f.read_text(encoding="utf-8").splitlines()
-           if l.strip() and not l.startswith("#")]
+    out = [line.strip() for line in f.read_text(encoding="utf-8").splitlines()
+           if line.strip() and not line.startswith("#")]
     return out[:limit] if limit else out
 
 

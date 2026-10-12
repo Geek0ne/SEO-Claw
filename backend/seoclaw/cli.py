@@ -109,15 +109,14 @@ def _persist_scan(
     create_all 不做 schema 版本管理，将来加了列会造出
     「库里缺列但代码以为是新的」这种静默故障。
     """
-    import asyncio
 
-    from .db.session import get_engine, get_session_factory, session_scope
+    from .db.session import get_session_factory, session_scope
     from .persist import get_or_create_site, persist_scan
 
     db_url = db_spec if "://" in db_spec else f"sqlite+aiosqlite:///{db_spec}"
 
     async def _run() -> dict:
-        engine = get_engine(db_url)
+        # get_session_factory 内部就会 get_engine → 无需单独持有引擎引用
         factory = get_session_factory(db_url)
         async with factory() as session:
             async with session_scope(session):
@@ -414,8 +413,8 @@ def _collect_site_facts(crawler: Crawler) -> dict:
 
     # --- robots.txt ---
     # （原先这里有个遍历 robots._parsers 的循环，循环体只有 pass，
-    #  读的 _origin_hint 全库从未被写过——纯死代码，已删。）
-    robots_client = getattr(crawler.robots, "_client", None)
+    #  读的 _origin_hint 全库从未被写过——纯死代码，已删。
+    #  连同读 robots._client 的那一行：同样从未被消费，别再加回来。）
     facts["robots_url"] = None
     facts["robots_status"] = None
     facts["robots_directives"] = []

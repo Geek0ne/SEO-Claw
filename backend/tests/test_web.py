@@ -374,9 +374,6 @@ def test_concurrency_limit_rejects_extra(client, monkeypatch):
     排队等比拒绝更糟：用户等 5 分钟才知道要排 8 个人，
     不如当场告诉他「现在忙」。
     """
-    import seoclaw.web as webmod
-
-    release = None
 
     async def _slow(session, **kw):
         # 卡住不返回，让前两个任务一直占着并发位

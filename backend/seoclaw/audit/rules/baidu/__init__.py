@@ -25,6 +25,19 @@ from urllib.parse import urlparse
 from ....models import Issue, Market, Page, Scope, Severity
 from ....util import cjk_ratio, contains_han
 from ...engine import Rule, RuleContext, default_registry
+from .._serp_px import (
+    CURLY_QUOTES as _W_CURLY,
+    W_DIGIT as _W_DIGIT,
+    W_EMOJI as _W_EMOJI,
+    W_LOWER as _W_LOWER,
+    W_NARROW as _W_NARROW,
+    W_OTHER_ALPHA as _W_OTHER_ALPHA,
+    W_PUNCT as _W_PUNCT,
+    W_SPACE as _W_SPACE,
+    W_UPPER as _W_UPPER,
+    is_emoji_cp,
+    is_zero_width,
+)
 
 reg = default_registry()
 
@@ -284,13 +297,7 @@ class BaiduspiderNotAllowed(Rule):
 
 def _is_emoji(ch: str) -> bool:
     """emoji / 符号类区块，实际渲染接近全宽。"""
-    cp = ord(ch)
-    return (
-        0x1F000 <= cp <= 0x1FAFF
-        or 0x2600 <= cp <= 0x27BF
-        or 0x2B00 <= cp <= 0x2BFF
-        or 0x1F1E6 <= cp <= 0x1F1FF
-    )
+    return is_emoji_cp(ord(ch))
 
 
 def _is_wide(ch: str) -> bool:
@@ -298,27 +305,17 @@ def _is_wide(ch: str) -> bool:
     return unicodedata.east_asian_width(ch) in ("W", "F")
 
 
-# 半角字符宽度表（16px 基准无衬线字体的经验值）。
-# ⚠️ 这张表与 `app/audit/rules/google/__init__.py` 里的 `_W_*` 同源，**必须保持同步**。
-#   之前试过直接 `from ..google import _estimate_title_px` 复用，但两个市场包
-#   互相 import 会构成环（google.i18n → google → baidu），直接让整个规则
-#   注册表加载失败、251 个测试全红。现文件是独占修改范围，无法把共用函数上提，
-#   所以只能在这端口一份——这是已知的技术债，改 google 包时需同步这里。
-_W_NARROW = set("iljItf.,;:'!|()[]-·’‘“”\"`")
-_W_UPPER = 10.7
-_W_LOWER = 8.0
-_W_DIGIT = 8.9
-_W_SPACE = 4.4
-_W_PUNCT = 5.5
-_W_OTHER_ALPHA = 9.0
-_W_EMOJI = 16.0
-_W_CURLY = set("“”‘’")
+# ⚠️ 半角字符宽度表本曾在此本地复制一份（与 google 包同源、注释约定人工
+# 同步）——那是环引用（google.i18n → google → baidu）逼出来的技术债。
+# 现已上提到中立模块 `._serp_px`（不 import 任何规则包，谁引它都不成环），
+# 同步债消除。这里保留的 `_W_*` 别名是同一张表，指标值完全不变（有测试
+# 数字钉着，见 test_fp_baidu_2026.py）。
 
 
 def _char_px(ch: str, curly_w: float) -> float:
     cp = ord(ch)
     # 变体选择符 / ZWJ 不占宽度
-    if cp == 0x200D or 0xFE00 <= cp <= 0xFE0F:
+    if is_zero_width(cp):
         return 0.0
     if _is_emoji(ch):
         return _W_EMOJI
@@ -431,7 +428,8 @@ class ChineseTitleTooLong(Rule):
                 "truncated_tail": page.title[len(shown) :],
                 "overflow_px": round(px - self.BUDGET_PX, 1),
                 "note": (
-                    "按 SERP 渲染宽度判定（复用 google 包的像素宽度表），"
+                    "按 SERP 渲染宽度判定（像素宽度表与 google 包共用同一份，"
+                    "见 audit/rules/_serp_px.py），"
                     "预算 480px = 30 个汉字；本条只对含中日韩字符、"
                     "且非日语、非抓取翻译版的标题生效；"
                     "纯英文标题请看 title.too_long（60 字符阈值）"
@@ -634,9 +632,9 @@ class MobileLandingPageMissing(Rule):
 
         # ↓↓↓ 可能有「有意为之」解释：站点另有独立移动站 ↓↓↓
         mobile_links = [
-            l.href
-            for l in page.links
-            if urlparse(l.href).netloc.lower().startswith(("m.", "wap.", "3g."))
+            link.href
+            for link in page.links
+            if urlparse(link.href).netloc.lower().startswith(("m.", "wap.", "3g."))
         ]
         if mobile_links:
             severity = Severity.MEDIUM
