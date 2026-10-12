@@ -12,6 +12,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    name: ruff 静态检查
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: ruff check
+        # ⚠️ 规则集在 pyproject 的 [tool.ruff]：只查真问题（E4/E7/E9/F），
+        # 不查行长、不上格式化。这个仓库的注释文化（事故记录式长注释）
+        # 经不起格式化工具重排——注释折了行就不再是当时的原话了。
+        #
+        # 这个任务存在的理由：PLAN.md 质量保障表一直写着「ruff 零告警」，
+        # 但之前 CI 里根本没有 lint 任务，门槛写在文档里等于没写。
+        # 实测补上时存量告警 65 条（未用导入/未用变量/歧义命名），已清零。
+        run: |
+          pip install ruff
+          ruff check backend scripts
+
   test:
     name: 测试 + 四道闸验收
     runs-on: ubuntu-latest
