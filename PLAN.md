@@ -187,6 +187,14 @@ class Rule(ABC):
 
 ## 7. 当前状态
 
+- [x] **改造阶段 1（工程地基）2026-10-18**：结构化日志 `log.py`（JSON/文本）+
+  CI mypy 任务（存量 31 错误 → 0，配置钉在 `pyproject.toml [tool.mypy]`）+
+  清理 routes/scan_service/cli 坏味道。顺手挖出两个真 bug：①关键词扩展端点
+  正常路径 AttributeError（`kw_expand.expand` 把函数当模块调，测试只走到
+  提前返回分支）；②Web 扫描站点级事实恒空（另起一只没探过任何东西的
+  Crawler 喂 `_collect_site_facts`）。均已修 + 补回归测试，630 测试全绿。
+  教训入库：**测试绿不代表路径通，类型检查扫的恰是测试的盲区**。
+
 - [x] 需求规划书（REQUIREMENTS.md）
 - [x] 执行计划（本文档）
 - [x] M0 代码骨架：模型 / 提取 / 爬虫 / 规则引擎 / 评分 / 报告 / CLI

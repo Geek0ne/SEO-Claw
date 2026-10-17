@@ -30,7 +30,7 @@ import httpx
 from .extract import extract_page
 from .models import Page
 from .render import RenderConfig, Renderer
-from .sitemap import SitemapFinder
+from .sitemap import SitemapFinder, SitemapResult
 from .util import is_internal, normalize_url
 
 # UA 必须是**可识别且可联系**的，这是 robots 协议的基本要求：
@@ -260,7 +260,7 @@ class Crawler:
                 RenderConfig(enabled=True, timeout_ms=int(self.config.timeout * 1000))
             )
         self.robots = RobotsCache(self.config.user_agent, self.config.timeout)
-        self.sitemap_result = None  # 由 crawl() 填充
+        self.sitemap_result: Optional[SitemapResult] = None  # 由 crawl() 填充
         self.aborted_reason: Optional[str] = None  # 熔断中止时的原因
         # 当前代理下标；-1 = 直连（不挂代理）。轮换时自增取模。
         self._proxy_index = -1
@@ -439,7 +439,10 @@ class Crawler:
                 or bool(page.error and page.error.startswith("http_error"))
             )
 
-            if blocked and self.config.adaptive_backoff:
+            if page is not None and blocked and self.config.adaptive_backoff:
+                # ⚠️ 不能只写 `blocked and ...`：blocked 是布尔变量，mypy
+                # 穿不透它对 page 的 narrowing（blocked 为真 ⇒ page 非 None
+                # 是事实，但类型系统不知道），里面读 page.status_code 就红。
                 self.limiter.slow_down()
                 retry_after = 0.0
                 if page.status_code == 429:

@@ -602,6 +602,30 @@ def test_keywords_expand_says_why_it_skipped(client):
     assert "语料" in body["reason"] and body["candidates"] == 0
 
 
+def test_keywords_expand_happy_path(client):
+    """回归：扩展端点的正常路径必须真的能跑完。
+
+    ⚠️ 这条路径此前**从来没有走通过**：routes 里写的是
+    ``kw_expand.expand(...)``，而 ``from ..keywords import expand``拿到的
+    是**函数**不是模块（__init__ 把函数绑在了包命名空间）——一到正常路径
+    就 AttributeError。单测全绿是因为既有用例都停在 skipped_* 的提前
+    返回分支，离崩溃点还差一步。mypy 先发现的（"def expand has no
+    attribute expand"），这里把它钉住。
+    """
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    r = client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    assert r.status_code in (200, 201), r.text
+    r = client.post(
+        f"/api/v1/sites/{site['id']}/keywords/expand",
+        json={"seeds": ["page"], "min_pages": 2},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    # 「ok」意味着 expand → cluster → persist 整条都跑完了；
+    # skipped_* 是提前返回，碰不到曾经的崩溃点。
+    assert body["status"] == "ok", body
+
+
 def test_brief_declares_missing_competitor_data(client):
     """没有 SERP 数据时，Brief 必须明说「竞品分析缺失」。
 

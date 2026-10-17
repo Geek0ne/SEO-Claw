@@ -271,7 +271,10 @@ def ngram_candidates(
     if len(titles) < min_pages:
         return []
 
-    grams: Counter[str] = defaultdict(set)
+    # ⚠️ 注解不能写 Counter[str]：值是 URL 集合不是计数。旧注解把
+    # 「gram → 出现它的页面集合」写成了「gram → 计数」，.add/len/全靠
+    # 运行时碰巧成立，mypy 一查一个准（旧注解下 4 处类型错误）。
+    grams: dict[str, set[str]] = defaultdict(set)
     for url, title in titles.items():
         toks = tokenize(title)
         for i in range(len(toks) - n + 1):

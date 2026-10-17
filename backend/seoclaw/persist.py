@@ -36,8 +36,12 @@ from .db.repository import KeywordRepository, SiteRepository
 from .models import Issue, Page
 
 
-def domain_of(url: str) -> str:
-    """从 URL 取 host（去掉 www. 前缀由仓储内部归一）。"""
+def netloc_of(url: str) -> str:
+    """从 URL 取原始 netloc（含 www.，归一化交给仓储内部）。
+
+    ⚠️ 别和 :func:`seoclaw.util.domain_of` 混：那个去 www.，是评分/报告的
+    口径；这个保留原样，给仓储做归一。两者曾同名不同义，已拆开。
+    """
     return urlsplit(url).netloc
 
 
@@ -100,7 +104,7 @@ async def get_or_create_site(
     但重复扫同一个站必须复用同一条记录 —— 否则 pages/issues 外键全断，
     而且 rank_history 会按不同 site_id 分裂成互不相干的几条历史。
     """
-    domain = domain_of(url)
+    domain = netloc_of(url)
     repo_site = SiteRepository(session)
     site = await repo_site.get_by_domain(domain)
     if site is None:
@@ -213,7 +217,7 @@ async def persist_keywords(
 
 
 __all__ = [
-    "domain_of",
+    "netloc_of",
     "page_to_row",
     "issue_to_row",
     "get_or_create_site",

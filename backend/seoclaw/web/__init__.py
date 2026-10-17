@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from typing import Any, Optional
 from urllib.parse import urlparse
@@ -38,6 +39,8 @@ from .guard import (
 )
 
 router = APIRouter(prefix="/api/v1/web")
+
+log = logging.getLogger(__name__)
 
 # ⚠️ 进程内存态。重启服务进度就没了（后台任务本身也一起没了，
 # 这是BackgroundTasks 的固有性质）。所以前端拿到 job_id 后如果查不到，
@@ -176,6 +179,12 @@ async def quick_scan(body: QuickScanRequest, request: Request) -> QuickScanAccep
     # ⚠️ 并发闸必须在**建站落库之前**。否则被拒的请求已经在库里留了
     # 一个孤儿 site——攻击者可以靠「提交即被拒」白刷一堆垃圾站点。
     if _INFLIGHT[0] >= _MAX_CONCURRENT:
+        # 并发满拒单是容量信号，必须留痕：长期观测它才知道该不该扩 worker。
+        log.warning(
+            "quick-scan 并发满被拒 ip=%s inflight=%s",
+            ip,
+            _INFLIGHT[0],
+        )
         raise HTTPException(
             status_code=503,
             detail=f"现在有 {_INFLIGHT[0]} 个体检正在跑（一台机器同时只能跑 "
@@ -221,6 +230,7 @@ async def quick_scan(body: QuickScanRequest, request: Request) -> QuickScanAccep
     )
     _JOB_OF_TASK[id(task)] = job_id
     task.add_done_callback(_on_task_done)
+    log.info("quick-scan 提交 job_id=%s site_id=%s url=%s", job_id, site_id, url)
     return QuickScanAccepted(job_id=job_id, site_id=site_id, domain=domain)
 
 
@@ -264,8 +274,15 @@ async def _run(
                 "report": summary,
                 "error": None,
             })
+            log.info(
+                "quick-scan 完成 job_id=%s health=%s issues=%s",
+                job_id,
+                summary.get("health_score"),
+                summary.get("issue_count"),
+            )
     except Exception as exc:  # noqa: BLE001
         # 任务失败必须让前端看得见。静默留在 running 会变成永远转圈的进度条。
+        log.error("quick-scan 失败 job_id=%s：%s: %s", job_id, type(exc).__name__, exc)
         _remember(job_id, {
             **_TASKS.get(job_id, {}),
             "status": "failed",
@@ -295,6 +312,9 @@ def _on_task_done(task: "asyncio.Task") -> None:
     job_id = _JOB_OF_TASK.get(id(task))
     if job_id is None:
         return
+    # 走到这里的是 _run 的 try 没接住的异常（如 import 失败）——最隐蔽的
+    # 一种，必须留痕。
+    log.error("quick-scan 任务异常 job_id=%s：%s", job_id, exc)
     _remember(job_id, {
         **_TASKS.get(job_id, {}),
         "status": "failed",

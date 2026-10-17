@@ -18,11 +18,16 @@ from fastapi.staticfiles import StaticFiles
 
 from .api import router
 from .db.session import create_all, dispose_engine
+from .log import configure
 from .web import router as web_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    # 结构化日志（log.py）：级别/格式由 SEO_CLAW_LOG_LEVEL / _FORMAT 控制。
+    # 放 lifespan 而不是模块导入时：import seoclaw.main 不该有全局副作用
+    # （测试和 CLI 都会 import 它）。
+    configure()
     # ⚠️ 这里是 create_all 而非跑 Alembic 迁移。
     # 它只保证「空库能跑起来」，**不会给已有库补新列**——那必须走
     # `alembic upgrade head`。两者的区别要讲清楚，否则上线时新增字段

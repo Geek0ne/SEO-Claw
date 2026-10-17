@@ -5,6 +5,48 @@
 ## [未发布]
 
 ### 新增
+- **结构化日志 `seoclaw/log.py`**：JSON/文本双格式（`SEO_CLAW_LOG_FORMAT=json`）、
+  级别环境变量（`SEO_CLAW_LOG_LEVEL`）、`extra=` 字段并进 JSON 顶层便于检索。
+  `main.py` lifespan 统一接线；scan_service 与 web 任务生命周期
+  （提交/完成/失败/并发满被拒）全部留痕。此前服务端排障全靠 print(stderr)。
+- **CI 增加 mypy 任务** + `pyproject.toml [tool.mypy]`。PLAN.md 质量表写着
+  「mypy strict 零错误」而 CI 里一直没有 mypy——先钉默认严格度归零
+  （31 → 0），strict 作为后续棘轮逐步开，不一步到位后批量加 ignore 自欺。
+- 测试：`test_log.py`（日志契约：JSON 形状 / extra / configure 幂等）、
+  `test_api.py::test_keywords_expand_happy_path`（正常路径回归，见下）。
+
+### 修复
+- **关键词扩展端点正常路径从未走通过**：`routes.py` 里 `kw_expand.expand(...)`
+  把**函数**当模块调（`keywords/__init__` 把函数绑在包命名空间），一到正常
+  路径就 AttributeError。既有测试全绿只因用例停在 skipped_* 提前返回分支，
+  离崩溃点差一步。由 mypy 发现（“def expand has no attribute expand”），
+  现改为显式子模块导入，并补正常路径回归测试。
+- **Web 扫描的站点级事实恒空**：`scan_service._crawl_and_audit` 里另起一只
+  全新 Crawler 当“verifier”喂给 `_collect_site_facts`——它 sitemap_result 是
+  None、robots 从没被探过，sitemap/robots 类站点级规则在 Web 扫描里永远
+  拿不到事实（CLI 是就地取材的，两处口径分叉很久）。现改为取自抓过站的
+  那只爬虫，并补上 `hit_page_limit`（旧代码连这个键都没赋）。
+- `cli.py` AI 总结块把 `cfg` 复用给 LLMConfig（同函数上方已有
+  `cfg = CrawlConfig`）——同名复用悄悄覆盖爬虫配置。改名 `llm_cfg`。
+- baidu ICP 规则对同一文本正则搜两次、第二次不判 None 直接 `.group(0)`。
+- `brief.py` 拿 `Optional[Intent]` 当 dict 键 `.get()`（运行时靠巧合落默认值）。
+- `keywords/expand.py` ngram 统计注解写成 `Counter[str]`，实际值是 URL 集合。
+
+### 重构
+- **同名不同义的 `domain_of` 拆开**：`util.domain_of`（去 www，评分/报告口径）
+  与 `persist.netloc_of`（保留原始 netloc，归一化交仓储）。两者曾分别叫
+  `scan_service._domain_of` / `persist.domain_of`，同名不同义是踩坑温床。
+- `routes.py` 清掉 26 处 `__import__("fastapi").Depends(get_uow)` 技巧，
+  改为正规导入 `Depends`。
+- `db/repository.py`：DML 行数统一走 `_rowcount()`（`AsyncSession.execute`
+  的 stub 只标 `Result`，rowcount 在 CursorResult 上）；类内返回注解用
+  `builtins.list`（类方法 `list` 遮蔽内建 list，mypy 解析成方法）。
+
+### 工程地基（阶段 1）小结
+本阶段以“mypy 钉零”为抓手扫了一遍类型盲区，顺手挖出两个真 bug——
+**都是单测全绿、接口通、答案错/路径断的类型**：测试覆盖面的盲区
+（正常路径没测）恰好是 mypy 的强项。630 测试全绿、ruff 零告警、
+mypy 零错误后入库。
 - **CI lint 任务**（ruff check）：PLAN.md 质量保障表一直写着「ruff 零告警」，
   但 CI 里根本没有 lint 任务，门槛写在文档里等于没写。规则集只查真问题
   （E4/E7/E9/F），不开行长、不上格式化——注释文化经不起格式化工具重排。

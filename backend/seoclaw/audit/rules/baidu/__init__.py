@@ -574,8 +574,12 @@ class IcpFilingMissing(Rule):
                 if any(host == h or host.endswith("." + h) for h in BEIAN_HOSTS):
                     hits.append({"type": "link", "url": p.url, "value": link.href})
                     break
-            if _ICP_TEXT_RE.search(p.text or ""):
-                hits.append({"type": "text", "url": p.url, "value": _ICP_TEXT_RE.search(p.text or "").group(0)})
+            # ⚠️ 原来搜了两次：if 里一次、取值里再一次。第二次的 match
+            # 没判 None 直接 .group(0)——正则回溯边界上完全可能 if 过了
+            # 第二次却返回 None（理论上同输入同结果，但这是运气不是契约）。
+            icp = _ICP_TEXT_RE.search(p.text or "")
+            if icp:
+                hits.append({"type": "text", "url": p.url, "value": icp.group(0)})
         if hits:
             return
 

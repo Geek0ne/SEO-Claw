@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import builtins
 import unicodedata
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
@@ -34,6 +35,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from . import models as m
 
 T = TypeVar("T")
+
+
+def _rowcount(result: Any) -> int:
+    """DML 后取受影响行数。
+
+    ⚠️ ``AsyncSession.execute`` 的 stub 返回 ``Result``，而 rowcount 只在
+    游标结果（CursorResult）上——stub 看不到，直接 ``.rowcount`` 就是 mypy
+    红。运行时拿得到，这里统一走 getattr 顺手把 None 归零。
+    """
+    return int(getattr(result, "rowcount", 0) or 0)
 
 
 # --------------------------------------------------------------------------
@@ -136,7 +147,10 @@ def _severity_rank_case() -> Any:
         (m.Severity.LOW.value, 3),
         (m.Severity.INFO.value, 4),
     ]
-    return case(*whens, value=m.Issue.severity)
+    return case(*whens, value=m.Issue.severity)  # type: ignore[arg-type]
+    # ⚠️ 上面的 ignore 是 SQLA 的 stub 缺口：value= 形式（简单 CASE）的
+    # whens 是 (值, 结果) 对，stub 只签名化了 (条件, 结果) 对。运行时两种
+    # 都合法；将来 SQLA stub 补上后可以把 ignore 删掉跑一遍看看。
 
 
 def normalize_root_cause(raw: Any) -> str:
@@ -489,8 +503,13 @@ class PageRepository:
 
     async def diff_against(
         self, site_id: int, seen: dict[str, str]
-    ) -> list[str]:
+    ) -> builtins.list[str]:
         """增量扫描：哪些 URL 是"新发现或内容已变"。
+
+        ⚠️ 返回注解用 builtins.list 而不是 list：本类有个方法就叫 ``list``，
+        会把内建 list 遮蔽掉——类体注解里的 ``list[str]`` 会被 mypy 解析成
+        那个方法（"not valid as a type"）。PageRepository / IssueRepository /
+        KeywordRepository 同理。
 
         返回需要重跑规则的 URL 列表（已存在库中）。全新 URL 由调用方直接
         当作需要处理，不在此列 —— 库里的"缺席"本身就是"已变"信号。
@@ -500,7 +519,7 @@ class PageRepository:
 
     async def unchanged_urls(
         self, site_id: int, seen: dict[str, str]
-    ) -> list[str]:
+    ) -> builtins.list[str]:
         """增量扫描：哪些 URL 内容完全没变（可跳过规则重跑）。"""
         known = await self.content_hashes(site_id)
         return [url for url, chash in seen.items() if known.get(url) == chash]
@@ -667,7 +686,7 @@ class IssueRepository:
 
     async def bulk_create(
         self, site_id: int, issues: Iterable[dict[str, Any]]
-    ) -> list[m.Issue]:
+    ) -> builtins.list[m.Issue]:
         """一次扫描的全部问题落库。
 
         **不**在内部聚合成一条：一条 Issue 记录 = 一条可勾选、可单独修复、
@@ -710,7 +729,7 @@ class IssueRepository:
         *,
         status: Optional[m.IssueStatus | str] = None,
         limit: int = 50,
-    ) -> list[FingerprintGroup]:
+    ) -> builtins.list[FingerprintGroup]:
         """按根因聚合 —— 回答"这类问题一共波及多少页、值得批量修吗"。
 
         用 SQL GROUP BY 而不是拉回内存再统计：问题数在大站上可达十万级，
@@ -788,7 +807,7 @@ class IssueRepository:
         )
         result = await self.session.execute(stmt)
         await self.session.flush()
-        return int(result.rowcount or 0)
+        return _rowcount(result)
 
     async def refresh_occurrences(self, site_id: int) -> None:
         """按指纹回填 ``occurrences``，让读路径不必再算一次 COUNT。"""
@@ -824,7 +843,7 @@ class IssueRepository:
         )
         result = await self.session.execute(stmt)
         await self.session.flush()
-        return int(result.rowcount or 0)
+        return _rowcount(result)
 
     async def count_by_severity(self, site_id: int) -> dict[str, int]:
         """OPEN 问题按严重度的条数，键为 severity 的**值**（"high" 而非 "Severity.HIGH"）。
@@ -853,7 +872,7 @@ class IssueRepository:
             stmt = stmt.where(m.Issue.status == m.IssueStatus(status))
         result = await self.session.execute(stmt)
         await self.session.flush()
-        return int(result.rowcount or 0)
+        return _rowcount(result)
 
 
 # --------------------------------------------------------------------------
@@ -888,7 +907,7 @@ class KeywordRepository:
 
     async def bulk_upsert(
         self, site_id: int, terms: Iterable[dict[str, Any]]
-    ) -> list[m.Keyword]:
+    ) -> builtins.list[m.Keyword]:
         """词库导入幂等：已存在的（站点,市场,词）更新指标，不新增行。"""
         out: list[m.Keyword] = []
         for payload in terms:

@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from datetime import datetime, timezone
 from typing import Any, Optional, Sequence
@@ -23,6 +24,9 @@ from ..db import repository as repo
 from ..db.models import JobStatus as DbJobStatus
 from ..models import Issue, Market, Page
 from ..scoring import score
+from ..util import domain_of
+
+log = logging.getLogger(__name__)
 
 
 def _page_to_row(p: Page) -> dict[str, Any]:
@@ -142,10 +146,23 @@ def _crawl_and_audit(
         pages = crawler.crawl(url)
         discovered = getattr(crawler, "discovered_count", len(pages))
 
-    from ..cli import _collect_site_facts
+        # ⚠️ site facts 必须取自**抓过站的这只爬虫**。以前这里另起一只全新
+        # Crawler 当“verifier”再喂给 _collect_site_facts —— 那只爬虫什么都没
+        # 探过：sitemap_result 是 None、robots 从没被查过，collect 出来全是
+        # 空值，sitemap/robots 类站点级规则在 Web 扫描里永远拿不到事实
+        # （CLI 是就地取材的，两处口径分叉了很久）。
+        from ..cli import _collect_site_facts
 
-    with Crawler(cfg) as verifier:
-        site_facts = _collect_site_facts(verifier)
+        site_facts = _collect_site_facts(crawler)
+        # ⚠️ 与 CLI 同口径（见 cli.cmd_scan 的同名逻辑）：hit_page_limit
+        # 看的是「frontier 还有没有剩」，不是「本趗有没有打满上限」——
+        # 分批跑站每趗都以打满收尾，旧口径会让站点级规则永远沉默。
+        # （而且旧行为这里压根没赋这个键，比口径错更糟：永远缺席。）
+        site_facts["hit_page_limit"] = bool(
+            getattr(crawler, "aborted_reason", None)
+            or not getattr(crawler, "frontier_drained", False)
+        )
+
     site_facts["discovered_count"] = discovered
     ok_pages = [p for p in pages if p.status_code == 200 and not p.error]
     site_facts["pages_ok"] = len(ok_pages)
@@ -159,10 +176,8 @@ def _crawl_and_audit(
 
 
 def _domain_of(url: str) -> str:
-    from urllib.parse import urlparse
-
-    d = urlparse(url).netloc
-    return d[4:] if d.startswith("www.") else d
+    """兼容别名：口径已收口到 :func:`seoclaw.util.domain_of`。"""
+    return domain_of(url)
 
 
 async def run_scan(
@@ -242,10 +257,14 @@ async def run_scan(
             # 这正是我在仓库注释里说过「绝不谎报」的那件事。
             scoped_urls={p.url for p in ok_pages if not p.not_modified},
         )
-        # ⚠️ 这个文件没有 logger（我第一版写了这行，实跑才发现是 NameError，
-        # 白等一次端到端）。同步统计目前只在排障时手工看，所以直接丢弃；
-        # 真要长期观测就先把 logger 引进这个模块，别在调用点现编一个。
-        _sync_stats
+        # ⚠️ 同步统计不再丢弃：log.py 引进后这块直接进结构化日志。
+        # auto_closed（「上轮还在、这轮没了」的自动收尾数）排障增量扫描
+        # 误报时第一个要看的就是它。
+        log.info(
+            "问题同步完成 %s",
+            _sync_stats,
+            extra={"site_id": site_id, "job_id": job.id},
+        )
 
         # ⚠️ 分数必须**跟着这一轮扫描**存进 crawl_jobs。issues 表是最新快照
         # ——上一轮的问题已被这一轮覆盖，事后再拿 issues 重算，算出来的

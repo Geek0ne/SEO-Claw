@@ -44,6 +44,8 @@ _BRAND_HINT = re.compile(r"\b[a-z0-9]{2,}\.(?:com|cn|net|org|io|co)\b", re.I)
 
 # 页型：不同搜索意图对应不同页面形态。
 # 这是本工具**唯一**的硬知识，来源是 SERP 通用规律，不是猜的。
+_PAGE_TYPE_UNKNOWN = "未分类（缺 intent，建议先人工判定）"
+
 _PAGE_TYPE_BY_INTENT: dict[Intent, str] = {
     Intent.INFORMATIONAL: "内容页（教程 / 说明 / 指南）",
     Intent.NAVIGATIONAL: "首页或分类入口页（少用大段正文）",
@@ -321,7 +323,11 @@ def generate_brief(
         market=market.value,
         intent=intent.value if intent else None,
         page_type=(
-            _PAGE_TYPE_BY_INTENT.get(intent, "未分类（缺 intent，建议先人工判定）")
+            # intent 是 Optional：直接 .get(intent) 在 mypy 里是「拿 None 当键」。
+            # 运行时 get(None) 恰好落回默认值，但那是巧合不是设计。
+            _PAGE_TYPE_BY_INTENT.get(intent, _PAGE_TYPE_UNKNOWN)
+            if intent is not None
+            else _PAGE_TYPE_UNKNOWN
         ),
         title_candidates=build_title_candidates(keyword, intent, site),
         serp_common=common,
