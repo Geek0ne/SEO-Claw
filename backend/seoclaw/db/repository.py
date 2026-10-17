@@ -20,7 +20,7 @@ import re
 import builtins
 import unicodedata
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import (
     Any,
     Iterable,
@@ -380,6 +380,150 @@ class CrawlJobRepository:
             .order_by(m.CrawlJob.id.desc())
         )
         return await paginate(self.session, stmt, limit=limit, offset=offset)
+
+
+# --------------------------------------------------------------------------
+# scan_tasks —— 任务队列
+# --------------------------------------------------------------------------
+
+
+class ScanTaskRepository:
+    """scan_tasks 的队列操作。所有「认领 / 收尾 / 恢复」的 SQL 收在这里。
+
+    ⚠️ 认领语义是这层的核心：条件 UPDATE（by id 且仍是 pending）后看
+    rowcount，=1 才算拿到。两个 worker 抢同一行时，后到的 rowcount=0
+    直接认输。**别改成先 SELECT 再 UPDATE**——那是教科书式的丢任务姿势。
+    """
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def enqueue(
+        self,
+        *,
+        site_id: int,
+        url: str,
+        markets: list[str],
+        max_pages: int,
+        max_depth: int,
+        respect_robots: bool,
+        render_js: bool,
+    ) -> m.ScanTask:
+        row = m.ScanTask(
+            site_id=site_id,
+            url=url,
+            markets=markets,
+            max_pages=max_pages,
+            max_depth=max_depth,
+            respect_robots=respect_robots,
+            render_js=render_js,
+        )
+        self.session.add(row)
+        await self.session.flush()
+        return row
+
+    async def get(self, task_id: int) -> Optional[m.ScanTask]:
+        stmt = select(m.ScanTask).where(m.ScanTask.id == task_id)
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def count_running(self) -> int:
+        stmt = select(func.count()).select_from(m.ScanTask).where(
+            m.ScanTask.status == m.TaskStatus.RUNNING
+        )
+        return int((await self.session.execute(stmt)).scalar() or 0)
+
+    async def count_pending(self) -> int:
+        stmt = select(func.count()).select_from(m.ScanTask).where(
+            m.ScanTask.status == m.TaskStatus.PENDING
+        )
+        return int((await self.session.execute(stmt)).scalar() or 0)
+
+    async def claim_next(self, *, max_running: int) -> Optional[m.ScanTask]:
+        """认领最早的 pending 任务并置 running。没有可领的返回 None。
+
+        ⚠️ 并发上限是「咨询式」的：count 与 claim 之间存在竞态窗口，
+        两个 worker 可能同时看到 running=0 而各领一个，瞬时超限。
+        硬上限要上 SELECT ... FOR UPDATE 或租约表，代价不值——超限的
+        后果只是多占一份内存，不是正确性问题。认领本身是原子的。
+        """
+        if max_running <= 0 or await self.count_running() >= max_running:
+            return None
+        row = (
+            await self.session.execute(
+                select(m.ScanTask)
+                .where(m.ScanTask.status == m.TaskStatus.PENDING)
+                .order_by(m.ScanTask.id.asc())
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            return None
+        res = await self.session.execute(
+            update(m.ScanTask)
+            .where(m.ScanTask.id == row.id, m.ScanTask.status == m.TaskStatus.PENDING)
+            .values(
+                status=m.TaskStatus.RUNNING,
+                attempts=m.ScanTask.attempts + 1,
+                started_at=utcnow(),
+            )
+        )
+        await self.session.flush()
+        if _rowcount(res) != 1:
+            return None  # 被别的 worker 抢先了
+        await self.session.refresh(row)
+        return row
+
+    async def finish(self, task_id: int, result: dict[str, Any]) -> None:
+        row = await self.get(task_id)
+        if row is None:
+            return
+        row.status = m.TaskStatus.DONE
+        row.result = result
+        row.finished_at = utcnow()
+        await self.session.flush()
+
+    async def fail(self, task_id: int, error: str) -> None:
+        row = await self.get(task_id)
+        if row is None:
+            return
+        row.status = m.TaskStatus.FAILED
+        row.error = error[:500]
+        row.finished_at = utcnow()
+        await self.session.flush()
+
+    async def recover_stale(
+        self, *, older_than_seconds: float, max_attempts: int = 2
+    ) -> int:
+        """捞回「running 了很久还在 running」的孤儿任务，返回处理条数。
+
+        孤儿 =认领它的进程已经死了（被杀 / 崩溃 / 部署重启）。判据是
+        ``started_at`` 足够旧——活人的任务会正常走到终态，不会停在
+        running 跨过阈值。
+
+        attempts < max_attempts 给一次重试机会（回 pending 重新排队），
+        否则认输标 failed。⚠️ 没有上限的重试会让一个必然失败的任务
+        永远霸占队列。
+        """
+        cutoff = utcnow() - timedelta(seconds=max(0.0, older_than_seconds))
+        rows = (
+            await self.session.execute(
+                select(m.ScanTask).where(
+                    m.ScanTask.status == m.TaskStatus.RUNNING,
+                    m.ScanTask.started_at < cutoff,
+                )
+            )
+        ).scalars().all()
+        for row in rows:
+            if row.attempts < max_attempts:
+                row.status = m.TaskStatus.PENDING
+                row.started_at = None
+                row.error = "执行进程中断，已重新排队"
+            else:
+                row.status = m.TaskStatus.FAILED
+                row.error = "任务执行中被中断，且已达重试上限"
+                row.finished_at = utcnow()
+        await self.session.flush()
+        return len(rows)
 
 
 # --------------------------------------------------------------------------

@@ -187,6 +187,14 @@ class Rule(ABC):
 
 ## 7. 当前状态
 
+- [x] **改造阶段 2a（持久任务队列）2026-10-18**：scan_tasks 表（迁移 0007）+
+  tasks.py 执行器。Web 任务从进程内存落库：重启不丢、多 worker 原子认领、
+  孤儿任务启动恢复（attempts 限次重试）；同进程唤醒秒级开跑 + 跨进程
+  慢轮询兜底；队列深度上限拒收。验收达成：杀进程任务不丢（有回归测试）、
+  并发计数从行状态数出来（不存在忘减）。踩坑三枚：asyncio.Event 绑循环、
+  嵌套 TestClient 双循环共享引擎、@dataclass 装饰器被插队接住。
+  阶段 2b（定时扫描调度）待做。
+
 - [x] **改造阶段 1（工程地基）2026-10-18**：结构化日志 `log.py`（JSON/文本）+
   CI mypy 任务（存量 31 错误 → 0，配置钉在 `pyproject.toml [tool.mypy]`）+
   清理 routes/scan_service/cli 坏味道。顺手挖出两个真 bug：①关键词扩展端点

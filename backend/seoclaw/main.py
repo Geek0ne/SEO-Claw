@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncIterator
@@ -33,9 +35,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # `alembic upgrade head`。两者的区别要讲清楚，否则上线时新增字段
     # 会只在测试里生效（测试每次建新库），生产直接 500。
     await create_all()
+    # 任务队列：先捞回上个进程死掉时留下的孤儿任务，再启动执行器。
+    # 顺序反了会让孤儿任务和新任务抢并发额度。
+    from . import tasks as task_queue
+
+    await task_queue.recover_stale()
+    worker = asyncio.create_task(task_queue.worker_loop())
     try:
         yield
     finally:
+        # 先停 worker 再关库：反过来 worker 会在关库后拿连接，报错刷屏。
+        # 取消时正在跑的任务行会留在 running，下次启动由 recover_stale 捞回。
+        worker.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await worker
         await dispose_engine()
 
 

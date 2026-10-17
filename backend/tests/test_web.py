@@ -48,7 +48,27 @@ import pytest
 from fastapi.testclient import TestClient
 
 from seoclaw.main import app
-from seoclaw.web import _MAX_TASKS, _TASKS, _next_id, _normalize_url
+from seoclaw.web import _normalize_url
+
+
+def _exec_sql(sql: str, params: tuple = ()) -> list[tuple]:
+    """直接对测试库执行 SQL（同步 sqlite3），返回全部行。
+
+    ⚠️ 不用 ORM/async 会话：测试是同步的，而驱动事件循环的教训在模块
+    docstring 里。断言辅助的轻量读写走裸连接最稳。表还没建时返回 []。
+    """
+    import sqlite3
+
+    try:
+        con = sqlite3.connect(_TMP_DB, timeout=5)
+        try:
+            rows = con.execute(sql, params).fetchall()
+            con.commit()
+            return rows
+        finally:
+            con.close()
+    except sqlite3.OperationalError:
+        return []
 
 
 async def _fake_scan(session, *, site_id, url, markets, max_pages, **kw):
@@ -117,15 +137,14 @@ def client(monkeypatch):
     # ⚠️ 并发计数器同样是**全局**的。上一条用例若泄漏了计数，
     # 这一条就会莫名其妙收到 503 —— 而且症状是「测试之间互相影响」，
     # 极难定位。跟限流桶一样，每个用例进来先清干净。
-    import seoclaw.web as _webmod
-    _webmod._INFLIGHT[0] = 0
+    # ⚠️ 任务状态落库后，测试隔离靠清表：上个用例遗留的 pending 行会被
+    # 本用例的 worker 认领，污染断言（尤其队列上限那条）。
+    # 直接同步 sqlite3 清——这里不碰事件循环（见模块 docstring）。
+    _exec_sql("DELETE FROM scan_tasks")
 
-    _TASKS.clear()
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
-    _TASKS.clear()
     guard.public_limiter._buckets.clear()
-    _webmod._INFLIGHT[0] = 0
 
 
 def _submit(c: TestClient, url: str = "demo.test") -> int:
@@ -241,14 +260,24 @@ def test_unknown_job_is_404_not_running(client):
     assert client.get("/api/v1/web/jobs/999999").status_code == 404
 
 
-def test_task_ids_are_unique():
-    ids = [_next_id() for _ in range(50)]
-    assert len(set(ids)) == 50
+def test_task_ids_are_unique(client):
+    """落库任务号唯一（自增主键）：两次提交拿到不同 id。"""
+    assert _submit(client) != _submit(client)
 
 
-def test_memory_task_table_bounded():
-    """内存任务表必须有上限，否则长期运行会被撑爆。"""
-    assert _MAX_TASKS <= 1000
+def test_queue_cap_rejects_when_backed_up(client, monkeypatch):
+    """队列满必须当场拒收。
+
+    ⚠️ 这条替换了旧的「并发上限当场拒」——现在真的有队列了，排队是
+    可兑现的承诺。但队列深度要有上限：收下排到天黑的活儿比明说
+    「现在忙」更伤信任。
+    """
+    import seoclaw.web as webmod
+
+    monkeypatch.setattr(webmod, "_MAX_PENDING", 0)
+    r = client.post("/api/v1/web/quick-scan", json={"url": "busy.test"})
+    assert r.status_code == 503
+    assert "Retry-After" in r.headers, "503 必须带 Retry-After"
 
 
 def test_same_domain_not_duplicated(client):
@@ -287,106 +316,92 @@ def test_scan_failure_becomes_failed(client, monkeypatch):
 
 
 def test_task_level_exception_still_becomes_failed(client, monkeypatch):
-    """⚠️ _run 自己 import 失败时，异常发生在 try 之前。
+    """⚠️ 执行器自身的异常（如 import 失败）也必须落成 failed。
 
     我第一版就是这个 bug：一个 ModuleNotFoundError 让任务卡在 running，
     而我在文件顶部刚写过「静默留在 running 会变成永远转圈的进度条」。
-    done_callback 才是真正的兜底。
+    现在 worker 的兜底 except 就是那道网，这里把它钉住。
     """
-    import seoclaw.web as webmod
+    import seoclaw.tasks as taskmod
 
     async def _dead(*a, **kw):
         raise ModuleNotFoundError("No module named 'seoclaw.web.api'")
 
-    monkeypatch.setattr(webmod, "_run", _dead)
+    monkeypatch.setattr(taskmod, "_execute", _dead)
 
     st = _wait_job(client, _submit(client))
     assert st["status"] == "failed", "任务级异常没被兜住，会永远转圈"
+    assert "ModuleNotFoundError" in (st["error"] or "")
+
 
 # --------------------------------------------------------------------------
-# 并发闸
+# 并发计数（落库后的等价物）
 # --------------------------------------------------------------------------
 #
 # ⚠️ 这道闸最阴的坑是「计数器忘了减」：症状是「刚才还好好的，
-# 突然全站 503」，而且**极难定位**——日志里没有异常，没有报错，
-# 只有一个慢慢涨上去再也降不下来的整数。我自己写第一版就漏了释放，
-# 所以这里必须钉死。
+# 突然全站 503」，而且极难定位——内存计数时代我漏过一次。落库后
+# running 是**从行状态数出来的**，不存在忘减的可能，但「行永远留在
+# running」是同一类病的新形态，这里改盯那个。
 
 
-def test_inflight_released_after_success(client):
-    """跑完之后计数器必须回到 0。"""
-    import seoclaw.web as webmod
-
+def test_no_running_rows_after_success(client):
+    """跑完之后 running 行必须清零（done/failed 都是终态）。"""
     _wait_job(client, _submit(client))
-    # done_callback 在事件循环里跑，轮询终态后可能还没执行完
     for _ in range(100):
-        if webmod._INFLIGHT[0] == 0:
+        if not _exec_sql("SELECT id FROM scan_tasks WHERE status = 'running'"):
             break
         time.sleep(0.02)
-    assert webmod._INFLIGHT[0] == 0, (
-        f"计数器没释放：{webmod._INFLIGHT[0]}。"
-        "再跑几次之后这个服务就永久 503 了"
-    )
+    rows = _exec_sql("SELECT id, status FROM scan_tasks WHERE status = 'running'")
+    assert not rows, f"有行卡在 running：{rows}——用户会对着不动的进度条等下去"
 
 
-def test_inflight_released_after_failure(client, monkeypatch):
-    """⚠️ 失败也必须释放。只在成功路径 release 的话，
-    「爬虫一挂就永久 503」——比不设闸还糟。"""
+def test_no_running_rows_after_failure(client, monkeypatch):
+    """⚠️ 失败也必须收尾。只在成功路径收尾的话，
+    「爬虫一挂就永远 running」——比没有队列还糟。"""
 
     async def _boom(session, **kw):
         raise RuntimeError("炸了")
 
     monkeypatch.setattr("seoclaw.api.scan_service.run_scan", _boom)
 
-    import seoclaw.web as webmod
-    _wait_job(client, _submit(client))
-    for _ in range(100):
-        if webmod._INFLIGHT[0] == 0:
-            break
-        time.sleep(0.02)
-    assert webmod._INFLIGHT[0] == 0, "任务失败后计数器没释放"
+    st = _wait_job(client, _submit(client))
+    assert st["status"] == "failed"
+    rows = _exec_sql("SELECT id FROM scan_tasks WHERE status = 'running'")
+    assert not rows, f"失败任务没收尾，仍有行卡在 running：{rows}"
 
 
-def test_inflight_released_when_task_never_starts(client, monkeypatch):
-    """⚠️ 任务级异常（import 失败那种）也必须释放。
+def test_stale_running_task_is_recovered(monkeypatch):
+    """⚠️ 进程死掉留下的 running 孤儿必须被捞回——这是内存态方案根本
+    做不到的事（任务当时直接蒸发）。启动恢复见 tasks.recover_stale：
+    attempts 未超限回 pending 重跑，超限标 failed，绝不留 running。
 
-    `from ..api.scan_service import run_scan` 在 try **上面**，
-    所以 _run 自己的 finally 覆盖不到那条路——我第一版就把释放
-    写在 finally 里，结果这条路径漏了。
+    ⚠️ 这里刻意用**两个顺序的 client**而不是嵌套：第一个 client 退出
+    就是「上个进程死了」，语义更真；更重要的是嵌套 TestClient 会让
+    两个事件循环共享同一个引擎连接池，引发与被测逻辑无关的 500。
     """
-    import seoclaw.web as webmod
+    monkeypatch.setattr("seoclaw.api.scan_service.run_scan", _fake_scan)
+    with TestClient(app, raise_server_exceptions=False) as c1:
+        site_id = c1.post(
+            "/api/v1/sites", json={"domain": "orphan.test"}
+        ).json()["id"]
+    # 造一条「上个进程」的任务：running + started_at 久远。
+    # 塞成 running 而不是 pending——正在跑的活儿不会被 worker 认领，
+    # 只有恢复逻辑会碰它，隔离干净。
+    _exec_sql(
+        "INSERT INTO scan_tasks (site_id, url, markets, max_pages, max_depth,"
+        " respect_robots, render_js, status, attempts, started_at, created_at,"
+        " updated_at) VALUES (?, 'https://orphan.test/', '[]', 5, 3, 1, 0,"
+        " 'running', 1, '2020-01-01 00:00:00', '2020-01-01 00:00:00',"
+        " '2020-01-01 00:00:00')",
+        (site_id,),
+    )
+    task_id = _exec_sql(
+        "SELECT id FROM scan_tasks WHERE site_id = ?", (site_id,)
+    )[0][0]
 
-    async def _dead(*a, **kw):
-        raise ModuleNotFoundError("No module named 'seoclaw.web.api'")
-
-    monkeypatch.setattr(webmod, "_run", _dead)
-    _wait_job(client, _submit(client))
-    for _ in range(100):
-        if webmod._INFLIGHT[0] == 0:
-            break
-        time.sleep(0.02)
-    assert webmod._INFLIGHT[0] == 0, "任务级异常路径没释放计数器"
-
-
-def test_concurrency_limit_rejects_extra(client, monkeypatch):
-    """超过上限要当场 503，而不是默默排队。
-
-    排队等比拒绝更糟：用户等 5 分钟才知道要排 8 个人，
-    不如当场告诉他「现在忙」。
-    """
-
-    async def _slow(session, **kw):
-        # 卡住不返回，让前两个任务一直占着并发位
-        import asyncio as _a
-        await _a.sleep(30)
-
-    monkeypatch.setattr("seoclaw.api.scan_service.run_scan", _slow)
-
-    first = client.post("/api/v1/web/quick-scan", json={"url": "a.test"})
-    second = client.post("/api/v1/web/quick-scan", json={"url": "b.test"})
-    assert first.status_code == 202
-    assert second.status_code == 202
-
-    third = client.post("/api/v1/web/quick-scan", json={"url": "c.test"})
-    assert third.status_code == 503, "超过并发上限却放行了"
-    assert "Retry-After" in third.headers, "503 必须带 Retry-After"
+    # 新进程上线：lifespan 的启动恢复是被测入口，阈值 0 = 只要还
+    # 在 running 就算孤儿。
+    monkeypatch.setenv("SEO_CLAW_TASK_STALE_S", "0")
+    with TestClient(app, raise_server_exceptions=False) as c2:
+        st = _wait_job(c2, task_id)
+    assert st["status"] == "done", f"孤儿任务没被捞回重跑：{st}"

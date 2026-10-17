@@ -4,6 +4,31 @@
 
 ## [未发布]
 
+### 新增（阶段 2a：持久任务队列）
+- **任务队列落库**：`scan_tasks` 表（迁移 0007）+ `seoclaw/tasks.py` 执行器。
+  Web 体检任务从进程内存（`_TASKS`/`_INFLIGHT`/`_NEXT_ID`）迁到数据库：
+  重启不丢、多 worker 安全（原子认领：条件 UPDATE 看 rowcount，抢不到就让），
+  被杀进程的孤儿任务由启动恢复捞回（attempts 未超限重排、超限标 failed，
+  绝不留永远 running 的行）。同进程提交唤醒秒级开跑，跨进程靠慢轮询兜底；
+  队列深度上限 50 拒收——排队承诺必须兑现。
+- 迁移 0007；模型/迁移零漂移（alembic check 干净）。
+
+### 修复
+- `asyncio.Event` 在模块 import 时创建会绑死事件循环：第二个 TestClient
+  的新循环一碰就是「bound to a different event loop」。改为按循环惰性重建。
+- 重排队任务的 elapsed 拿 created_at 算，报出过 2 亿秒——没开跑现在报 0，
+  elapsed 只认 started_at（排队时长和运行时长是两个量）。
+- `@dataclass(slots=True)` 装饰器被新类插队接住（症状：`self.session = session`
+  报 no attribute——slots 的经典面孔），装饰器已归位。
+
+### 变更
+- **Web 语义**：并发满不再当场 503，改为排队（现在真的有队列，这个
+  承诺才兑现得了）；队列深度满才拒。
+- 旧内存态用例重写为落库等价物：inflight 释放×3 → running 行清零×2 +
+  孤儿恢复；并发上限拒收 → 队列上限拒收。
+
+## [阶段 1 已随 49f5367 提交]
+
 ### 新增
 - **结构化日志 `seoclaw/log.py`**：JSON/文本双格式（`SEO_CLAW_LOG_FORMAT=json`）、
   级别环境变量（`SEO_CLAW_LOG_LEVEL`）、`extra=` 字段并进 JSON 顶层便于检索。

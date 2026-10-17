@@ -45,7 +45,9 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    false,
     func,
+    true,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -120,6 +122,21 @@ class JobStatus(str, enum.Enum):
     SUCCEEDED = "succeeded"
     FAILED = "failed"
     CANCELLED = "cancelled"
+
+
+class TaskStatus(str, enum.Enum):
+    """Web 体检任务的队列状态。
+
+    ⚠️ 与 :class:`JobStatus` 刻意分开：任务（scan_tasks）是「用户提交的
+    一份活儿」，job（crawl_jobs）是「一次抓取记录」。一次任务的执行会产生
+    一个 crawl_job；两者的生命周期粒度不同，共用一套状态会把
+    「排队中」和「抓取失败」混成一个词。
+    """
+
+    PENDING = "pending"
+    RUNNING = "running"
+    DONE = "done"
+    FAILED = "failed"
 
 
 class Intent(str, enum.Enum):
@@ -297,6 +314,81 @@ class CrawlJob(Base, TimestampMixin):
         if not self.started_at or not self.finished_at:
             return None
         return (self.finished_at - self.started_at).total_seconds()
+
+
+# --------------------------------------------------------------------------
+# scan_tasks —— Web 体检任务的持久队列
+# --------------------------------------------------------------------------
+
+
+class ScanTask(Base, TimestampMixin):
+    """一次 Web 体检提交 —— 持久队列的一条。
+
+    ## 为什么不再用进程内存
+
+    前一版把任务状态放 ``web/__init__.py`` 的模块字典里，三个硬伤：
+    重启全丢（任务连同进度蒸发，只剩前端永远转圈）、多 worker 互相
+    看不见（并发闸形同虚设）、进程被杀后 running 行变僵局。任务是
+    「用户提交的活儿」，活儿必须落库。
+
+    ## 与 crawl_jobs 的关系
+
+    一条任务执行时会创建一个 crawl_job（由 run_scan 负责）。这张表管
+    排队与调度的生命周期，crawl_jobs 管抓取本身的生命周期；把两者合一
+    会让「排队中」和「抓取失败」共用一个状态词。
+    """
+
+    __tablename__ = "scan_tasks"
+    __table_args__ = (
+        # 队列扫描的核心查询：最早的 pending + running 计数，都走这个前缀。
+        Index("ix_scan_tasks_status_created", "status", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    site_id: Mapped[int] = mapped_column(
+        ForeignKey("sites.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    # 执行参数整包落库：worker 拿到的是完整可执行的任务，
+    # 不依赖提交时的进程内上下文。
+    # ⚠️ server_default 与迁移 0007 逐字段对齐（0006 的教训：只有 Python
+    # 侧 default= 而库里有 server_default，alembic check 直接报漂移）。
+    markets: Mapped[list[str]] = mapped_column(
+        JSONType, default=list, server_default="[]", nullable=False
+    )
+    max_pages: Mapped[int] = mapped_column(
+        Integer, default=30, server_default="30", nullable=False
+    )
+    max_depth: Mapped[int] = mapped_column(
+        Integer, default=6, server_default="6", nullable=False
+    )
+    respect_robots: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default=true(), nullable=False
+    )
+    render_js: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=false(), nullable=False
+    )
+
+    status: Mapped[TaskStatus] = mapped_column(
+        enum_column(TaskStatus, "scan_task_status"),
+        default=TaskStatus.PENDING,
+        server_default="pending",
+        nullable=False,
+    )
+    # 认领即 +1：进程崩溃后 recover_stale 靠它决定「再给一次机会还是
+    # 认输」——没有上限的重试会让一个必然失败的任务永远霸占队列。
+    attempts: Mapped[int] = mapped_column(
+        Integer, default=0, server_default="0", nullable=False
+    )
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # 跑完给前端的完整报告快照（run_scan 的 summary）。
+    result: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONType, nullable=True)
+    started_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    finished_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 # --------------------------------------------------------------------------

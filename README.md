@@ -5,7 +5,7 @@
 **基于正面证据的站点 SEO 审计工具 —— 宁可漏报，不报假问题**
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-630%20✓-2EA44F?logo=pytest&logoColor=white)](#-开发与测试)
+[![Tests](https://img.shields.io/badge/tests-629%20✓-2EA44F?logo=pytest&logoColor=white)](#-开发与测试)
 [![Coverage](https://img.shields.io/badge/coverage-82%25-2EA44F)](#-开发与测试)
 [![License](https://img.shields.io/badge/license-MIT-FF9900)](#-license)
 [![Code style](https://img.shields.io/badge/style-audit%20grade-black)](./DESIGN.md)
@@ -268,7 +268,7 @@ backend/seoclaw/
 └── 🧰 mcp_server.py    MCP Server（3 个只读工具）
 ```
 
-**约 14,600 行实现代码 · 约 8,900 行测试代码 · 630 个测试（全绿）。**
+**约 14,600 行实现代码 · 约 8,900 行测试代码 · 629 个测试（全绿）。**
 
 ### 🗄️ 数据库
 
@@ -292,7 +292,7 @@ pip install -e ".[api,dev]"
 pytest backend/tests -q
 ```
 
-- ✅ **630 个测试**：全绿（`mcp` 为可选依赖，未安装时 3 个相关用例自动跳过）
+- ✅ **629 个测试**：全绿（`mcp` 为可选依赖，未安装时 3 个相关用例自动跳过）
 - 📊 覆盖率约 82%（CI 门禁 78%，为波动留余量）
 - 🤖 **CI 双任务**：① 全量测试 + 覆盖率 + CLI 冒烟 + wheel 构建；② `guard_smoke.sh` 真容器验收（四道闸）
 - 🧰 部分环境用 `run.sh` 封装本机依赖安装方式（`.deps/` 隔离 + `PYTHONPATH`），见脚本内注释
