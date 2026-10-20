@@ -5,7 +5,7 @@
 **基于正面证据的站点 SEO 审计工具 —— 宁可漏报，不报假问题**
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-624%20✓-2EA44F?logo=pytest&logoColor=white)](#-开发与测试)
+[![Tests](https://img.shields.io/badge/tests-657%20✓-2EA44F?logo=pytest&logoColor=white)](#-开发与测试)
 [![Coverage](https://img.shields.io/badge/coverage-82%25-2EA44F)](#-开发与测试)
 [![License](https://img.shields.io/badge/license-MIT-FF9900)](#-license)
 [![Code style](https://img.shields.io/badge/style-audit%20grade-black)](./DESIGN.md)
@@ -63,6 +63,8 @@
 | 🧭 | **规则引擎** —— 43 条检查项按市场分包（base / google / baidu / cnh_eco / geo），页面级与站点级分层，实验包与已验证规则物理隔离 |
 | 🕷️ | **礼貌爬虫** —— BFS 抓取、限速、自适应降速、熔断、代理轮换、断点续传、ETag/304 增量扫描 |
 | 🧾 | **多格式报告** —— 终端 / Markdown / JSON / 单文件 HTML（无外链、可离线打开、可直接交付客户） |
+| 🩹 | **整改工单（处方包）** —— 把问题变成「改前 → 改后」的可落地修复动作，md / json / csv / diff 四格式；可信度分三档（可照抄 / 机器起草待润色 / 只给配方），判不了的转人工不硬凑 |
+| 📉 | **排名监测数据入口** —— 日级排名/流量 CSV 导入（`rank-import`）+ REST 接入，喂活排名时序与跌落告警；坏行逐行报错，区间聚合数据拒收 |
 | 🔑 | **关键词模块** —— 语料挖掘 + 词形聚类，**纯离线、确定性、无需任何 API key** |
 | 📝 | **内容 Brief** —— 基于 SERP 快照与本站页面生成写作 Brief，数据边界如实标注 |
 | 🤖 | **可选 LLM 总结** —— `--llm-summary`，兼容任意 OpenAI 协议端点（OpenRouter / DeepSeek / Ollama / 自建网关） |
@@ -143,6 +145,8 @@ seoclaw rules                             # 📏 看看会查些什么
 | `--market` | `base` | 🌍 规则市场包，可重复叠加：`base` / `google` / `baidu` / `cnh_eco` / `geo` |
 | `--output, -o` | – | 📄 Markdown 报告输出路径 |
 | `--html` | – | 🌐 单文件 HTML 报告输出路径 |
+| `--fixpack` | – | 🩹 整改工单输出路径（格式按扩展名：`.md` / `.json` / `.csv` / `.diff`） |
+| `--brand` | – | 🏷️ 白标交付：报告与工单落款换成这个名字（代理商交付客户用） |
 | `--json` | – | 🔗 JSON 输出 |
 | `--db` | 不落库 | 🗄️ 持久化路径或连接串（不指定则不建库） |
 | `--checkpoint` | – | 💾 断点续传目录 |
@@ -156,6 +160,12 @@ seoclaw rules                             # 📏 看看会查些什么
 ### `seoclaw rules`
 
 列出全部已加载检查项（规则编号、严重级、标题），分「页面级 / 站点级」两栏。
+
+### `seoclaw rank-import <csv> --db seo.db`
+
+导入**日级**排名/流量数据（GSC API / BigQuery / 排名跟踪器导出），驱动排名
+监测与跌落告警。列名认别名（`page`/`average position`/`query`…）；⚠️ GSC
+**网页版**导出是区间聚合（无日期列），会直接拒收——假时序比没时序更糟。
 
 <a id="-规则覆盖"></a>
 ## 📏 规则覆盖
@@ -216,8 +226,9 @@ uvicorn seoclaw.main:app --port 8000
 - 🧩 **问题流转**：筛选、单条/按根因批量标记（待处理 / 已知晓 / 已修复 / 误报）
 - 🧾 **报告与导出**：md / html / json 一键带走
 - 📈 **趋势与历史**：健康分曲线 + 扫描任务列表
+- 🩹 **整改工单**：`GET /sites/{id}/fixpack`（md / json / csv / diff）+ 排名数据接入 `POST /sites/{id}/rankings`
 - 🔑 **多租户**：API Key（只存哈希）、额度、站点归属验证
-- 🔌 **REST API**：28 个端点 + **MCP Server**（3 个只读工具）
+- 🔌 **REST API**：30 个端点 + **MCP Server**（3 个只读工具）
 
 <a id="-爬虫礼仪与性能边界"></a>
 ## 🤝 爬虫礼仪与性能边界
@@ -268,7 +279,7 @@ backend/seoclaw/
 └── 🧰 mcp_server.py    MCP Server（3 个只读工具）
 ```
 
-**约 14,600 行实现代码 · 约 8,900 行测试代码 · 624 个测试（623 通过 / 1 跳过）。**
+**约 14,600 行实现代码 · 约 8,900 行测试代码 · 657 个测试（656 通过 / 1 跳过）。**
 
 ### 🗄️ 数据库
 
@@ -292,7 +303,7 @@ pip install -e ".[api,dev]"
 pytest backend/tests -q
 ```
 
-- ✅ **624 个测试**：623 通过、1 跳过（`mcp` 为可选依赖，安装 `mcp` extra 后全量运行）
+- ✅ **657 个测试**：656 通过、1 跳过（`mcp` 为可选依赖，安装 `mcp` extra 后全量运行）
 - 📊 覆盖率约 82%（CI 门禁 78%，为波动留余量）
 - 🤖 **CI 双任务**：① 全量测试 + 覆盖率 + CLI 冒烟 + wheel 构建；② `guard_smoke.sh` 真容器验收（四道闸）
 - 🧰 部分环境用 `run.sh` 封装本机依赖安装方式（`.deps/` 隔离 + `PYTHONPATH`），见脚本内注释
@@ -327,7 +338,8 @@ pytest backend/tests -q
 
 当前版本聚焦「技术 SEO 审计」的准确性与可交付性。规划中的方向（详见 [REQUIREMENTS.md](REQUIREMENTS.md) / [PLAN.md](PLAN.md)）：
 
-- 📈 SERP 排名与流量监测、异动告警（`rank_history` 表已就绪）
+- 📈 SERP 排名与流量监测、异动告警（数据入口已通：`rank-import` / `POST /rankings`；接真实数据源即用）
+- ✍️ 页面改写与执行闭环第二步：处方已能开「改前 → 改后」，下一步是平台适配器（WordPress/Shopify 插件）与 PR diff 自动提交
 - 🆚 竞品追踪与内容缺口分析
 - 📅 内容日历与批量 Brief
 - 📤 一键导出 PR diff / PDF / Excel

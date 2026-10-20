@@ -269,11 +269,15 @@ def render_html(
     pages: list[Page],
     max_issue_urls: int = 3,
     ai_summary: Optional[str] = None,
+    brand: Optional[str] = None,
 ) -> str:
     """生成单文件 HTML 报告。
 
     ``ai_summary`` 是可选的 AI 总结段落。**它缺失时报告必须依然完整**
     ——AI 总结是锦上添花，删掉它不能影响任何一条结论。
+
+    ``brand`` 是白标出口：代理商交付客户的报告落自己的款（P3 客户的
+    付费点）。不给则保持「由 SEO-Claw 生成」，不隐匿工具出处也不硬贴。
     """
     parts: list[str] = []
     A = parts.append
@@ -380,7 +384,8 @@ def render_html(
         A('<div class="alert warn" style="background:#f6fdf6;border-color:#b7e0b7;'
           'border-left-color:#0f9d58">没有命中任何规则。</div>')
 
-    A(f'<div class="footer">由 SEO-Claw 生成 · '
+    byline = f"由 {_e(brand)} 出具" if brand else "由 SEO-Claw 生成"
+    A(f'<div class="footer">{byline} · '
       f"{_e(report.started_at.strftime('%Y-%m-%d %H:%M')) if report.started_at else ''} UTC</div>")
     A("</div></body></html>")
     return "".join(parts)

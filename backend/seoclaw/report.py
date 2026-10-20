@@ -157,14 +157,21 @@ def render_markdown(
     report: SiteReport,
     pages: list[Page],
     max_issue_urls: int = 3,
+    brand: Optional[str] = None,
 ) -> str:
-    """生成完整 Markdown 报告。"""
+    """生成完整 Markdown 报告。
+
+    ``brand``：白标出口（见 report_html.render_html 同名参数的说明）。
+    """
     by_sev = report.issues_by_severity
     lines: list[str] = []
 
     # ---- 概览 ----
     lines.append(f"# SEO 体检报告 · {report.domain}")
     lines.append("")
+    if brand:
+        lines.append(f"本报告由 **{brand}** 出具。")
+        lines.append("")
     if report.finished_at and report.started_at:
         duration = (report.finished_at - report.started_at).total_seconds()
         lines.append(

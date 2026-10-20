@@ -311,3 +311,43 @@ class ReportSummary(BaseModel):
     counts: dict[str, int]
     health_score: Optional[float] = None
     issues: list[IssueOut]
+
+class RankPointIn(BaseModel):
+    """一行日级排名数据（程序化接入：GSC API / BigQuery / 排名跟踪器）。
+
+    ⚠️ 字段校验规则只有一份，在 :func:`seoclaw.rankdata.row_from_fields`——
+    CSV 导入与 API 接入共用。schema 这里只管形状，不复制业务校验。
+    ``position`` 留空表示「当天没有排名数据」，不是「排最后」。
+    """
+
+    date: str = Field(examples=["2026-10-01"])
+    url: str
+    position: Optional[float] = None
+    clicks: int = 0
+    impressions: int = 0
+    ctr: Optional[float] = None
+    keyword: Optional[str] = None
+
+
+class RankingsIn(BaseModel):
+    rows: list[RankPointIn] = Field(min_length=1, max_length=5000)
+
+
+class RankingsOut(BaseModel):
+    upserted: int
+    skipped: int = 0
+    errors: list[str] = Field(default_factory=list)
+
+
+class RankPointOut(BaseModel):
+    date: str
+    url: str
+    position: Optional[float] = None
+    clicks: int = 0
+    impressions: int = 0
+    ctr: Optional[float] = None
+
+
+class RankingsPage(BaseModel):
+    items: list[RankPointOut]
+    count: int

@@ -5,6 +5,31 @@
 ## [未发布]
 
 ### 新增
+- **整改工单（处方包，`fixpack.py`）**：把规则命中转成「改前 → 改后」的
+  可落地修复动作，产品从「体检报告」跨到「照着改的工单」。
+  - 处方分三档可信度并**强制展示**：`deterministic`（自指 canonical /
+    viewport 常量 / 按文件名起草 alt）、`heuristic`（title/meta/h1 机器
+    起草，标注「发布前请人工润色」）、`recipe`（robots/sitemap/JSON-LD/OG
+    只给配方）。判不了的进 `manual_review` 带原 fix_hint，**不硬凑**。
+  - 输出四格式：`md`（工单）/ `json` / `csv`（派工表）/ `diff`（逐页
+    unified diff，给模板工程师照着改）。
+  - CLI：`scan --fixpack out.md`；API：`GET /api/v1/sites/{id}/fixpack`。
+    Web 版是库重建口径，边界（img_alt 类仅 CLI 可出）写进工单自己的
+    「工单说明」，不靠口头声明。
+  - 站点级问题（title.duplicate / meta.duplicate）按页面集合**逐页归因**：
+    报告可以说「N 页重复」，工单必须落到「哪个页面改成什么」。
+- **排名数据入口（`rankdata.py`）**：监测闭环断在入口——`rank_history` 表、
+  幂等 upsert、跌落告警早就写好，但没有任何路径能把数据灌进去。
+  - CLI：`seoclaw rank-import <csv> --db seo.db`；API：
+    `POST /api/v1/sites/{id}/rankings` + `GET .../rankings`。
+  - 列名认别名（page/address/average position/query…），`5%` 与 `0.05`
+    两种 ctr 写法都认；坏行跳过并**逐行报行号**，好行照常入库。
+  - `position` 留空 = 「当天没排名数据」≠「排最后」，入口不抹平这个区分。
+  - ⚠️ GSC 网页版导出是区间聚合（无日期列），直接拒绝并提示用日级数据源
+    ——假时序画真趋势比不画更糟。
+  - 校验规则只有一份（`row_from_fields`），CSV 与 API 共用。
+- **白标交付**：`scan --brand 名字`，报告与工单落款换成代理商的品牌
+  （P3 客户的付费点）；不给则保持 SEO-Claw 署名。
 - **CI lint 任务**（ruff check）：PLAN.md 质量保障表一直写着「ruff 零告警」，
   但 CI 里根本没有 lint 任务，门槛写在文档里等于没写。规则集只查真问题
   （E4/E7/E9/F），不开行长、不上格式化——注释文化经不起格式化工具重排。

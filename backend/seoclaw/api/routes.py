@@ -38,6 +38,10 @@ from .schemas import (
     RankAlertAckIn,
     RankAlertOut,
     RankDropRequest,
+    RankPointOut,
+    RankingsIn,
+    RankingsOut,
+    RankingsPage,
     ScorePoint,
     ScoreTrend,
     SummaryOut,
@@ -664,6 +668,74 @@ async def ack_rank_drops(
     return {"acked": added, "total": len(set(body.alert_keys))}
 
 
+@router.post("/sites/{site_id}/rankings", response_model=RankingsOut, status_code=201)
+async def ingest_rankings(
+    site_id: int,
+    body: RankingsIn,
+    uow=__import__("fastapi").Depends(get_uow),
+) -> RankingsOut:
+    """程序化接入日级排名/流量数据（监测闭环的数据入口）。
+
+    ``rank_history`` + 跌落告警早已就位，但没有任何路径能把数据灌
+    进去——监测是个只能看的空壳。GSC API / BigQuery / 排名跟踪器都可以
+    往这送。幂等：同一 (url, date) 重复推送是「当日回补」，不重复计数。
+
+    ⚠️ 坏行跳过并**逐行报错**，好行照常入库：真实导出混一两行脏数据
+    是常态，整批拒绝与静默丢行都不可接受。
+    """
+    from ..rankdata import ingest_rows, row_from_fields
+
+    await _require_site(uow, site_id)
+    rows, errors = [], []
+    for i, r in enumerate(body.rows, 1):
+        try:
+            rows.append(row_from_fields(
+                date_raw=r.date, url=r.url, position=r.position,
+                clicks=r.clicks, impressions=r.impressions,
+                ctr=r.ctr, keyword=r.keyword or "",
+            ))
+        except ValueError as exc:
+            errors.append(f"第 {i} 行跳过：{exc}")
+    if not rows:
+        raise HTTPException(
+            status_code=422,
+            detail={"message": "没有一行可用，什么都没写入", "errors": errors},
+        )
+    info = await ingest_rows(uow.session, site_id, rows)
+    return RankingsOut(upserted=info["upserted"], skipped=len(errors), errors=errors)
+
+
+@router.get("/sites/{site_id}/rankings", response_model=RankingsPage)
+async def list_rankings(
+    site_id: int,
+    url: Optional[str] = Query(None, description="只看某个页面；不给则返回全站"),
+    days: int = Query(30, ge=1, le=365),
+    uow=__import__("fastapi").Depends(get_uow),
+) -> RankingsPage:
+    """读回日级排名时序（趋势图/告警的数据源）。"""
+    from datetime import date as _date
+
+    await _require_site(uow, site_id)
+    if url:
+        rows = await uow.ranks.series(site_id, url)
+    else:
+        rows = await uow.ranks.recent(site_id, days=days)
+    cutoff = _date.today().toordinal() - days
+    items = [
+        RankPointOut(
+            date=r.date.isoformat(),
+            url=r.url,
+            position=r.position,
+            clicks=r.clicks,
+            impressions=r.impressions,
+            ctr=r.ctr,
+        )
+        for r in rows
+        if r.date.toordinal() >= cutoff
+    ]
+    return RankingsPage(items=items, count=len(items))
+
+
 @router.get("/sites/{site_id}/usage", response_model=UsageOut)
 async def usage(site_id: int, uow=__import__("fastapi").Depends(get_uow)) -> UsageOut:
     """计量汇总（按 kind）。
@@ -783,6 +855,89 @@ async def export_report(
         content=body,
         media_type=media,
         headers={"Content-Disposition": f'attachment; filename="{base}.{ext}"'},
+    )
+
+
+@router.get("/sites/{site_id}/fixpack")
+async def export_fixpack(
+    site_id: int,
+    format: str = Query("md", pattern="^(md|json|csv|diff)$"),  # noqa: A002
+    brand: Optional[str] = Query(None, max_length=80),
+    uow=__import__("fastapi").Depends(get_uow),
+) -> Response:
+    """导出整改工单（处方包）：每条问题给「改前 → 改后」的可落地改法。
+
+    报告回答「哪里不对」，工单回答「下周一改什么」——这是产品从体检
+    工具跨到执行型 Agent 的交付物。处方生成逻辑在 :mod:`seoclaw.fixpack`，
+    与 CLI 的 ``--fixpack`` 同一份，不在路由里重写一套。
+
+    ⚠️ 与报告导出同口径：这是**从库里重建**的工单。库里不留图片清单，
+    因此 ``img_alt`` 类处方只在 CLI 完整扫描里能出——这条边界写在工单
+    自己的「工单说明」里，不靠口头声明。
+    """
+    from ..fixpack import build_fixpack, render_fixpack
+    from ..models import Issue as DomainIssue
+    from ..models import Market as DomainMarket, Scope as DomainScope
+    from ..models import Page as DomainPage, Severity as DomainSeverity
+
+    site = await _require_site(uow, site_id)
+
+    _MAX_PAGES = 5000
+    page_rows = (await uow.pages.list(site_id, limit=_MAX_PAGES)).items
+    issue_rows = (await uow.issues.list(site_id, limit=5000)).items
+
+    def _domain_page(r: m.Page) -> DomainPage:
+        return DomainPage(
+            url=r.url,
+            final_url=r.final_url,
+            status_code=r.status_code or 0,
+            depth=r.depth or 0,
+            title=r.title,
+            meta_description=r.meta_desc,
+            canonical=r.canonical,
+            h1=[x for x in (r.h1 or "").split("\n") if x.strip()],
+            text=r.text or "",
+            word_count=r.word_count or 0,
+            content_hash=r.content_hash or "",
+            is_html=True,
+        )
+
+    def _domain_issue(r: m.Issue) -> DomainIssue:
+        return DomainIssue(
+            code=r.code,
+            severity=DomainSeverity(r.severity.value),
+            market=DomainMarket(r.market.value),
+            scope=DomainScope(r.scope.value),
+            url=r.url,
+            title=r.title,
+            description=r.description,
+            fix_hint=r.fix_hint,
+            fix_example=r.fix_example,
+            evidence=r.evidence or {},
+        )
+
+    pages = [_domain_page(r) for r in page_rows]
+    issues = [_domain_issue(r) for r in issue_rows]
+    pack = build_fixpack(pages, issues, site.domain)
+    pack.notes.append(
+        "本工单由数据库留存字段重建：库里不留图片清单，img_alt 类处方仅 CLI 完整扫描可出。"
+    )
+    if len(page_rows) >= _MAX_PAGES:
+        pack.notes.append(f"页面数超过 {_MAX_PAGES} 页上限，工单只覆盖前 {_MAX_PAGES} 页。")
+
+    body = render_fixpack(pack, format, brand=brand)
+    media = {
+        "md": "text/markdown; charset=utf-8",
+        "json": "application/json; charset=utf-8",
+        "csv": "text/csv; charset=utf-8",
+        "diff": "text/plain; charset=utf-8",
+    }[format]
+    domain = site.domain.replace("/", "_")
+    stamp = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).strftime("%Y%m%d")
+    return Response(
+        content=body,
+        media_type=media,
+        headers={"Content-Disposition": f'attachment; filename="seo-claw-fixpack-{domain}-{stamp}.{format}"'},
     )
 
 

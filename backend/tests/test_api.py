@@ -783,3 +783,135 @@ def test_export_rejects_unknown_format(client):
 
 def test_export_missing_site_404(client):
     assert client.get("/api/v1/sites/99999/report/export").status_code == 404
+
+
+# --------------------------------------------------------------------------
+# 整改工单（处方包）导出：报告回答「哪里不对」，工单回答「下周一改什么」
+# --------------------------------------------------------------------------
+
+
+def test_fixpack_markdown_states_scope_honestly(client):
+    site_id = _scanned_site(client)
+    r = client.get(f"/api/v1/sites/{site_id}/fixpack?format=md")
+    assert r.status_code == 200, r.text
+    assert "text/markdown" in r.headers["content-type"]
+    assert "SEO 整改工单" in r.text
+    # 口径声明必须在：Web 工单是库重建版，不能冒充 CLI 完整版
+    assert "数据库留存字段重建" in r.text
+
+
+def test_fixpack_json_csv_diff_formats(client):
+    import json as _json
+
+    site_id = _scanned_site(client)
+
+    r = client.get(f"/api/v1/sites/{site_id}/fixpack?format=json")
+    assert r.status_code == 200
+    payload = _json.loads(r.text)
+    assert payload["domain"] == client.domain
+    assert isinstance(payload["actions"], list)
+
+    r = client.get(f"/api/v1/sites/{site_id}/fixpack?format=csv")
+    assert r.status_code == 200
+    assert r.text.splitlines()[0].startswith("url,field,code,confidence")
+
+    r = client.get(f"/api/v1/sites/{site_id}/fixpack?format=diff")
+    assert r.status_code == 200
+
+
+def test_fixpack_brand_replaces_byline(client):
+    site_id = _scanned_site(client)
+    r = client.get(f"/api/v1/sites/{site_id}/fixpack?format=md&brand=某某网络")
+    assert r.status_code == 200
+    assert "某某网络" in r.text
+
+
+def test_fixpack_rejects_unknown_format(client):
+    site_id = _scanned_site(client)
+    r = client.get(f"/api/v1/sites/{site_id}/fixpack?format=pdf")
+    assert r.status_code == 422, "没实现的格式必须在校验层拒绝，不能 200 一个空文件"
+
+
+def test_fixpack_missing_site_404(client):
+    assert client.get("/api/v1/sites/99999/fixpack").status_code == 404
+
+
+# --------------------------------------------------------------------------
+# 排名数据入口：rank_history + 跌落告警早就写好了，此前没有任何数据能进去
+# --------------------------------------------------------------------------
+
+
+def _rank_rows(n: int = 6, base: int = 10, drop: float = 2.0) -> list[dict]:
+    from datetime import date, timedelta
+
+    today = date.today()
+    # 由旧到新排名越来越差（数字变大）：跌落告警盯的是「变差」。
+    # 行按 i 生成：i=0 是今天（最差），i=n-1 是最早（最好）。
+    return [
+        {
+            "date": (today - timedelta(days=i)).isoformat(),
+            "url": "https://demo.test/hot",
+            "position": base + drop * (n - 1 - i),
+            "clicks": 5,
+            "impressions": 500,
+            "ctr": 0.01,
+        }
+        for i in range(n)
+    ]
+
+
+def test_rankings_ingest_and_read_back(client):
+    site_id = _scanned_site(client)
+    r = client.post(f"/api/v1/sites/{site_id}/rankings", json={"rows": _rank_rows()})
+    assert r.status_code == 201, r.text
+    assert r.json()["upserted"] == 6
+    assert r.json()["errors"] == []
+
+    r = client.get(f"/api/v1/sites/{site_id}/rankings?days=30")
+    assert r.status_code == 200
+    payload = r.json()
+    assert payload["count"] == 6
+
+    # 幂等：GSC 每天回补最近 3 天，重推同一批必须刷新而不是翻倍
+    r = client.post(f"/api/v1/sites/{site_id}/rankings", json={"rows": _rank_rows()})
+    assert r.status_code == 201
+    assert client.get(f"/api/v1/sites/{site_id}/rankings?days=30").json()["count"] == 6
+
+
+def test_rankings_partial_bad_rows_keep_good_ones(client):
+    site_id = _scanned_site(client)
+    rows = _rank_rows(2) + [{"date": "2026-10-01", "url": "https://demo.test/x", "position": 0}]
+    r = client.post(f"/api/v1/sites/{site_id}/rankings", json={"rows": rows})
+    assert r.status_code == 201
+    body = r.json()
+    assert body["upserted"] == 2 and body["skipped"] == 1
+    assert any("第 3 行" in e for e in body["errors"])
+
+
+def test_rankings_all_bad_rows_is_422_nothing_written(client):
+    site_id = _scanned_site(client)
+    rows = [{"date": "bad", "url": "https://demo.test/x"}]
+    r = client.post(f"/api/v1/sites/{site_id}/rankings", json={"rows": rows})
+    assert r.status_code == 422
+    assert client.get(f"/api/v1/sites/{site_id}/rankings?days=30").json()["count"] == 0
+
+
+def test_rank_drops_end_to_end_with_ingested_data(client):
+    """监测闭环的验收：灌数据 → 跌落告警真的响，且带人话结论。"""
+    site_id = _scanned_site(client)
+    client.post(f"/api/v1/sites/{site_id}/rankings", json={"rows": _rank_rows()})
+
+    r = client.post(
+        f"/api/v1/sites/{site_id}/rank-drops",
+        json={"window_days": 30, "min_drop": 3, "min_impressions": 10, "min_days": 2},
+    )
+    assert r.status_code == 200
+    alerts = r.json()
+    assert len(alerts) == 1, "6 天跌 10 名且曝光充足，必须报一条"
+    assert alerts[0]["url"] == "https://demo.test/hot"
+    assert "跌" in alerts[0]["message"]  # 通知里要有人话结论，不能只给数字
+    assert alerts[0]["alert_key"]
+
+
+def test_rankings_missing_site_404(client):
+    assert client.post("/api/v1/sites/99999/rankings", json={"rows": _rank_rows(1)}).status_code == 404

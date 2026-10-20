@@ -360,11 +360,31 @@ def cmd_scan(args: argparse.Namespace) -> int:
                 file=sys.stderr,
             )
 
+    # 处方包：把本次扫描的问题转成「改前 → 改后」的整改工单。
+    # 独立于报告输出，可单独只出工单（--fixpack 不给则完全不参与）。
+    if args.fixpack:
+        from .fixpack import build_fixpack, render_fixpack
+
+        fmt = Path(args.fixpack).suffix.lstrip(".").lower() or "md"
+        fmt = {"markdown": "md", "patch": "diff"}.get(fmt, fmt)
+        pack = build_fixpack(pages, issues, urlparse(args.url).netloc)
+        try:
+            content = render_fixpack(pack, fmt, brand=args.brand)
+        except ValueError as exc:
+            print(f"⚠️ 处方包未生成：{exc}", file=sys.stderr)
+        else:
+            _write(Path(args.fixpack), content)
+            print(
+                f"→ 处方包已写入 {args.fixpack}"
+                f"（{len(pack.actions)} 条处方 / {len(pack.manual_review)} 条转人工）",
+                file=sys.stderr,
+            )
+
     if args.json:
         payload = report.model_dump(mode="json")
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     elif not args.html:
-        md = render_markdown(report, pages)
+        md = render_markdown(report, pages, brand=args.brand)
         if ai_summary:
             md = md.replace(
                 "## 最该先做的 5 件事",
@@ -381,7 +401,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
     if args.html:
         from .report_html import render_html
 
-        _write(Path(args.html), render_html(report, pages, ai_summary=ai_summary))
+        _write(Path(args.html), render_html(report, pages, ai_summary=ai_summary, brand=args.brand))
         if not args.quiet and not args.json:
             print(
                 "→ HTML 报告已写入 "
@@ -505,6 +525,57 @@ def cmd_rules(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_rank_import(args: argparse.Namespace) -> int:
+    """导入日级排名/流量数据（监测闭环的数据入口）。"""
+    from .db.session import get_session_factory, session_scope
+    from .rankdata import ingest_rows, infer_domain, parse_rank_csv
+
+    if args.csv == "-":
+        text = sys.stdin.read()
+    else:
+        text = Path(args.csv).read_text(encoding="utf-8-sig")
+
+    parsed = parse_rank_csv(text)
+    for err in parsed.errors:
+        print(f"⚠️ {err}", file=sys.stderr)
+    if not parsed.rows:
+        print("没有可导入的行——文件解析不出任何有效记录。", file=sys.stderr)
+        return 1
+
+    domain = args.site or infer_domain(parsed.rows)
+    if not domain:
+        print("推断不出站点域名，请用 --site 显式指定。", file=sys.stderr)
+        return 1
+
+    db_url = args.db if "://" in args.db else f"sqlite+aiosqlite:///{args.db}"
+
+    async def _run() -> int:
+        from .db.repository import SiteRepository
+
+        factory = get_session_factory(db_url)
+        async with factory() as session:
+            async with session_scope(session):
+                site = await SiteRepository(session).get_by_domain(domain)
+                if site is None:
+                    # ⚠️ 不自动建站：排名数据灌进一个「不存在的站点」，
+                    # 后续告警会在一个没人看的站点上静默空转。
+                    print(
+                        f"站点 {domain} 不在库里。先对它跑一次 `seoclaw scan {domain} --db {args.db}`，"
+                        "再导排名数据。",
+                        file=sys.stderr,
+                    )
+                    return 1
+                info = await ingest_rows(session, site.id, parsed.rows)
+                print(
+                    f"→ 已导入 {info['upserted']} 行日级数据"
+                    f"（跳过 {parsed.skipped} 行）· site #{site.id} · {domain}",
+                    file=sys.stderr,
+                )
+                return 0
+
+    return asyncio.run(_run())
+
+
 def build_parser() -> argparse.ArgumentParser:
     """构造参数解析器。
 
@@ -543,6 +614,11 @@ def build_parser() -> argparse.ArgumentParser:
                       help="单页渲染超时秒数（默认 20，仅在开启 --render-js 时生效）")
     scan.add_argument("--quiet", "-q", action="store_true")
     scan.add_argument("--html", help="HTML 报告输出路径（单文件、无外链、可离线打开）")
+    scan.add_argument("--fixpack", metavar="PATH",
+                      help="输出整改工单（处方包）：每条问题给「改前 → 改后」的可落地改法。"
+                           "格式按扩展名：.md / .json / .csv / .diff")
+    scan.add_argument("--brand", metavar="NAME",
+                      help="白标交付：报告与工单的落款换成这个名字（代理商交付客户用）")
     scan.add_argument("--llm-summary", action="store_true",
                       help="用 LLM 生成报告的 AI 总结段落（需配置 API key；失败不影响报告本身）")
     scan.add_argument("--proxy", action="append", default=[], metavar="URL",
@@ -560,6 +636,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     rules = sub.add_parser("rules", help="列出已加载的检查项")
     rules.set_defaults(func=cmd_rules)
+
+    rk = sub.add_parser(
+        "rank-import",
+        help="导入日级排名/流量 CSV（GSC API / BigQuery / 排名跟踪器导出），驱动排名监测与跌落告警",
+    )
+    rk.add_argument("csv", help="CSV 文件路径（给 - 则读标准输入）")
+    rk.add_argument("--db", metavar="PATH_OR_URL", required=True,
+                    help="数据库（同 scan --db：SQLite 路径或 DATABASE_URL）")
+    rk.add_argument("--site", help="站点域名（默认按 CSV 里 URL 的多数域名自动匹配）")
+    rk.set_defaults(func=cmd_rank_import)
 
     return parser
 
