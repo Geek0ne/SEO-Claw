@@ -279,3 +279,31 @@ def test_unaudited_not_counted_as_issue():
                                     is_html=False)])
     assert rep.issues == []
     assert "## 全部问题明细" in md
+
+
+def test_json_payload_has_top_actions_with_fixes():
+    """⚠️ JSON 出口也要有 Top 5（阶段 3）。
+
+    此前 --json 只有 model_dump，「先做清单」只活在 Markdown/HTML/终端
+    里——拿 JSON 做集成的下游（脚本、外部系统）看不到「先做什么」，
+    而那恰恰是报告最值钱的部分。
+    """
+    from seoclaw.report import json_payload
+
+    issues = [
+        _issue(code="title.missing", severity=Severity.CRITICAL,
+               url="https://x.test/1", fix_hint="加 <title>",
+               fix_example="<title>核心词 - 品牌</title>"),
+        _issue(code="meta.missing", severity=Severity.HIGH,
+               url="https://x.test/2", fix_hint="补 meta description"),
+    ]
+    rep = SiteReport(domain="x.test", pages_crawled=2, pages_discovered=2,
+                     issues=issues)
+    payload = json_payload(rep)
+    top = payload["top_actions"]
+    # critical 的影响值（权重 30）高于 high（15），先做它
+    assert [t["code"] for t in top] == ["title.missing", "meta.missing"]
+    assert top[0]["fix_hint"] == "加 <title>"
+    assert top[0]["fix_example"]
+    # Top 5 是附加键：报告体保持完整
+    assert len(payload["issues"]) == 2

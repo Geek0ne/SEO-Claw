@@ -24,7 +24,7 @@ import httpx
 from .audit.engine import default_registry, run_audit
 from .crawler import CrawlConfig, Crawler
 from .models import Market, SiteReport
-from .report import render_markdown, summarize_console
+from .report import json_payload, render_markdown, summarize_console
 from .scoring import score
 from .util import same_site_scope
 
@@ -364,7 +364,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
             )
 
     if args.json:
-        payload = report.model_dump(mode="json")
+        payload = json_payload(report)
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     elif not args.html:
         md = render_markdown(report, pages)

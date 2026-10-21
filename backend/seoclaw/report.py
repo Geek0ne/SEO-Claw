@@ -153,6 +153,21 @@ def _render_unaudited(pages: list[Page], max_urls: int = 3) -> list[str]:
     return lines
 
 
+def json_payload(report: SiteReport) -> dict:
+    """JSON 出口的装配点：报告体 + Top 5 优先做。
+
+    Top 5 的排序只在 :func:`scoring.top_actions` 实现一份（CLI 三个
+    格式 + 网页 + MCP 共用），这里只做序列化——两处各排各的，用户
+    看到的「先做」就会和报告里的对不上。
+    """
+    payload = report.model_dump(mode="json")
+    payload["top_actions"] = [
+        i.model_dump(mode="json")
+        for i in top_actions(report.issues, max(report.pages_crawled, 1), limit=5)
+    ]
+    return payload
+
+
 def render_markdown(
     report: SiteReport,
     pages: list[Page],

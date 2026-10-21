@@ -32,7 +32,7 @@ import asyncio
 import os
 import tempfile
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any, Callable, Coroutine
 
 # ⚠️ 必须在 import seoclaw.* 之前设（与 test_api/test_web 同一纪律）：

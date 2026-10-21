@@ -807,3 +807,64 @@ def test_export_rejects_unknown_format(client):
 
 def test_export_missing_site_404(client):
     assert client.get("/api/v1/sites/99999/report/export").status_code == 404
+
+
+# --------------------------------------------------------------------------
+# Top 5 优先做（阶段 3：全出口同一口径 + 可执行改法）
+# --------------------------------------------------------------------------
+
+
+def test_report_top_actions_with_fix_advice(client):
+    """Top 5 必须带「怎么修」：只报病不开药的清单不是行动清单。"""
+    site_id = _scanned_site(client)
+    rep = client.get(f"/api/v1/sites/{site_id}/report").json()
+    top = rep["top_actions"]
+    assert 1 <= len(top) <= 5, f"Top 应在 1~5 条之间：{len(top)}"
+    for item in top:
+        assert item["code"] and item["title"]
+        assert item["fix_hint"] or item["fix_example"], (
+            f"{item['code']} 没有可执行改法——用户照着清单也不知道动手改什么"
+        )
+        assert item.get("affected_pages", 0) >= 1
+
+
+def test_report_top_actions_follow_scoring_not_severity(client):
+    """⚠️ 口径钉子：API 的 Top 5 必须与 scoring.top_actions 同序同条目。
+
+    曾经网页按严重级自己排前 5、报告按「严重度 × 影响面」排——同一次
+    扫描两处「先做」对不上，用户没理由知道该信哪个。现在排序只有
+    scoring 一份实现（CLI 三格式 + 网页 + MCP 共用），这里钉住
+    「API 出口就是它」。
+    """
+    from seoclaw.models import Issue as DomainIssue
+    from seoclaw.models import Scope as DScope
+    from seoclaw.models import Severity as DSeverity
+    from seoclaw.scoring import top_actions as scoring_top
+
+    site_id = _scanned_site(client)
+    rep = client.get(f"/api/v1/sites/{site_id}/report").json()
+    domain_issues = [
+        DomainIssue(
+            code=i["code"],
+            severity=DSeverity(i["severity"]),
+            scope=DScope(i["scope"]),
+            url=i["url"],
+            title=i["title"],
+        )
+        for i in rep["issues"]
+    ]
+    expected = [
+        i.code
+        for i in scoring_top(domain_issues, max(rep["pages_crawled"], 1), limit=5)
+    ]
+    got = [i["code"] for i in rep["top_actions"]]
+    assert got == expected, f"API 排序偏离 scoring：{got} != {expected}"
+
+
+def test_report_top_actions_capped_at_five(client):
+    """五条就是五条：渐进披露的承诺不能因为问题多就破。"""
+    site_id = _scanned_site(client)
+    rep = client.get(f"/api/v1/sites/{site_id}/report").json()
+    assert len(rep["top_actions"]) <= 5
+    # 全部问题仍在明细里，Top 5 只是入口不是过滤器
+    assert len(rep["issues"]) >= len(rep["top_actions"])

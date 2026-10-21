@@ -9,7 +9,7 @@ from __future__ import annotations
 import time
 from datetime import timezone
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
@@ -257,7 +257,7 @@ async def put_schedule(
         # 停用：三列全清，不碰参数校验（停用不该被任何校验挡）。
         updated = await uow.sites.set_schedule(site_id, interval_s=None)
     else:
-        params = {
+        params: dict[str, Any] = {
             "url": body.url or f"https://{site.domain}",
             "markets": list(body.markets or site.markets or ["base"]),
             "max_pages": body.max_pages,

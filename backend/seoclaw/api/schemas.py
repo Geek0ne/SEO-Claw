@@ -61,6 +61,14 @@ class IssueOut(BaseModel):
     fingerprint: Optional[str] = None
     status: str
     occurrences: int = 1
+    # 「可执行改法」三件套：问题清单/Top 5 要能直接照着改，
+    # 不给改法的清单只是报病不开药。
+    description: str = ""
+    impact: str = ""
+    fix_hint: str = ""
+    fix_example: Optional[str] = None
+    # 仅 top_actions 条目携带：该问题影响的页面数（排「先做」的核心输入）。
+    affected_pages: Optional[int] = None
 
 
 class IssueStatusIn(BaseModel):
@@ -310,6 +318,9 @@ class ReportSummary(BaseModel):
     pages_crawled: int
     counts: dict[str, int]
     health_score: Optional[float] = None
+    # Top 5 优先做：服务端按「严重度 × 影响面」排好（scoring.top_actions），
+    # 网页/MCP/报告同一个口径。affected_pages = 该问题影响的页面数。
+    top_actions: list[IssueOut] = Field(default_factory=list)
     issues: list[IssueOut]
 
 

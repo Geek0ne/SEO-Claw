@@ -4,6 +4,22 @@
 
 ## [未发布]
 
+### 修复（阶段 3：Top 5 优先做，全出口同一口径）
+- **「先做清单」三处口径分叉全部修齐**。此前：终端/Markdown/HTML 报告
+  按「严重度 × 影响面」排（scoring.top_actions），**网页自己按严重级排前
+  5**，**CLI `--json` 和 API `/report`（Web+MCP 共用）压根没有 Top 5**——
+  同一次扫描三处「先做」对不上，用户没理由知道该信哪个。现在排序只有
+  scoring 一份实现，`build_summary` 与 `json_payload` 只做序列化。
+- **API 问题条目补上「可执行改法」三件套**（description/impact/
+  fix_hint/fix_example）：此前 IssueOut 不给这些字段，网页声称的
+  「每条带怎么改+示例」实际渲染不出来。top_actions 条目另带
+  affected_pages（该问题影响几页——排「先做」的核心输入）。
+- 网页「最该先做的事」改读服务端 top_actions，条目展示影响页数、
+  影响说明、怎么修、可复制示例。
+- M0 验收项关闭：真站实测 antfu.me（5 页/13 问题）Top 5 全部带改法。
+- 顺手修 mypy 两处（stage 2b 的 dict 字面量推断、top_actions 装配的
+  dict 注解）；ruff 零告警、mypy 零错误、650 测试全绿。
+
 ### 新增（阶段 2b：定时扫描调度）
 - **托管定时复扫**：站点声明复扫间隔（`sites` 三列，迁移 0008：
   `scan_interval_s` / `next_scan_at` / `schedule_params`），调度器
