@@ -63,6 +63,12 @@ jobs:
         # 结果写完 40 分钟就自己用同一种方式犯了一遍。
         run: pip install -e ".[api,dev]"
 
+      - name: mypy 类型检查
+        # ⚠️ 必须在装完依赖之后跑（见上一步的两次翻车记录）：SQLAlchemy
+        # 的 stub 参与类型推断，空环境下检查形同虚设。门槛见 pyproject 的
+        # [tool.mypy]。
+        run: mypy backend/seoclaw
+
       - name: 全量测试 + 覆盖率
         # ⚠️ --cov-fail-under 是**及格线，不是目标**。
         # 实测当前 82%。定 78 是留一点余量：覆盖率会因为加了几行

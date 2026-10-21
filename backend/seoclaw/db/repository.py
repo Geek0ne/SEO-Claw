@@ -17,9 +17,10 @@ from __future__ import annotations
 
 import hashlib
 import re
+import builtins
 import unicodedata
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import (
     Any,
     Iterable,
@@ -34,6 +35,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from . import models as m
 
 T = TypeVar("T")
+
+
+def _rowcount(result: Any) -> int:
+    """DML 后取受影响行数。
+
+    ⚠️ ``AsyncSession.execute`` 的 stub 返回 ``Result``，而 rowcount 只在
+    游标结果（CursorResult）上——stub 看不到，直接 ``.rowcount`` 就是 mypy
+    红。运行时拿得到，这里统一走 getattr 顺手把 None 归零。
+    """
+    return int(getattr(result, "rowcount", 0) or 0)
 
 
 # --------------------------------------------------------------------------
@@ -136,7 +147,10 @@ def _severity_rank_case() -> Any:
         (m.Severity.LOW.value, 3),
         (m.Severity.INFO.value, 4),
     ]
-    return case(*whens, value=m.Issue.severity)
+    return case(*whens, value=m.Issue.severity)  # type: ignore[arg-type]
+    # ⚠️ 上面的 ignore 是 SQLA 的 stub 缺口：value= 形式（简单 CASE）的
+    # whens 是 (值, 结果) 对，stub 只签名化了 (条件, 结果) 对。运行时两种
+    # 都合法；将来 SQLA stub 补上后可以把 ignore 删掉跑一遍看看。
 
 
 def normalize_root_cause(raw: Any) -> str:
@@ -267,6 +281,84 @@ class SiteRepository:
         await self.session.flush()
         return True
 
+    # ---- 托管定时复扫（改造阶段 2b）----
+
+    async def set_schedule(
+        self,
+        site_id: int,
+        *,
+        interval_s: Optional[int],
+        params: Optional[dict[str, Any]] = None,
+        first_run_at: Optional[datetime] = None,
+    ) -> Optional[m.Site]:
+        """开启 / 停用托管复扫。``interval_s=None`` = 停用（三列全清）。
+
+        开启即首次到期（next_scan_at=now）：用户点「托管」多半就是想要
+        马上有一份基线；若恰有任务在跑，由调度器的不叠任务守卫兜住。
+        ``first_run_at`` 留给测试指定到期时刻。
+        """
+        site = await self.get(site_id)
+        if site is None:
+            return None
+        if interval_s is None:
+            site.scan_interval_s = None
+            site.next_scan_at = None
+            site.schedule_params = None
+        else:
+            site.scan_interval_s = int(interval_s)
+            site.next_scan_at = first_run_at or utcnow()
+            site.schedule_params = dict(params or {})
+        await self.session.flush()
+        return site
+
+    async def due_schedules(
+        self, *, now: datetime, limit: int = 20
+    ) -> builtins.list[m.Site]:
+        """到期的托管站点（next_scan_at <= now，按到期时间升序）。
+
+        只看 is_active 的站：停用的站不该继续对外发扫描。
+        """
+        stmt = (
+            select(m.Site)
+            .where(
+                m.Site.is_active.is_(True),
+                m.Site.scan_interval_s.is_not(None),
+                m.Site.next_scan_at <= now,
+            )
+            .order_by(m.Site.next_scan_at.asc())
+            .limit(limit)
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def claim_schedule(
+        self, site_id: int, *, now: datetime, next_scan_at: datetime
+    ) -> bool:
+        """CAS 认领一次到期触发：推进 next_scan_at，返回是否抢到。
+
+        ⚠️ 判据是 ``next_scan_at <= now`` 而不是等值比较：两个调度
+        实例同时到期时，先到的把 next_scan_at 推进到未来，后到的
+        WHERE 不再命中、rowcount=0 直接认输。与 ScanTaskRepository.
+        claim_next 同一个套路——**别改成先 SELECT 再 UPDATE**。
+        """
+        res = await self.session.execute(
+            update(m.Site)
+            .where(
+                m.Site.id == site_id,
+                m.Site.scan_interval_s.is_not(None),
+                m.Site.next_scan_at <= now,
+            )
+            .values(next_scan_at=next_scan_at)
+            # ⚠️ synchronize_session=False 不是优化，是必需：ORM 的
+            # 同步评估会拿会话里已载入的 next_scan_at（SQLite 读回来是
+            # naive）与绑定的 aware now 比较，直接
+            # `TypeError: can't compare offset-naive and offset-aware`。
+            # 比较交给数据库做，对象状态不参与（这里的行紧接着就会被
+            # 提交丢弃，没有脏对象要同步）。
+            .execution_options(synchronize_session=False)
+        )
+        await self.session.flush()
+        return _rowcount(res) == 1
+
 
 def _normalize_domain(domain: str) -> str:
     """把用户填的站点地址收敛成 host。
@@ -366,6 +458,163 @@ class CrawlJobRepository:
             .order_by(m.CrawlJob.id.desc())
         )
         return await paginate(self.session, stmt, limit=limit, offset=offset)
+
+
+# --------------------------------------------------------------------------
+# scan_tasks —— 任务队列
+# --------------------------------------------------------------------------
+
+
+class ScanTaskRepository:
+    """scan_tasks 的队列操作。所有「认领 / 收尾 / 恢复」的 SQL 收在这里。
+
+    ⚠️ 认领语义是这层的核心：条件 UPDATE（by id 且仍是 pending）后看
+    rowcount，=1 才算拿到。两个 worker 抢同一行时，后到的 rowcount=0
+    直接认输。**别改成先 SELECT 再 UPDATE**——那是教科书式的丢任务姿势。
+    """
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def enqueue(
+        self,
+        *,
+        site_id: int,
+        url: str,
+        markets: list[str],
+        max_pages: int,
+        max_depth: int,
+        respect_robots: bool,
+        render_js: bool,
+    ) -> m.ScanTask:
+        row = m.ScanTask(
+            site_id=site_id,
+            url=url,
+            markets=markets,
+            max_pages=max_pages,
+            max_depth=max_depth,
+            respect_robots=respect_robots,
+            render_js=render_js,
+        )
+        self.session.add(row)
+        await self.session.flush()
+        return row
+
+    async def get(self, task_id: int) -> Optional[m.ScanTask]:
+        stmt = select(m.ScanTask).where(m.ScanTask.id == task_id)
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def count_running(self) -> int:
+        stmt = select(func.count()).select_from(m.ScanTask).where(
+            m.ScanTask.status == m.TaskStatus.RUNNING
+        )
+        return int((await self.session.execute(stmt)).scalar() or 0)
+
+    async def count_pending(self) -> int:
+        stmt = select(func.count()).select_from(m.ScanTask).where(
+            m.ScanTask.status == m.TaskStatus.PENDING
+        )
+        return int((await self.session.execute(stmt)).scalar() or 0)
+
+    async def has_active(self, site_id: int) -> bool:
+        """该站点是否已有排队中 / 执行中的任务。
+
+        定时调度的不叠任务守卫用：复扫的目的是「保持最新」，不是
+        「把没跑的补回来」——队列里搌三份同样的扫描，用户等的是三倍
+        时间、看到的是一样的报告。
+        """
+        stmt = select(func.count()).select_from(m.ScanTask).where(
+            m.ScanTask.site_id == site_id,
+            m.ScanTask.status.in_([m.TaskStatus.PENDING, m.TaskStatus.RUNNING]),
+        )
+        return int((await self.session.execute(stmt)).scalar() or 0) > 0
+
+    async def claim_next(self, *, max_running: int) -> Optional[m.ScanTask]:
+        """认领最早的 pending 任务并置 running。没有可领的返回 None。
+
+        ⚠️ 并发上限是「咨询式」的：count 与 claim 之间存在竞态窗口，
+        两个 worker 可能同时看到 running=0 而各领一个，瞬时超限。
+        硬上限要上 SELECT ... FOR UPDATE 或租约表，代价不值——超限的
+        后果只是多占一份内存，不是正确性问题。认领本身是原子的。
+        """
+        if max_running <= 0 or await self.count_running() >= max_running:
+            return None
+        row = (
+            await self.session.execute(
+                select(m.ScanTask)
+                .where(m.ScanTask.status == m.TaskStatus.PENDING)
+                .order_by(m.ScanTask.id.asc())
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            return None
+        res = await self.session.execute(
+            update(m.ScanTask)
+            .where(m.ScanTask.id == row.id, m.ScanTask.status == m.TaskStatus.PENDING)
+            .values(
+                status=m.TaskStatus.RUNNING,
+                attempts=m.ScanTask.attempts + 1,
+                started_at=utcnow(),
+            )
+        )
+        await self.session.flush()
+        if _rowcount(res) != 1:
+            return None  # 被别的 worker 抢先了
+        await self.session.refresh(row)
+        return row
+
+    async def finish(self, task_id: int, result: dict[str, Any]) -> None:
+        row = await self.get(task_id)
+        if row is None:
+            return
+        row.status = m.TaskStatus.DONE
+        row.result = result
+        row.finished_at = utcnow()
+        await self.session.flush()
+
+    async def fail(self, task_id: int, error: str) -> None:
+        row = await self.get(task_id)
+        if row is None:
+            return
+        row.status = m.TaskStatus.FAILED
+        row.error = error[:500]
+        row.finished_at = utcnow()
+        await self.session.flush()
+
+    async def recover_stale(
+        self, *, older_than_seconds: float, max_attempts: int = 2
+    ) -> int:
+        """捞回「running 了很久还在 running」的孤儿任务，返回处理条数。
+
+        孤儿 =认领它的进程已经死了（被杀 / 崩溃 / 部署重启）。判据是
+        ``started_at`` 足够旧——活人的任务会正常走到终态，不会停在
+        running 跨过阈值。
+
+        attempts < max_attempts 给一次重试机会（回 pending 重新排队），
+        否则认输标 failed。⚠️ 没有上限的重试会让一个必然失败的任务
+        永远霸占队列。
+        """
+        cutoff = utcnow() - timedelta(seconds=max(0.0, older_than_seconds))
+        rows = (
+            await self.session.execute(
+                select(m.ScanTask).where(
+                    m.ScanTask.status == m.TaskStatus.RUNNING,
+                    m.ScanTask.started_at < cutoff,
+                )
+            )
+        ).scalars().all()
+        for row in rows:
+            if row.attempts < max_attempts:
+                row.status = m.TaskStatus.PENDING
+                row.started_at = None
+                row.error = "执行进程中断，已重新排队"
+            else:
+                row.status = m.TaskStatus.FAILED
+                row.error = "任务执行中被中断，且已达重试上限"
+                row.finished_at = utcnow()
+        await self.session.flush()
+        return len(rows)
 
 
 # --------------------------------------------------------------------------
@@ -489,8 +738,13 @@ class PageRepository:
 
     async def diff_against(
         self, site_id: int, seen: dict[str, str]
-    ) -> list[str]:
+    ) -> builtins.list[str]:
         """增量扫描：哪些 URL 是"新发现或内容已变"。
+
+        ⚠️ 返回注解用 builtins.list 而不是 list：本类有个方法就叫 ``list``，
+        会把内建 list 遮蔽掉——类体注解里的 ``list[str]`` 会被 mypy 解析成
+        那个方法（"not valid as a type"）。PageRepository / IssueRepository /
+        KeywordRepository 同理。
 
         返回需要重跑规则的 URL 列表（已存在库中）。全新 URL 由调用方直接
         当作需要处理，不在此列 —— 库里的"缺席"本身就是"已变"信号。
@@ -500,7 +754,7 @@ class PageRepository:
 
     async def unchanged_urls(
         self, site_id: int, seen: dict[str, str]
-    ) -> list[str]:
+    ) -> builtins.list[str]:
         """增量扫描：哪些 URL 内容完全没变（可跳过规则重跑）。"""
         known = await self.content_hashes(site_id)
         return [url for url, chash in seen.items() if known.get(url) == chash]
@@ -667,7 +921,7 @@ class IssueRepository:
 
     async def bulk_create(
         self, site_id: int, issues: Iterable[dict[str, Any]]
-    ) -> list[m.Issue]:
+    ) -> builtins.list[m.Issue]:
         """一次扫描的全部问题落库。
 
         **不**在内部聚合成一条：一条 Issue 记录 = 一条可勾选、可单独修复、
@@ -710,7 +964,7 @@ class IssueRepository:
         *,
         status: Optional[m.IssueStatus | str] = None,
         limit: int = 50,
-    ) -> list[FingerprintGroup]:
+    ) -> builtins.list[FingerprintGroup]:
         """按根因聚合 —— 回答"这类问题一共波及多少页、值得批量修吗"。
 
         用 SQL GROUP BY 而不是拉回内存再统计：问题数在大站上可达十万级，
@@ -788,7 +1042,7 @@ class IssueRepository:
         )
         result = await self.session.execute(stmt)
         await self.session.flush()
-        return int(result.rowcount or 0)
+        return _rowcount(result)
 
     async def refresh_occurrences(self, site_id: int) -> None:
         """按指纹回填 ``occurrences``，让读路径不必再算一次 COUNT。"""
@@ -824,7 +1078,7 @@ class IssueRepository:
         )
         result = await self.session.execute(stmt)
         await self.session.flush()
-        return int(result.rowcount or 0)
+        return _rowcount(result)
 
     async def count_by_severity(self, site_id: int) -> dict[str, int]:
         """OPEN 问题按严重度的条数，键为 severity 的**值**（"high" 而非 "Severity.HIGH"）。
@@ -853,7 +1107,7 @@ class IssueRepository:
             stmt = stmt.where(m.Issue.status == m.IssueStatus(status))
         result = await self.session.execute(stmt)
         await self.session.flush()
-        return int(result.rowcount or 0)
+        return _rowcount(result)
 
 
 # --------------------------------------------------------------------------
@@ -888,7 +1142,7 @@ class KeywordRepository:
 
     async def bulk_upsert(
         self, site_id: int, terms: Iterable[dict[str, Any]]
-    ) -> list[m.Keyword]:
+    ) -> builtins.list[m.Keyword]:
         """词库导入幂等：已存在的（站点,市场,词）更新指标，不新增行。"""
         out: list[m.Keyword] = []
         for payload in terms:

@@ -7,10 +7,11 @@
 from __future__ import annotations
 
 import time
+from datetime import timezone
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from ..db import models as m
 from .auth import current_auth, guard
@@ -42,6 +43,8 @@ from .schemas import (
     RankingsIn,
     RankingsOut,
     RankingsPage,
+    ScheduleOut,
+    ScheduleUpdate,
     ScorePoint,
     ScoreTrend,
     SummaryOut,
@@ -93,7 +96,7 @@ _CODE_MTIME = (
 
 
 @router.post("/sites", response_model=SiteOut, status_code=201)
-async def create_site(body: SiteCreate, uow=__import__("fastapi").Depends(get_uow)) -> SiteOut:
+async def create_site(body: SiteCreate, uow=Depends(get_uow)) -> SiteOut:
     existing = await uow.sites.get_by_domain(body.domain)
     if existing is not None:
         raise HTTPException(status_code=409, detail=f"站点已存在：{body.domain}")
@@ -114,7 +117,7 @@ async def create_site(body: SiteCreate, uow=__import__("fastapi").Depends(get_uo
 async def list_sites(
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> list[SiteOut]:
     # ⚠️ 必须按 owner 过滤。我第一版只在 _require_site 加了归属校验，
     # 以为「15 个端点都受益」就万事大吉 —— 但列表端点根本不调
@@ -167,7 +170,7 @@ async def _require_site(uow, site_id: int) -> m.Site:
 
 
 @router.get("/sites/{site_id}", response_model=SiteOut)
-async def get_site(site_id: int, uow=__import__("fastapi").Depends(get_uow)) -> SiteOut:
+async def get_site(site_id: int, uow=Depends(get_uow)) -> SiteOut:
     site = await _require_site(uow, site_id)
     return SiteOut(
         id=site.id, domain=site.domain, markets=list(site.markets or []), is_active=site.is_active
@@ -180,7 +183,7 @@ async def get_site(site_id: int, uow=__import__("fastapi").Depends(get_uow)) -> 
 
 
 @router.post("/sites/{site_id}/scan", response_model=dict, status_code=201)
-async def scan(site_id: int, body: ScanRequest, uow=__import__("fastapi").Depends(get_uow)) -> dict:
+async def scan(site_id: int, body: ScanRequest, uow=Depends(get_uow)) -> dict:
     from . import quota as q
 
     site = await _require_site(uow, site_id)
@@ -218,11 +221,73 @@ async def scan(site_id: int, body: ScanRequest, uow=__import__("fastapi").Depend
     return summary
 
 
+# --------------------------------------------------------------------------
+# 托管定时复扫（改造阶段 2b）
+# --------------------------------------------------------------------------
+
+
+def _schedule_out(site: m.Site) -> ScheduleOut:
+    nxt = site.next_scan_at
+    if nxt is not None and nxt.tzinfo is None:
+        # SQLite 读回的 DATETIME 是 naive（存的是 UTC 墙钟）。出口统一
+        # 补回 UTC——否则同一时刻在 PUT 响应里带 Z、GET 响应里不带，
+        # 客户端拿去一比就是两个值。
+        nxt = nxt.replace(tzinfo=timezone.utc)
+    return ScheduleOut(
+        enabled=site.scan_interval_s is not None,
+        interval_s=site.scan_interval_s,
+        next_scan_at=nxt,
+        params=dict(site.schedule_params or {}),
+    )
+
+
+@router.get("/sites/{site_id}/schedule", response_model=ScheduleOut)
+async def get_schedule(site_id: int, uow=Depends(get_uow)) -> ScheduleOut:
+    site = await _require_site(uow, site_id)
+    return _schedule_out(site)
+
+
+@router.put("/sites/{site_id}/schedule", response_model=ScheduleOut)
+async def put_schedule(
+    site_id: int, body: ScheduleUpdate, uow=Depends(get_uow)
+) -> ScheduleOut:
+    """开启 / 停用托管定时复扫。
+
+    ``interval_s=null`` 停用；正整数开启且首个周期立即到期（提交即
+    安排第一次复扫）。执行参数在此刻定格成快照——见 ScheduleUpdate。
+    """
+    site = await _require_site(uow, site_id)
+    if body.interval_s is None:
+        # 停用：三列全清，不碰参数校验（停用不该被任何校验挡）。
+        updated = await uow.sites.set_schedule(site_id, interval_s=None)
+    else:
+        params: dict[str, Any] = {
+            "url": body.url or f"https://{site.domain}",
+            "markets": list(body.markets or site.markets or ["base"]),
+            "max_pages": body.max_pages,
+            "max_depth": body.max_depth,
+            "respect_robots": body.respect_robots,
+            "render_js": body.render_js,
+        }
+        # ⚠️ 市场包白名单与 quick-scan 同口径：不认识的值直接拒，
+        # 否则它会原样进快照，变成一条谁都读不懂的数据。
+        for mk in params["markets"]:
+            if mk not in ("base", "google", "baidu", "cnh_eco", "geo"):
+                raise HTTPException(400, f"未知的规则包：{mk}")
+        updated = await uow.sites.set_schedule(
+            site_id, interval_s=body.interval_s, params=params
+        )
+    if updated is None:  # _require_site 已校验，这里是防御
+        raise HTTPException(404, "站点不存在")
+    await uow.session.commit()
+    return _schedule_out(updated)
+
+
 @router.get("/sites/{site_id}/jobs", response_model=list[JobOut])
 async def list_jobs(
     site_id: int,
     limit: int = Query(default=20, ge=1, le=100),
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> list[JobOut]:
     await _require_site(uow, site_id)
     page = await uow.jobs.list_for_site(site_id, limit=limit)
@@ -253,7 +318,7 @@ async def list_issues(
     code: Optional[str] = None,
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> IssuePage:
     await _require_site(uow, site_id)
     page = await uow.issues.list(
@@ -288,7 +353,7 @@ async def update_issue_status(
     site_id: int,
     issue_id: int,
     body: IssueStatusIn,
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> IssueOut:
     """把一条问题标成「已修 / 已知悉 / 忽略」。
 
@@ -318,7 +383,7 @@ async def update_issue_status(
 async def bulk_update_issue_status(
     site_id: int,
     body: IssueBulkStatusIn,
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> dict:
     """按根因批量改状态（「这一类我都处理了」）。
 
@@ -351,7 +416,7 @@ async def list_keywords(
     cluster_id: Optional[int] = None,
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> KeywordPage:
     """已落库的关键词（扩展+聚类的结果，由扫描时顺带写入）。"""
     await _require_site(uow, site_id)
@@ -384,16 +449,20 @@ async def list_keywords(
 async def expand_keywords(
     site_id: int,
     body: KeywordExpandIn,
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> KeywordExpandOut:
     """按种子词，从**已抓页面**的语料里扩展候选并聚类，然后落库。
 
     ⚠️ 与 CLI 走同一套口径（同一道门槛、同一份实现），因为两处各算一套
     必然分叉，而分叉之后没人知道该信哪个。
     """
-    from ..keywords import cluster as kw_cluster
-    from ..keywords import expand as kw_expand
+    # ⚠️ 这里 import 的必须是**子模块**再取函数，不能 `from ..keywords import
+    # expand as kw_expand`：keywords/__init__ 把函数 `expand` 绑在包命名空间，
+    # 那样 kw_expand 是函数而不是模块，`kw_expand.expand(...)` 运行时直接
+    # AttributeError —— 关键词扩展端点的正常路径从来没走通过（mypy 挖出来的）。
     from ..keywords import tokenize
+    from ..keywords.cluster import cluster as cluster_terms
+    from ..keywords.expand import expand as expand_terms
     from ..persist import persist_keywords
 
     await _require_site(uow, site_id)
@@ -427,14 +496,14 @@ async def expand_keywords(
             reason="种子词为空：无种子的共现等于把全站词两两配对，噪声大于信号",
         )
 
-    candidates = kw_expand.expand(
+    candidates = expand_terms(
         seeds, corpus, max_candidates=body.max_candidates, min_pages=body.min_pages
     )
     stats = await persist_keywords(
         uow.session,
         site_id=site_id,
         candidates=candidates,
-        clusters=kw_cluster.cluster([c.term for c in candidates])[0],
+        clusters=cluster_terms([c.term for c in candidates])[0],
         market=body.market,
         title_tokens=title_tokens,
     )
@@ -449,7 +518,7 @@ async def expand_keywords(
 async def make_brief(
     site_id: int,
     body: BriefIn,
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> BriefOut:
     """为「一个关键词 + 一个目标 URL」生成内容 Brief。
 
@@ -458,7 +527,6 @@ async def make_brief(
     就明说「竞品分析缺失」，让用户知道这份 Brief 的依据只有自己站。
     """
     from ..brief import ContentBrief, PageSignal, SerpEntry, generate_brief
-    from ..models import Market
 
     # 归属校验：不是本租户的站点在这里就 404，返回值本身用不上
     await _require_site(uow, site_id)
@@ -502,8 +570,12 @@ async def make_brief(
     brief: ContentBrief = generate_brief(
         body.keyword,
         target_url=body.target_url,
-        market=Market(body.market) if body.market else Market.GOOGLE,
-        intent=body.intent,
+        # ⚠️ 这里必须用 db.models 的 Market/Intent（brief 的签名就是它们）。
+        # 以前传的是 models.Market —— 领域层和库里各养了一套同名枚举，
+        # mypy 直接红「两个不同的 Market」。先在边界上显式转换，
+        # 枚举合一留给后续阶段。
+        market=m.Market(body.market) if body.market else m.Market.GOOGLE,
+        intent=m.Intent(body.intent) if body.intent else None,
         serp_entries=serp_entries,
         own_pages=own_pages,
     )
@@ -525,7 +597,7 @@ async def make_brief(
 @router.get("/sites/{site_id}/report/summary", response_model=SummaryOut)
 async def report_summary(
     site_id: int,
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> SummaryOut:
     """报告的 AI 总结。
 
@@ -591,7 +663,7 @@ async def report_summary(
 async def rank_drops(
     site_id: int,
     body: RankDropRequest,
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> list[RankAlertOut]:
     """排名跌幅告警。
 
@@ -654,7 +726,7 @@ async def rank_drops(
 async def ack_rank_drops(
     site_id: int,
     body: RankAlertAckIn,
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> dict:
     """把若干条告警标记为「已看过」，幂等。
 
@@ -737,7 +809,7 @@ async def list_rankings(
 
 
 @router.get("/sites/{site_id}/usage", response_model=UsageOut)
-async def usage(site_id: int, uow=__import__("fastapi").Depends(get_uow)) -> UsageOut:
+async def usage(site_id: int, uow=Depends(get_uow)) -> UsageOut:
     """计量汇总（按 kind）。
 
     ⚠️ 这里只给**数字**，不给「还剩多少额度」—— 配额与定价是产品决策，
@@ -751,7 +823,7 @@ async def usage(site_id: int, uow=__import__("fastapi").Depends(get_uow)) -> Usa
 
 
 @router.get("/sites/{site_id}/trend", response_model=ScoreTrend)
-async def trend(site_id: int, uow=__import__("fastapi").Depends(get_uow)) -> ScoreTrend:
+async def trend(site_id: int, uow=Depends(get_uow)) -> ScoreTrend:
     """分数随时间的变化 —— 趋势线数据。
 
     ⚠️ 两个坑，都在这行代码里体现：
@@ -784,7 +856,7 @@ async def trend(site_id: int, uow=__import__("fastapi").Depends(get_uow)) -> Sco
 
 
 @router.get("/sites/{site_id}/report", response_model=ReportSummary)
-async def report(site_id: int, uow=__import__("fastapi").Depends(get_uow)) -> ReportSummary:
+async def report(site_id: int, uow=Depends(get_uow)) -> ReportSummary:
     """最新一次扫描的汇总。
 
     ⚠️ 0 页成功时 ``health_score`` 必须是 ``null`` 而不是 0 ——
@@ -801,7 +873,7 @@ async def report(site_id: int, uow=__import__("fastapi").Depends(get_uow)) -> Re
 async def export_report(
     site_id: int,
     format: str = Query("md", pattern="^(md|html|json)$"),   # noqa: A002
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> Response:
     """导出报告文件（md / html / json）。
 
@@ -966,7 +1038,7 @@ def _latest_score(jobs) -> float | None:
 
 
 @router.get("/me", response_model=MeOut)
-async def me(uow=__import__("fastapi").Depends(get_uow)) -> MeOut:
+async def me(uow=Depends(get_uow)) -> MeOut:
     """我是谁 + 我还有多少免费额度。
 
     ⚠️ 单机模式（未开鉴权）返回 ``enforced: false``，而不是 limit=0。
@@ -982,7 +1054,7 @@ async def me(uow=__import__("fastapi").Depends(get_uow)) -> MeOut:
 @router.post("/keys", response_model=ApiKeyCreated, status_code=201)
 async def create_key(
     name: str = "default",
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> ApiKeyCreated:
     """签发一把访问钥匙。⚠️ **明文只在这里返回一次。**
 
@@ -1010,7 +1082,7 @@ async def create_key(
 
 
 @router.get("/keys", response_model=list[ApiKeyOut])
-async def list_keys(uow=__import__("fastapi").Depends(get_uow)) -> list[ApiKeyOut]:
+async def list_keys(uow=Depends(get_uow)) -> list[ApiKeyOut]:
     """列出钥匙。只返回前缀 —— 完整钥匙不在库里，也没有理由展示。"""
     from sqlalchemy import select
 
@@ -1033,7 +1105,7 @@ async def list_keys(uow=__import__("fastapi").Depends(get_uow)) -> list[ApiKeyOu
 
 @router.post("/keys/{key_id}/revoke", response_model=ApiKeyOut)
 async def revoke_key(
-    key_id: int, uow=__import__("fastapi").Depends(get_uow)
+    key_id: int, uow=Depends(get_uow)
 ) -> ApiKeyOut:
     """撤销钥匙（标记而非删除）。
 
@@ -1067,7 +1139,7 @@ async def revoke_key(
 
 @router.get("/sites/{site_id}/verification", response_model=VerificationOut)
 async def get_verification(
-    site_id: int, uow=__import__("fastapi").Depends(get_uow)
+    site_id: int, uow=Depends(get_uow)
 ) -> VerificationOut:
     """当前验证状态；没验证过就顺带把 token 与两条通道的说明给出来。"""
     from . import verification as V
@@ -1087,7 +1159,7 @@ async def get_verification(
 
 @router.post("/sites/{site_id}/verification", response_model=VerificationOut)
 async def start_verification(
-    site_id: int, uow=__import__("fastapi").Depends(get_uow)
+    site_id: int, uow=Depends(get_uow)
 ) -> VerificationOut:
     """生成（或重新生成）验证 token。
 
@@ -1114,7 +1186,7 @@ async def start_verification(
 async def check_verification(
     site_id: int,
     method: str = "dns",
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> VerificationOut:
     """实际去查 DNS TXT 或首页 meta。
 
@@ -1169,7 +1241,7 @@ async def check_verification(
 
 @router.delete("/sites/{site_id}", status_code=204)
 async def delete_site(
-    site_id: int, uow=__import__("fastapi").Depends(get_uow)
+    site_id: int, uow=Depends(get_uow)
 ) -> None:
     """删除站点。⚠️ 连带删除它的所有页面、问题、关键词、计量记录。
 

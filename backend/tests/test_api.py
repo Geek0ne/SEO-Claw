@@ -602,6 +602,30 @@ def test_keywords_expand_says_why_it_skipped(client):
     assert "语料" in body["reason"] and body["candidates"] == 0
 
 
+def test_keywords_expand_happy_path(client):
+    """回归：扩展端点的正常路径必须真的能跑完。
+
+    ⚠️ 这条路径此前**从来没有走通过**：routes 里写的是
+    ``kw_expand.expand(...)``，而 ``from ..keywords import expand``拿到的
+    是**函数**不是模块（__init__ 把函数绑在了包命名空间）——一到正常路径
+    就 AttributeError。单测全绿是因为既有用例都停在 skipped_* 的提前
+    返回分支，离崩溃点还差一步。mypy 先发现的（"def expand has no
+    attribute expand"），这里把它钉住。
+    """
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    r = client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    assert r.status_code in (200, 201), r.text
+    r = client.post(
+        f"/api/v1/sites/{site['id']}/keywords/expand",
+        json={"seeds": ["page"], "min_pages": 2},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    # 「ok」意味着 expand → cluster → persist 整条都跑完了；
+    # skipped_* 是提前返回，碰不到曾经的崩溃点。
+    assert body["status"] == "ok", body
+
+
 def test_brief_declares_missing_competitor_data(client):
     """没有 SERP 数据时，Brief 必须明说「竞品分析缺失」。
 
@@ -915,3 +939,64 @@ def test_rank_drops_end_to_end_with_ingested_data(client):
 
 def test_rankings_missing_site_404(client):
     assert client.post("/api/v1/sites/99999/rankings", json={"rows": _rank_rows(1)}).status_code == 404
+
+
+# --------------------------------------------------------------------------
+# Top 5 优先做（阶段 3：全出口同一口径 + 可执行改法）
+# --------------------------------------------------------------------------
+
+
+def test_report_top_actions_with_fix_advice(client):
+    """Top 5 必须带「怎么修」：只报病不开药的清单不是行动清单。"""
+    site_id = _scanned_site(client)
+    rep = client.get(f"/api/v1/sites/{site_id}/report").json()
+    top = rep["top_actions"]
+    assert 1 <= len(top) <= 5, f"Top 应在 1~5 条之间：{len(top)}"
+    for item in top:
+        assert item["code"] and item["title"]
+        assert item["fix_hint"] or item["fix_example"], (
+            f"{item['code']} 没有可执行改法——用户照着清单也不知道动手改什么"
+        )
+        assert item.get("affected_pages", 0) >= 1
+
+
+def test_report_top_actions_follow_scoring_not_severity(client):
+    """⚠️ 口径钉子：API 的 Top 5 必须与 scoring.top_actions 同序同条目。
+
+    曾经网页按严重级自己排前 5、报告按「严重度 × 影响面」排——同一次
+    扫描两处「先做」对不上，用户没理由知道该信哪个。现在排序只有
+    scoring 一份实现（CLI 三格式 + 网页 + MCP 共用），这里钉住
+    「API 出口就是它」。
+    """
+    from seoclaw.models import Issue as DomainIssue
+    from seoclaw.models import Scope as DScope
+    from seoclaw.models import Severity as DSeverity
+    from seoclaw.scoring import top_actions as scoring_top
+
+    site_id = _scanned_site(client)
+    rep = client.get(f"/api/v1/sites/{site_id}/report").json()
+    domain_issues = [
+        DomainIssue(
+            code=i["code"],
+            severity=DSeverity(i["severity"]),
+            scope=DScope(i["scope"]),
+            url=i["url"],
+            title=i["title"],
+        )
+        for i in rep["issues"]
+    ]
+    expected = [
+        i.code
+        for i in scoring_top(domain_issues, max(rep["pages_crawled"], 1), limit=5)
+    ]
+    got = [i["code"] for i in rep["top_actions"]]
+    assert got == expected, f"API 排序偏离 scoring：{got} != {expected}"
+
+
+def test_report_top_actions_capped_at_five(client):
+    """五条就是五条：渐进披露的承诺不能因为问题多就破。"""
+    site_id = _scanned_site(client)
+    rep = client.get(f"/api/v1/sites/{site_id}/report").json()
+    assert len(rep["top_actions"]) <= 5
+    # 全部问题仍在明细里，Top 5 只是入口不是过滤器
+    assert len(rep["issues"]) >= len(rep["top_actions"])

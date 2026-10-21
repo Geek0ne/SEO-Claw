@@ -649,17 +649,30 @@ async function tabOverview(host, site) {
         el("div",{class:"k"},SEV_LABEL[k]),
         el("div",{class:"v"}, String(counts[k] || 0)))))));
 
-  // 最该先做的几件事：按严重级排序的前 5 条
-  const top = (rep.issues||[]).slice().sort((a,b) =>
-    SEV.indexOf(a.severity) - SEV.indexOf(b.severity)).slice(0,5);
+  // 最该先做的几件事：**服务端**排好的 top_actions（scoring.top_actions，
+  // 与 CLI/HTML 报告同一份排序：严重度 × 影响面）。前端不再自己按
+  // 严重级排——两处排法不一样，用户看到的「先做」和报告里的对不上。
+  const top = rep.top_actions || [];
   host.append(el("div",{class:"card"},
     el("h2",{},"最该先做的事"),
-    top.length ? el("table",{}, ...top.map(i => el("tr",{},
-      el("td",{}, sevTag(i.severity)),
-      el("td",{}, el("span",{class:"rule-id"}, i.code)),
-      el("td",{}, i.title),
-      el("td",{class:"mono",style:"color:var(--muted)"}, i.url || "站点级"))))
-      : emptyBox("没有待处理问题", "这张清单只覆盖本轮抓到的页面。")));
+    top.length ? el("div",{}, ...top.map((i, idx) => el("div",{
+        class:"top-item",
+        style:"border-top:1px solid var(--line);padding:12px 0"
+      },
+      el("div",{style:"display:flex;gap:10px;align-items:baseline;flex-wrap:wrap"},
+        el("span",{class:"rule-id"}, `${idx+1}. ${i.code}`),
+        sevTag(i.severity),
+        el("span",{}, i.title)),
+      el("div",{class:"mono",style:"color:var(--muted);font-size:11px;margin-top:4px"},
+        (i.url || "站点级") + (i.affected_pages ? `　· 影响 ${i.affected_pages} 页` : "")),
+      i.impact ? el("p",{style:"margin:6px 0 0"}, i.impact) : "",
+      i.fix_hint ? el("p",{style:"margin:6px 0 0"}, el("strong",{},"怎么修："), i.fix_hint) : "",
+      i.fix_example ? el("pre",{class:"mono",style:
+        "background:var(--bg);border:1px solid var(--line);border-radius:4px;"
+        + "padding:8px;overflow-x:auto;margin:6px 0 0;font-size:11px"}, i.fix_example) : "",
+      i.description ? el("p",{style:"margin:6px 0 0;color:var(--muted);font-size:12px"}, i.description) : "",
+    )))
+    : emptyBox("没有待处理问题", "这张清单只覆盖本轮抓到的页面。")));
 
   // AI 总结：可选功能，失败只空缺，不拖垮主结果
   const ai = el("div",{class:"card"}, el("h2",{},"AI 总结"), loading());

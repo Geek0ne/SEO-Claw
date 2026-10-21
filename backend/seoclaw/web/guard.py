@@ -67,7 +67,11 @@ _BLOCKED_PORTS = frozenset({
 })
 
 
-def _is_forbidden_ip(ip: ipaddress._BaseAddress) -> Optional[str]:
+def _is_forbidden_ip(
+    ip: ipaddress.IPv4Address | ipaddress.IPv6Address,
+) -> Optional[str]:
+    # ⚠️ 注解不用 ipaddress._BaseAddress：那是私有名字（下划线开头），
+    # 类型标注跟着运行时内部实现走，换个 Python 版本就崩注解。
     """内网/保留地址一律拒绝。返回拒绝原因，全局则返回 None。"""
     if ip.is_loopback:
         return "回环地址"
@@ -138,7 +142,7 @@ def resolve_and_check(url: str, *, timeout: float = 3.0) -> str:
     # 一个域名完全可以同时返回公网 A 记录和 127.0.0.1，
     # 只查第一个等于把这个洞留着。任一条命中就整体拒绝。
     for info in infos:
-        addr = info[4][0]
+        addr = str(info[4][0])  # getaddrinfo 的 stub 里这里是 str | int
         try:
             ip = ipaddress.ip_address(addr.split("%")[0])  # 去掉 IPv6 zone id
         except ValueError:

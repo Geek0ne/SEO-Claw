@@ -13,6 +13,17 @@ from urllib.parse import parse_qsl, urlencode, urlparse
 TRACKING_PARAM_PREFIXES = ("utm_",)
 
 
+def domain_of(url: str) -> str:
+    """取 host 并去掉 ``www.`` 前缀——评分与报告的「站点」口径。
+
+    ⚠️ 与 :func:`seoclaw.persist.netloc_of` 不同：那个保留原始 netloc
+    （归一化交给仓储内部）。两者曾经同名不同义（scan_service._domain_of /
+    persist.domain_of），是典型的踩坑温床，故收口到此。
+    """
+    d = urlparse(url).netloc
+    return d[4:] if d.startswith("www.") else d
+
+
 def normalize_url(url: str) -> str:
     """归一化 URL：忽略协议、www、末尾斜杠与跟踪参数。
 

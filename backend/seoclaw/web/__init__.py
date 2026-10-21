@@ -20,15 +20,17 @@
 
 from __future__ import annotations
 
-import asyncio
-import time
+import logging
+from datetime import datetime, timezone
 from typing import Any, Optional
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from ..db.repository import ScanTaskRepository, as_utc
 from ..db.session import get_session_factory
+from .. import tasks as task_queue
 from .guard import (
     BlockedTarget,
     check_denied,
@@ -39,51 +41,17 @@ from .guard import (
 
 router = APIRouter(prefix="/api/v1/web")
 
-# ⚠️ 进程内存态。重启服务进度就没了（后台任务本身也一起没了，
-# 这是BackgroundTasks 的固有性质）。所以前端拿到 job_id 后如果查不到，
-# 必须显示「任务已失效，请重试」而不是无限转圈——
-# 一个永远转圈的进度条比报错糟糕得多。
-_TASKS: dict[int, dict[str, Any]] = {}
-# asyncio.Task 对象 → job_id。done_callback 只给Task，得靠它反查是哪个体检。
-_JOB_OF_TASK: dict[int, int] = {}
+log = logging.getLogger(__name__)
 
-# 内存任务号自增。与 crawl_jobs.id 完全无关，别混用。
-_NEXT_ID = [0]
+# ⚠️ 任务状态已落库（scan_tasks 表 + seoclaw/tasks.py 的 worker）。
+# 这里曾是进程内存的 _TASKS / _INFLIGHT / _NEXT_ID 三件套，三个硬伤：
+# 重启全丢、多 worker 互相看不见、被杀进程留下永远 running 的僵局。
+# 历史教训里最值钱的一条：上上版有人写过一个「队列上限」但没有队列——
+# 用户体感是「我等 5 分钟轮到我」，而实际上没人给他排队。现在是真的队列，
+# 这个承诺才配写进界面。
+_MAX_CONCURRENT = task_queue.MAX_CONCURRENT
+_MAX_PENDING = task_queue.MAX_PENDING
 
-
-def _next_id() -> int:
-    _NEXT_ID[0] += 1
-    return _NEXT_ID[0]
-_MAX_TASKS = 500  # 内存上限：超过就丢最老的，防止长期运行被撑爆
-
-# --------------------------------------------------------------------------
-# 并发闸
-# --------------------------------------------------------------------------
-# ⚠️ 限流挡的是「一个人狂刷」，挡不住「一群人各刷一次」。
-# 10 个不同 IP 各提交一次 = 10 个爬虫同时跑：内存被吃掉十倍，
-# 而更要命的是**服务器 IP 被 10 个目标站同时扫**——被按 IP 拉黑之后，
-# 整台机器的对外访问都废了，不只这个服务。
-#
-# 为什么是 2：一次体检 100MB 峰值内存（实测 15 页），2 并发留足余量；
-# 再多对 512MB 的免费实例就是自杀。
-#: 同时在跑的上限。⚠️ 这里**没有队列**——`create_task` 是提交即开跑，
-#: 所以要么现在跑，要么当场拒。上一版我写了个「队列上限」纯属虚构：
-#: 用户的体感是「我等 5 分钟轮到我」，而实际上没人给他排队。
-#: 与其给一个兑现不了的承诺，不如直接说「现在忙，一分钟后再来」。
-_MAX_CONCURRENT = 2
-
-#: 当前在跑的数量。用**单个整数**而不是 Semaphore：
-# 这里要的只是「计数 + 超阈值就拒」，不需要真的阻塞等待；
-# 而 asyncio.Semaphore 在多 event loop 下会跨 loop 出问题
-# （测试里 TestClient 每个用例一个新 loop，正是这么炸的）。
-_INFLIGHT = [0]
-
-
-def _remember(job_id: int, payload: dict[str, Any]) -> None:
-    if len(_TASKS) >= _MAX_TASKS:
-        for old in sorted(_TASKS)[: len(_TASKS) - _MAX_TASKS + 1]:
-            _TASKS.pop(old, None)
-    _TASKS[job_id] = payload
 
 
 class QuickScanRequest(BaseModel):
@@ -173,147 +141,69 @@ async def quick_scan(body: QuickScanRequest, request: Request) -> QuickScanAccep
 
     domain = urlparse(url).netloc
 
-    # ⚠️ 并发闸必须在**建站落库之前**。否则被拒的请求已经在库里留了
+    # ⚠️ 队列闸必须在**建站落库之前**。否则被拒的请求已经在库里留了
     # 一个孤儿 site——攻击者可以靠「提交即被拒」白刷一堆垃圾站点。
-    if _INFLIGHT[0] >= _MAX_CONCURRENT:
-        raise HTTPException(
-            status_code=503,
-            detail=f"现在有 {_INFLIGHT[0]} 个体检正在跑（一台机器同时只能跑 "
-            f"{_MAX_CONCURRENT} 个）。过一两分钟再来试。",
-            headers={"Retry-After": "60"},
-        )
-    _INFLIGHT[0] += 1
-
-    # ⚠️ `async with session:` **不等于提交**——它只负责关闭连接。
-    # 我第一版写成这样，站点压根没落库，后台建任务时立刻
-    # `FOREIGN KEY constraint failed`。这跟 API 层 deps.py 里
-    # 老老实实 `await session.commit()` 是同一件事的两面。
     async with get_session_factory()() as session:
+        repo = ScanTaskRepository(session)
+        if await repo.count_pending() >= _MAX_PENDING:
+            # 队列满拒收是容量信号，必须留痕：长期观测才知道该不该扩 worker。
+            log.warning("quick-scan 队列满被拒 ip=%s pending>=%s", ip, _MAX_PENDING)
+            raise HTTPException(
+                status_code=503,
+                detail=f"队列里已有 {_MAX_PENDING} 个任务在排（同时只跑 "
+                f"{_MAX_CONCURRENT} 个）。排队承诺必须兑现——与其收下排到"
+                "天黑的活儿，不如明说现在忙。",
+                headers={"Retry-After": "120"},
+            )
+
+        # ⚠️ `async with session:` **不等于提交**——它只负责关闭连接。
+        # 我第一版写成这样，站点压根没落库，后台建任务时立刻
+        # `FOREIGN KEY constraint failed`。这跟 API 层 deps.py 里
+        # 老老实实 `await session.commit()` 是同一件事的两面。
         site_id = await get_or_create_site(session, url, markets=[body.market])
-        await session.commit()
-
-    # 内存任务号，**不占crawl_jobs 的 id**。
-    # ⚠️ 我第一版在这里 create_crawl_job 了一次，可 run_scan 内部还会再建一次
-    # —— 一次体检留下两条任务记录，jobs 列表会看到重复的 PENDING。
-    # 真正的 crawl_jobs 由 run_scan 负责建，这里的号只用于前端轮询。
-    job_id = _next_id()
-
-    _remember(job_id, {
-        "status": "running",
-        "started": time.monotonic(),
-        "domain": domain,
-        "url": url,
-        "error": None,
-    })
-
-    # ⚠️ create_task 的异常**默认没人接**。我第一版就写成裸的 create_task，
-    # 结果一个 ModuleNotFoundError 把任务永远卡在 running —— 而我在文件
-    # 顶部刚写过「静默留在 running 会变成永远转圈的进度条」，自己先犯了。
-    # done_callback 是唯一的兜底：任何没进 _run 内部 try 的异常
-    # （包括 import 失败）都会走到这里，变成前端看得见的 failed。
-    task = asyncio.create_task(
-        _run(
-            job_id, site_id, url, body.max_pages, body.market,
+        task_row = await repo.enqueue(
+            site_id=site_id,
+            url=url,
+            markets=[body.market],
+            max_pages=body.max_pages,
             max_depth=body.max_depth,
             respect_robots=body.respect_robots,
             render_js=body.render_js,
         )
-    )
-    _JOB_OF_TASK[id(task)] = job_id
-    task.add_done_callback(_on_task_done)
-    return QuickScanAccepted(job_id=job_id, site_id=site_id, domain=domain)
+        await session.commit()
 
-
-async def _run(
-    job_id: int,
-    site_id: int,
-    url: str,
-    max_pages: int,
-    market: str,
-    *,
-    max_depth: int = 6,
-    respect_robots: bool = True,
-    render_js: bool = False,
-) -> None:
-    """后台跑一次体检，把进度与终态写进 ``_TASKS``。
-
-    ⚠️ 自己开 session：请求早已返回、它那个 session 已被关闭，
-    复用会直接抛「session is closed」。
-    """
-    from ..api.scan_service import run_scan
-
-    try:
-        async with get_session_factory()() as session:
-            summary = await run_scan(
-                session,
-                site_id=site_id,
-                url=url,
-                markets=[market],
-                max_pages=max_pages,
-                max_depth=max_depth,
-                respect_robots=respect_robots,
-                render_js=render_js,
-            )
-            # ⚠️ run_scan 自己不提交（它的调用方 API 层靠 deps 的 finally 提交）。
-            # 这里没有 deps，必须自己 commit，否则页面拿到的是空报告——
-            # 数据还在会话里躺着，随连接关闭一起没了。
-            await session.commit()
-            _remember(job_id, {
-                **(_TASKS.get(job_id, {})),
-                "status": "done",
-                "report": summary,
-                "error": None,
-            })
-    except Exception as exc:  # noqa: BLE001
-        # 任务失败必须让前端看得见。静默留在 running 会变成永远转圈的进度条。
-        _remember(job_id, {
-            **_TASKS.get(job_id, {}),
-            "status": "failed",
-            "error": f"{type(exc).__name__}: {exc}",
-        })
-
-
-
-def _on_task_done(task: "asyncio.Task") -> None:
-    """任务整体的兜底异常处理。
-
-    :func:`_run` 内部已经try 了业务异常，但**它自己 import 失败**时
-    那一行就会在 try 之前炸掉 —— 那种异常没人接，任务永远停在 running。
-    这里统一收口。
-
-    并发计数的释放也放这里，而不是 ``_run`` 的 finally——因为
-    ``from ..api.scan_service import run_scan`` 那行在 ``try`` **上面**，
-    import 失败时 finally 根本不会执行，计数器就永远减不掉。
-    done_callback 是保证「恰好一次」的唯一钩子。
-    """
-    _INFLIGHT[0] = max(0, _INFLIGHT[0] - 1)
-    if task.cancelled():
-        return
-    exc = task.exception()
-    if exc is None:
-        return
-    job_id = _JOB_OF_TASK.get(id(task))
-    if job_id is None:
-        return
-    _remember(job_id, {
-        **_TASKS.get(job_id, {}),
-        "status": "failed",
-        "error": f"{type(exc).__name__}: {exc}",
-    })
+    # 同进程的 worker 被唤醒立刻开跑；跨进程的靠慢轮询兜底（tasks.py）。
+    task_queue.wake()
+    log.info("quick-scan 提交 task_id=%s site_id=%s url=%s", task_row.id, site_id, url)
+    return QuickScanAccepted(job_id=task_row.id, site_id=site_id, domain=domain)
 
 
 @router.get("/jobs/{job_id}", response_model=JobStatus)
 async def job_state(job_id: int) -> JobStatus:
-    task = _TASKS.get(job_id)
-    if task is None:
-        # 404 而不是「还在跑」：进程重启会清空这张表，
-        # 谎称 running 会让用户对着永远不动的进度条等下去。
-        raise HTTPException(404, "任务不存在或服务已重启，请重新发起体检")
+    async with get_session_factory()() as session:
+        row = await ScanTaskRepository(session).get(job_id)
+    if row is None:
+        # 404 而不是「还在跑」：查不到就是真没有。任务落库后重启不再丢，
+        # 这里的 404 是诚实的「没这个任务」，而不是「内存被清了」。
+        raise HTTPException(404, "任务不存在")
+    status = row.status.value
+    if status == "pending":
+        # 对前端仍报 running：界面只认「转圈 / done / failed」三态，
+        # 「排队中」也该转圈。拆成独立状态留给阶段 2b 的前端改造。
+        status = "running"
+    # ⚠️ SQLite 返回 naive datetime，必须过 as_utc 再做减法，
+    # 否则 aware − naive 直接 TypeError。
+    start = as_utc(row.started_at)
+    end = as_utc(row.finished_at) or datetime.now(timezone.utc)
+    # 还没开跑（排队中/刚被捞回）报 0，不拿 created_at 算——那会把
+    # 「排队等了多久」当成「跑了多久」，重排队的任务尤其离谱（实测报过
+    # 2 亿秒）。
+    elapsed = round(max(0.0, (end - start).total_seconds()), 1) if start else 0.0
     return JobStatus(
-        status=task["status"],
-        elapsed=round(time.monotonic() - task.get("started", time.monotonic()), 1),
-        error=task.get("error"),
-        report=task.get("report"),
+        status=status,
+        elapsed=elapsed,
+        error=row.error,
+        report=row.result,
     )
 
 

@@ -24,7 +24,7 @@ import httpx
 from .audit.engine import default_registry, run_audit
 from .crawler import CrawlConfig, Crawler
 from .models import Market, SiteReport
-from .report import render_markdown, summarize_console
+from .report import json_payload, render_markdown, summarize_console
 from .scoring import score
 from .util import same_site_scope
 
@@ -347,15 +347,18 @@ def cmd_scan(args: argparse.Namespace) -> int:
     if args.llm_summary:
         from .llm import LLMConfig, summarize
 
-        cfg = LLMConfig.from_env()
-        ai_summary = summarize(report, config=cfg)
+        # ⚠️ 别叫 cfg：本函数上面已经有 cfg = CrawlConfig(...)，同名复用
+        # 在 mypy 里直接红（LLMConfig 赋给 CrawlConfig 变量），运行时则
+        # 悄悄把爬虫配置覆盖掉——两个毫无关系的配置共用一个名字是事故配方。
+        llm_cfg = LLMConfig.from_env()
+        ai_summary = summarize(report, config=llm_cfg)
         if ai_summary:
-            print(f"→ 已生成 AI 总结（{cfg.model}）", file=sys.stderr)
+            print(f"→ 已生成 AI 总结（{llm_cfg.model}）", file=sys.stderr)
         else:
             print(
                 "⚠️ 未生成 AI 总结"
                 + ("：缺少 API key（SEO_CLAW_LLM_API_KEY / OPENROUTER_API_KEY / OPENAI_API_KEY）"
-                   if not cfg.api_key else "：调用失败，详见上。")
+                   if not llm_cfg.api_key else "：调用失败，详见上。")
                 + "。报告其余部分完整，不受影响。",
                 file=sys.stderr,
             )
@@ -381,7 +384,7 @@ def cmd_scan(args: argparse.Namespace) -> int:
             )
 
     if args.json:
-        payload = report.model_dump(mode="json")
+        payload = json_payload(report)
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     elif not args.html:
         md = render_markdown(report, pages, brand=args.brand)

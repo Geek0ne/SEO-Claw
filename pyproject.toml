@@ -38,7 +38,7 @@ api = ["fastapi>=0.110", "uvicorn>=0.29"]
 postgres = ["asyncpg>=0.29"]
 # MCP Server 是可选集成层：不装不影响 CLI / Web，装了 MCP 用例才不会被跳过。
 mcp = ["mcp>=2.0"]
-dev = ["pytest>=8.0", "pytest-cov>=5.0"]
+dev = ["pytest>=8.0", "pytest-cov>=5.0", "mypy>=1.8"]
 
 [project.urls]
 Homepage = "https://github.com/Geek0ne/SEO-Claw"
@@ -80,6 +80,16 @@ select = ["E4", "E7", "E9", "F"]
 # 所以「import 不在文件顶部」是这类文件的**正确写法**。
 "backend/tests/*" = ["E402"]
 "scripts/*" = ["E402"]
+
+[tool.mypy]
+# PLAN.md 质量保障表写着「mypy strict 零错误」，但 CI 里一直没有 mypy——
+# 门槛写在文档里等于没写。这里先把**默认严格度**钉住归零（31 → 0），
+# strict 是下一步的棘轮：逐参数开、开了就不再关，不搞一步到位后
+# 批量加 ignore 自欺。
+#
+# ⚠️ CI 里必须在装完依赖后跑：SQLAlchemy 的 stub 参与类型推断，
+# 空环境下 ignore_missing_imports 会把一切推成 Any，检查形同虚设。
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 # 测试全用相对导入跑，包根必须先进 path，否则收集阶段就 ImportError。

@@ -61,6 +61,14 @@ class IssueOut(BaseModel):
     fingerprint: Optional[str] = None
     status: str
     occurrences: int = 1
+    # 「可执行改法」三件套：问题清单/Top 5 要能直接照着改，
+    # 不给改法的清单只是报病不开药。
+    description: str = ""
+    impact: str = ""
+    fix_hint: str = ""
+    fix_example: Optional[str] = None
+    # 仅 top_actions 条目携带：该问题影响的页面数（排「先做」的核心输入）。
+    affected_pages: Optional[int] = None
 
 
 class IssueStatusIn(BaseModel):
@@ -310,7 +318,11 @@ class ReportSummary(BaseModel):
     pages_crawled: int
     counts: dict[str, int]
     health_score: Optional[float] = None
+    # Top 5 优先做：服务端按「严重度 × 影响面」排好（scoring.top_actions），
+    # 网页/MCP/报告同一个口径。affected_pages = 该问题影响的页面数。
+    top_actions: list[IssueOut] = Field(default_factory=list)
     issues: list[IssueOut]
+
 
 class RankPointIn(BaseModel):
     """一行日级排名数据（程序化接入：GSC API / BigQuery / 排名跟踪器）。
@@ -351,3 +363,35 @@ class RankPointOut(BaseModel):
 class RankingsPage(BaseModel):
     items: list[RankPointOut]
     count: int
+
+
+#: 托管定时复扫的最小间隔（秒）。为什么是 1 小时：一次扫描本身就要
+#: 几分钟到几十分钟，间隔小于扫描耗时只会让队列里永远耥着一条任务；
+#: 而且这是对目标站的持续负载，下限属于「爬虫礼仪」不是技术参数。
+MIN_SCHEDULE_INTERVAL_S = 3600
+
+
+class ScheduleUpdate(BaseModel):
+    """开启 / 停用托管定时复扫。
+
+    ``interval_s`` 传 null（或不传）= 停用；传整数 = 开启，首个周期
+    立即到期（提交即安排第一次复扫）。其余字段是定时扫描的执行参数，
+    **提交这一刻定格**成快照，后续改站点设置不影响已托管的复扫。
+    """
+
+    interval_s: Optional[int] = Field(
+        default=None, ge=MIN_SCHEDULE_INTERVAL_S, le=90 * 86400
+    )
+    url: Optional[str] = None
+    max_pages: int = Field(default=30, ge=1, le=500)
+    max_depth: int = Field(default=6, ge=0, le=20)
+    markets: Optional[list[str]] = None
+    respect_robots: bool = True
+    render_js: bool = False
+
+
+class ScheduleOut(BaseModel):
+    enabled: bool
+    interval_s: Optional[int] = None
+    next_scan_at: Optional[datetime] = None
+    params: dict[str, Any] = Field(default_factory=dict)
