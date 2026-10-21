@@ -121,16 +121,20 @@ def client(monkeypatch):
     # 修法是**让假域名解析到一个公网 IP**，不是放宽守卫：
     # 守卫在生产里拒绝不可解析域名是对的（那是 DNS rebinding 的一环），
     # 改它等于为了测试通过而打开一个洞。
+    #
+    # ⚠️ 而且**一个真 DNS 都不发**。开发机上挂着代理时，fake-IP 模式
+    # （198.18.0.0/15，基准测试网段）会把 example.com 也解析成一个内网
+    # 地址，守卫照样拒——于是「测试过不过」取决于本机开没开代理，而不
+    # 取决于被测代码。真实例子：example.com → 198.18.0.53 → 400。
+    # 守卫自己的解析/拒绝逻辑由 test_guard.py 逐条控制解析结果来验，
+    # 这里只需要「提交被接受」，所以统一解析到一个公网 IP。
     import socket
-    _real_gai = socket.getaddrinfo
 
     def _fake_gai(host, port, *a, **kw):
-        if host.endswith((".test", ".invalid")):
-            return [
-                (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
-                 ("93.184.216.34", port)),
-            ]
-        return _real_gai(host, port, *a, **kw)
+        return [
+            (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "",
+             ("93.184.216.34", port)),
+        ]
 
     monkeypatch.setattr(socket, "getaddrinfo", _fake_gai)
 
@@ -285,12 +289,20 @@ def test_same_domain_not_duplicated(client):
 
     ⚠️ 只能**按域名**查，不能数全库：本文件与 test_api.py 共用一个
     测试库（见模块 docstring），数全库会把别的模块的站点也算进来。
+
+    ⚠️ 而且要**翻页**查。列表接口默认一页 50 条，整套跑下来库里早已
+    有 60+ 站点，dup.test 排在第一页之外——只看第一页会得到
+    `mine == []`，于是「恰好一个」这条在单跑时绿、全量跑时红。
     """
     _wait_job(client, _submit(client, "dup.test"))
     _wait_job(client, _submit(client, "dup.test"))
 
-    sites = client.get("/api/v1/sites").json()
-    mine = [s for s in sites if s["domain"] == "dup.test"]
+    mine: list[dict] = []
+    for offset in range(0, 2000, 200):  # 单页上限就是 200
+        page = client.get(f"/api/v1/sites?limit=200&offset={offset}").json()
+        mine.extend(s for s in page if s["domain"] == "dup.test")
+        if len(page) < 200:
+            break
     assert len(mine) == 1, f"同一域名建了 {len(mine)} 个 site"
 
 

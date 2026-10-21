@@ -201,7 +201,7 @@ def infer_domain(rows: list[RankRow]) -> Optional[str]:
     from collections import Counter
     from urllib.parse import urlparse
 
-    hosts = Counter()
+    hosts: Counter[str] = Counter()
     for r in rows:
         host = urlparse(r.url).netloc.lower()
         if host.startswith("www."):

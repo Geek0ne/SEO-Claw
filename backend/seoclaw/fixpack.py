@@ -32,7 +32,7 @@ import io
 import json
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Iterable, Optional
+from typing import Callable, Iterable, Optional
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field
@@ -148,7 +148,7 @@ def _detect_site_suffix(pages: list[Page]) -> Optional[str]:
     """
     from collections import Counter
 
-    tails: Counter = Counter()
+    tails: Counter[str] = Counter()
     total = 0
     for p in pages:
         t = (p.title or "").strip()
@@ -161,10 +161,12 @@ def _detect_site_suffix(pages: list[Page]) -> Optional[str]:
                 if 0 < len(tail) <= 25:
                     tails[tail] += 1
                 break
-    if not total:
+    if not total or not tails:
         return None
-    tail, n = tails.most_common(1)[0] if tails else (None, 0)
-    return tail if tail and n * 2 > total else None
+    # 走到这里 tails 必非空，most_common(1)[0] 取得到——不必再兜 (None, 0)
+    # 那个假分支（它除了把 tail 的类型搅浑之外没做过任何事）。
+    tail, n = tails.most_common(1)[0]
+    return tail if n * 2 > total else None
 
 
 _SENT_END = ("。", "！", "？", ".", "!", "?")
@@ -271,7 +273,10 @@ def _fix_title(
     return title, after, how_to, Confidence.HEURISTIC
 
 
-def _fix_meta(page: Page) -> tuple[str, str, str, Confidence]:
+def _fix_meta(page: Page) -> tuple[Optional[str], str, str, Confidence]:
+    """返回 (改前, 改后, 怎么落地, 可信度)。改前可能是 None——那正是
+    「这页压根没有 meta description」，不是「改前是空串」。
+    """
     budget = _META_LIMIT_CJK if _is_cjk_text(page.text[:200]) else _META_LIMIT_LATIN
     after = _first_sentences(page.text, budget)
     if not after:
@@ -281,7 +286,7 @@ def _fix_meta(page: Page) -> tuple[str, str, str, Confidence]:
     return (page.meta_description or None), after, how_to, Confidence.HEURISTIC
 
 
-def _fix_h1(page: Page, code: str, suffix: Optional[str]) -> tuple[str, str, str, Confidence]:
+def _fix_h1(page: Page, code: str, suffix: Optional[str]) -> tuple[Optional[str], str, str, Confidence]:
     if code == "h1.missing":
         base = _strip_site_suffix((page.title or "").strip(), [suffix] if suffix else [])
         if not base:
@@ -296,20 +301,20 @@ def _fix_h1(page: Page, code: str, suffix: Optional[str]) -> tuple[str, str, str
     return " | ".join(x.strip() for x in page.h1), first, how_to, Confidence.DETERMINISTIC
 
 
-def _fix_canonical(page: Page) -> tuple[str, str, str, Confidence]:
+def _fix_canonical(page: Page) -> tuple[Optional[str], str, str, Confidence]:
     self_url = (page.final_url or page.url).split("#")[0]
     how_to = "在 <head> 加自指 canonical，把带参数/大小写的变体统一到规范地址。"
     return page.canonical or None, self_url, how_to, Confidence.DETERMINISTIC
 
 
-def _fix_lang(page: Page) -> tuple[str, str, str, Confidence]:
+def _fix_lang(page: Page) -> tuple[Optional[str], str, str, Confidence]:
     zh = sum(1 for ch in page.text[:2000] if "\u4e00" <= ch <= "\u9fff")
     after = "zh-CN" if zh * 2 >= max(len(page.text[:2000]), 1) else "en"
     how_to = "给 <html> 加 lang 属性（读屏与搜索引擎都靠它判语言）。多语言站按本页实际语种填。"
     return None, after, how_to, Confidence.HEURISTIC
 
 
-def _fix_alt(page: Page, code: str) -> list[tuple[str, str, str, str, Confidence]]:
+def _fix_alt(page: Page, code: str) -> list[tuple[str, Optional[str], str, str, Confidence]]:
     """逐图给 alt 底稿：从文件名还原可读短语。返回 (field, before, after, how_to, conf)。"""
     out = []
     for img in page.images:
@@ -502,8 +507,13 @@ def build_fixpack(pages: list[Page], issues: list[Issue], domain: str) -> FixPac
             continue
 
     # 按严重度 + 字段排序：工单是拿来分派的，得先看大头
-    sev_rank = {s: i for i, s in enumerate(Severity)}
-    pack.actions.sort(key=lambda a: (sev_rank.get(_code_severity(a.code), 9), a.field, a.url or ""))
+    # ⚠️ None 也要进表：_code_severity 认不出的 code 是真会发生的
+    # （规则包加了 code 而处方层还没跟上），排到最后而不是当场 KeyError。
+    sev_rank: dict[Optional[Severity], int] = {
+        None: 9,
+        **{s: i for i, s in enumerate(Severity)},
+    }
+    pack.actions.sort(key=lambda a: (sev_rank[_code_severity(a.code)], a.field, a.url or ""))
     if not pack.actions and not pack.manual_review:
         pack.notes.append("没有可自动开出处方的问题——本次扫描的命中项都需要人工判断或无需改动。")
     pack.notes.append(
@@ -648,7 +658,10 @@ def render_fixpack_diff(pack: FixPack) -> str:
     return "\n\n".join(out) + ("\n" if out else "")
 
 
-RENDERERS = {
+# ⚠️ 标注写成 Callable[..., str]：不标的话 mypy 拿最后两个 lambda 的
+# 签名当值类型，前面两个带 keyword-only brand 的真函数就被判成「不兼容」——
+# 错的是推断，不是这几个渲染器。
+RENDERERS: dict[str, Callable[..., str]] = {
     "md": render_fixpack_markdown,
     "json": render_fixpack_json,
     "csv": lambda pack, **kw: render_fixpack_csv(pack),
