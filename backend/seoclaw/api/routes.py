@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import time
+from datetime import timezone
 from pathlib import Path
 from typing import Optional
 
@@ -38,6 +39,8 @@ from .schemas import (
     RankAlertAckIn,
     RankAlertOut,
     RankDropRequest,
+    ScheduleOut,
+    ScheduleUpdate,
     ScorePoint,
     ScoreTrend,
     SummaryOut,
@@ -212,6 +215,68 @@ async def scan(site_id: int, body: ScanRequest, uow=Depends(get_uow)) -> dict:
         render_js=body.render_js,
     )
     return summary
+
+
+# --------------------------------------------------------------------------
+# 托管定时复扫（改造阶段 2b）
+# --------------------------------------------------------------------------
+
+
+def _schedule_out(site: m.Site) -> ScheduleOut:
+    nxt = site.next_scan_at
+    if nxt is not None and nxt.tzinfo is None:
+        # SQLite 读回的 DATETIME 是 naive（存的是 UTC 墙钟）。出口统一
+        # 补回 UTC——否则同一时刻在 PUT 响应里带 Z、GET 响应里不带，
+        # 客户端拿去一比就是两个值。
+        nxt = nxt.replace(tzinfo=timezone.utc)
+    return ScheduleOut(
+        enabled=site.scan_interval_s is not None,
+        interval_s=site.scan_interval_s,
+        next_scan_at=nxt,
+        params=dict(site.schedule_params or {}),
+    )
+
+
+@router.get("/sites/{site_id}/schedule", response_model=ScheduleOut)
+async def get_schedule(site_id: int, uow=Depends(get_uow)) -> ScheduleOut:
+    site = await _require_site(uow, site_id)
+    return _schedule_out(site)
+
+
+@router.put("/sites/{site_id}/schedule", response_model=ScheduleOut)
+async def put_schedule(
+    site_id: int, body: ScheduleUpdate, uow=Depends(get_uow)
+) -> ScheduleOut:
+    """开启 / 停用托管定时复扫。
+
+    ``interval_s=null`` 停用；正整数开启且首个周期立即到期（提交即
+    安排第一次复扫）。执行参数在此刻定格成快照——见 ScheduleUpdate。
+    """
+    site = await _require_site(uow, site_id)
+    if body.interval_s is None:
+        # 停用：三列全清，不碰参数校验（停用不该被任何校验挡）。
+        updated = await uow.sites.set_schedule(site_id, interval_s=None)
+    else:
+        params = {
+            "url": body.url or f"https://{site.domain}",
+            "markets": list(body.markets or site.markets or ["base"]),
+            "max_pages": body.max_pages,
+            "max_depth": body.max_depth,
+            "respect_robots": body.respect_robots,
+            "render_js": body.render_js,
+        }
+        # ⚠️ 市场包白名单与 quick-scan 同口径：不认识的值直接拒，
+        # 否则它会原样进快照，变成一条谁都读不懂的数据。
+        for mk in params["markets"]:
+            if mk not in ("base", "google", "baidu", "cnh_eco", "geo"):
+                raise HTTPException(400, f"未知的规则包：{mk}")
+        updated = await uow.sites.set_schedule(
+            site_id, interval_s=body.interval_s, params=params
+        )
+    if updated is None:  # _require_site 已校验，这里是防御
+        raise HTTPException(404, "站点不存在")
+    await uow.session.commit()
+    return _schedule_out(updated)
 
 
 @router.get("/sites/{site_id}/jobs", response_model=list[JobOut])

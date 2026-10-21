@@ -281,6 +281,84 @@ class SiteRepository:
         await self.session.flush()
         return True
 
+    # ---- 托管定时复扫（改造阶段 2b）----
+
+    async def set_schedule(
+        self,
+        site_id: int,
+        *,
+        interval_s: Optional[int],
+        params: Optional[dict[str, Any]] = None,
+        first_run_at: Optional[datetime] = None,
+    ) -> Optional[m.Site]:
+        """开启 / 停用托管复扫。``interval_s=None`` = 停用（三列全清）。
+
+        开启即首次到期（next_scan_at=now）：用户点「托管」多半就是想要
+        马上有一份基线；若恰有任务在跑，由调度器的不叠任务守卫兜住。
+        ``first_run_at`` 留给测试指定到期时刻。
+        """
+        site = await self.get(site_id)
+        if site is None:
+            return None
+        if interval_s is None:
+            site.scan_interval_s = None
+            site.next_scan_at = None
+            site.schedule_params = None
+        else:
+            site.scan_interval_s = int(interval_s)
+            site.next_scan_at = first_run_at or utcnow()
+            site.schedule_params = dict(params or {})
+        await self.session.flush()
+        return site
+
+    async def due_schedules(
+        self, *, now: datetime, limit: int = 20
+    ) -> builtins.list[m.Site]:
+        """到期的托管站点（next_scan_at <= now，按到期时间升序）。
+
+        只看 is_active 的站：停用的站不该继续对外发扫描。
+        """
+        stmt = (
+            select(m.Site)
+            .where(
+                m.Site.is_active.is_(True),
+                m.Site.scan_interval_s.is_not(None),
+                m.Site.next_scan_at <= now,
+            )
+            .order_by(m.Site.next_scan_at.asc())
+            .limit(limit)
+        )
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def claim_schedule(
+        self, site_id: int, *, now: datetime, next_scan_at: datetime
+    ) -> bool:
+        """CAS 认领一次到期触发：推进 next_scan_at，返回是否抢到。
+
+        ⚠️ 判据是 ``next_scan_at <= now`` 而不是等值比较：两个调度
+        实例同时到期时，先到的把 next_scan_at 推进到未来，后到的
+        WHERE 不再命中、rowcount=0 直接认输。与 ScanTaskRepository.
+        claim_next 同一个套路——**别改成先 SELECT 再 UPDATE**。
+        """
+        res = await self.session.execute(
+            update(m.Site)
+            .where(
+                m.Site.id == site_id,
+                m.Site.scan_interval_s.is_not(None),
+                m.Site.next_scan_at <= now,
+            )
+            .values(next_scan_at=next_scan_at)
+            # ⚠️ synchronize_session=False 不是优化，是必需：ORM 的
+            # 同步评估会拿会话里已载入的 next_scan_at（SQLite 读回来是
+            # naive）与绑定的 aware now 比较，直接
+            # `TypeError: can't compare offset-naive and offset-aware`。
+            # 比较交给数据库做，对象状态不参与（这里的行紧接着就会被
+            # 提交丢弃，没有脏对象要同步）。
+            .execution_options(synchronize_session=False)
+        )
+        await self.session.flush()
+        return _rowcount(res) == 1
+
 
 def _normalize_domain(domain: str) -> str:
     """把用户填的站点地址收敛成 host。
@@ -437,6 +515,19 @@ class ScanTaskRepository:
             m.ScanTask.status == m.TaskStatus.PENDING
         )
         return int((await self.session.execute(stmt)).scalar() or 0)
+
+    async def has_active(self, site_id: int) -> bool:
+        """该站点是否已有排队中 / 执行中的任务。
+
+        定时调度的不叠任务守卫用：复扫的目的是「保持最新」，不是
+        「把没跑的补回来」——队列里搌三份同样的扫描，用户等的是三倍
+        时间、看到的是一样的报告。
+        """
+        stmt = select(func.count()).select_from(m.ScanTask).where(
+            m.ScanTask.site_id == site_id,
+            m.ScanTask.status.in_([m.TaskStatus.PENDING, m.TaskStatus.RUNNING]),
+        )
+        return int((await self.session.execute(stmt)).scalar() or 0) > 0
 
     async def claim_next(self, *, max_running: int) -> Optional[m.ScanTask]:
         """认领最早的 pending 任务并置 running。没有可领的返回 None。

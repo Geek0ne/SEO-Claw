@@ -311,3 +311,35 @@ class ReportSummary(BaseModel):
     counts: dict[str, int]
     health_score: Optional[float] = None
     issues: list[IssueOut]
+
+
+#: 托管定时复扫的最小间隔（秒）。为什么是 1 小时：一次扫描本身就要
+#: 几分钟到几十分钟，间隔小于扫描耗时只会让队列里永远耥着一条任务；
+#: 而且这是对目标站的持续负载，下限属于「爬虫礼仪」不是技术参数。
+MIN_SCHEDULE_INTERVAL_S = 3600
+
+
+class ScheduleUpdate(BaseModel):
+    """开启 / 停用托管定时复扫。
+
+    ``interval_s`` 传 null（或不传）= 停用；传整数 = 开启，首个周期
+    立即到期（提交即安排第一次复扫）。其余字段是定时扫描的执行参数，
+    **提交这一刻定格**成快照，后续改站点设置不影响已托管的复扫。
+    """
+
+    interval_s: Optional[int] = Field(
+        default=None, ge=MIN_SCHEDULE_INTERVAL_S, le=90 * 86400
+    )
+    url: Optional[str] = None
+    max_pages: int = Field(default=30, ge=1, le=500)
+    max_depth: int = Field(default=6, ge=0, le=20)
+    markets: Optional[list[str]] = None
+    respect_robots: bool = True
+    render_js: bool = False
+
+
+class ScheduleOut(BaseModel):
+    enabled: bool
+    interval_s: Optional[int] = None
+    next_scan_at: Optional[datetime] = None
+    params: dict[str, Any] = Field(default_factory=dict)

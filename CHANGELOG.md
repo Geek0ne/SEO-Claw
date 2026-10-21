@@ -4,6 +4,38 @@
 
 ## [未发布]
 
+### 新增（阶段 2b：定时扫描调度）
+- **托管定时复扫**：站点声明复扫间隔（`sites` 三列，迁移 0008：
+  `scan_interval_s` / `next_scan_at` / `schedule_params`），调度器
+  `scheduler.py` 到期自动入队，走阶段 2a 的持久队列执行。API 两端点：
+  `PUT /sites/{id}/schedule`（`interval_s=null` 停用；正整数开启且
+  **首个周期立即到期**）、`GET /sites/{id}/schedule`。
+- 调度语义四条，各有测试钉着：①**at-most-once**（CAS 认领与入队同事务、
+  认领在前，崩掉宁漏勿双）；②**不叠任务**（有 pending/running 就跳过
+  入队但照常推进周期，按时间节奏走，扫描比周期长时队列不会越积越多）；
+  ③**参数定格**（执行参数读开启托管时的快照，不实时读站点设置）；
+  ④**队列满不认领**（留在 due 下个 tick 再试，与 web 端拒收同一条
+  「排队承诺必须兑现」的底线）。
+- `ScanTaskRepository.has_active`；`SiteRepository` 的
+  `set_schedule` / `due_schedules` / `claim_schedule`（CAS：条件 UPDATE
+  `next_scan_at <= now` 看 rowcount，与 claim_next 同套路）。
+- 测试 `test_scheduler.py`：tick 语义 8 条 + API 5 条 + **接线 1 条**
+  （拉小轮询间隔等 lifespan 跑的 scheduler_loop 自己触发——只测
+  tick 不测接线，就存在「函数全对、没接上电」的空隙）。
+- 托管最小间隔 1 小时（`MIN_SCHEDULE_INTERVAL_S`）：扫描本身就要
+  几分钟到几十分钟，下限是爬虫礼仪不是技术参数。
+- **踩坑一枚（收尾吊死）**：lifespan 收尾原本无界 `await` 被取消的
+  worker，而取消落在 SQLAlchemy 异步驱动的 greenlet 交接区时，任务会
+  吊死在没人置位的 future 上（实测栈：aiosqlite `_terminate_graceful_close`
+  的 `asyncio.shield`，线程已空闲、close future 永远不完成）——
+  **症状是测试套件随机挂起**，挂哪条取决于取消命中哪个 DB 操作（快速
+  开关 TestClient 基本必中：启动时连续几个 DB 调用，首关就撞窗口）。
+  修法是收尾**有界等待**（2s 到点就走，dispose 同理用 task+wait 而非
+  wait_for——后者超时后还会等取消完成，对吊死任务同样永久挂住），
+  回归钉 `test_rapid_client_cycles_do_not_wedge_shutdown`（线程+join
+  超时，真回归时 FAIL 而不是把套件挂死）。上游 interplay 不在本仓
+  可修范围，边界防御到此为止。
+
 ### 新增（阶段 2a：持久任务队列）
 - **任务队列落库**：`scan_tasks` 表（迁移 0007）+ `seoclaw/tasks.py` 执行器。
   Web 体检任务从进程内存（`_TASKS`/`_INFLIGHT`/`_NEXT_ID`）迁到数据库：

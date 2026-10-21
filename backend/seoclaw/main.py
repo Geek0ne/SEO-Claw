@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncIterator
@@ -22,6 +22,8 @@ from .api import router
 from .db.session import create_all, dispose_engine
 from .log import configure
 from .web import router as web_router
+
+log = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -41,15 +43,40 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     await task_queue.recover_stale()
     worker = asyncio.create_task(task_queue.worker_loop())
+    # 定时扫描调度（阶段 2b）：把到期的托管站点变成队列任务。
+    # 与 worker 同生共死——先停它们再关库（顺序见 finally）。
+    from . import scheduler as scan_scheduler
+
+    sched = asyncio.create_task(scan_scheduler.scheduler_loop())
     try:
         yield
     finally:
-        # 先停 worker 再关库：反过来 worker 会在关库后拿连接，报错刷屏。
+        # 先停 worker/调度再关库：反过来它们会在关库后拿连接，报错刷屏。
         # 取消时正在跑的任务行会留在 running，下次启动由 recover_stale 捞回。
-        worker.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await worker
-        await dispose_engine()
+        for t in (sched, worker):
+            t.cancel()
+        # ⚠️ 有界等待，绝不无界 await——这是实测踩出来的（0008 阶段）：
+        # 取消落在 SQLAlchemy 异步驱动的 greenlet 交接区时，任务会吊死在
+        # 没人置位的 future 上（实测栈：worker 卡在 aiosqlite 的
+        # `AsyncAdapt_aiosqlite_connection._terminate_graceful_close` 的
+        # asyncio.shield 里，aiosqlite 线程已空闲、close future 却永远
+        # 不完成），无界 await 会把 lifespan 收尾、TestClient 关闭、
+        # 进程退出一起拖死。症状极具迷惑性：测试套件**随机挂起**，
+        # 挂哪条取决于取消命中哪个数据库操作（窗口期就是每个 DB 调用的
+        # 毫秒级瞬间，启动时连续三个 DB 调用，命中率最高）。
+        # 到点就走：进程即将退出，吊死的任务随进程消失——为「优雅」
+        # 无限期挂住不优雅。2s 盖过正常收尾（毫秒级）三个数量级，
+        # 又不会让命中吊死的测试用例慢到不可忍。
+        _done, _stuck = await asyncio.wait({sched, worker}, timeout=2)
+        if _stuck:
+            log.warning("后台任务取消后 2s 未退出（%d 个），放弃等待", len(_stuck))
+        # dispose 同理有界：同一类吊死可能发生在连接关闭的 greenlet
+        # 交接里。用 task + asyncio.wait 而不是 wait_for——wait_for
+        # 超时后还会等取消完成，对吊死的任务同样会永久挂住。
+        _dispose = asyncio.create_task(dispose_engine())
+        _done, _stuck = await asyncio.wait({_dispose}, timeout=2)
+        if _stuck:
+            log.warning("数据库连接池关闭超时，放弃等待（进程即将退出）")
 
 
 def create_app() -> FastAPI:

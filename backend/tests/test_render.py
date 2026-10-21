@@ -14,9 +14,34 @@ JS 渲染层测试（Playwright）。
 from __future__ import annotations
 
 
+import asyncio
+
+import pytest
+
 from seoclaw.crawler import CrawlConfig, Crawler
 from seoclaw.models import Page
 from seoclaw.render import RenderConfig, Renderer
+
+
+@pytest.fixture(autouse=True)
+def _clear_stale_running_loop():
+    """⚠️ Playwright sync API 会把「loop 正在运行」的标记泄漏在调用线程
+    （pytest 主线程）上：跑过本模块之后，任何用
+    ``loop.run_until_complete`` 驱动协程的测试都会报
+    ``RuntimeError: Cannot run the event loop while another loop is
+    running``。
+
+    这个雷以前没炸纯属运气——用 run_until_complete 的模块（test_db、
+    test_scheduler）按字母序排在 test_render 前面/后面不凑巧。2026-10-20
+    新增 test_scheduler（排在 test_render 之后）才炸出来：9 个用例全
+    error，而 test_render 单跑、test_scheduler 单跑都绿。
+
+    清标记用的是 asyncio 的准内部接口 ``_set_running_loop(None)``：
+    没有公开等价物，且这里能确定没有真的 loop 在跑（测试是同步的）。
+    放在每条用例之后清，而不是只在模块尾清——单跑任意一条都该干净。
+    """
+    yield
+    asyncio.events._set_running_loop(None)
 
 
 # --------------------------------------------------------------------------

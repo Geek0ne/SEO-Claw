@@ -250,6 +250,21 @@ class Site(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
 
+    # ---- 托管定时复扫（改造阶段 2b）----
+    #: 复扫间隔（秒）。None = 未开启托管。
+    scan_interval_s: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    #: 下次复扫到期时间（UTC）。调度器只认这一列：到期就入队，
+    #: 然后把它推到下个周期（CAS 认领，见 scheduler.tick）。
+    next_scan_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    #: 定时执行参数快照（url/markets/max_pages/…）。⚠️ 定格在开启托管
+    #: 的那一刻，不实时读 settings/markets——「当初约好的复扫」不该
+    #: 随后续设置漂移；要改参数就重新提交托管（重新定格）。
+    schedule_params: Mapped[Optional[dict[str, Any]]] = mapped_column(
+        JSONType, nullable=True
+    )
+
     pages: Mapped[list["Page"]] = relationship(
         back_populates="site", cascade="all, delete-orphan", passive_deletes=True
     )
