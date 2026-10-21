@@ -89,6 +89,9 @@ class ContentBrief:
     serp_common: dict[str, Any] = field(default_factory=dict)
     #: 本站字数基线。明确标注来源是「自家页面」，不是竞品。
     own_length_baseline: dict[str, Any] = field(default_factory=dict)
+    #: 我方当前排名。来源是 ``rank_history``（由 rank-import / POST /rankings
+    #: 灌入）；没数据时 available=False，而不是留空让人以为「排在最后」。
+    own_rank: dict[str, Any] = field(default_factory=dict)
     #: 差异化机会：每条附证据。
     opportunities: list[dict[str, Any]] = field(default_factory=list)
     #: 明确标注「拿不到」的东西，防止下游误以为已覆盖。
@@ -104,6 +107,7 @@ class ContentBrief:
             "title_candidates": self.title_candidates,
             "serp_common": self.serp_common,
             "own_length_baseline": self.own_length_baseline,
+            "own_rank": self.own_rank,
             "opportunities": self.opportunities,
             "not_available": self.not_available,
         }
@@ -291,6 +295,31 @@ def build_title_candidates(
     return base[:limit]
 
 
+def own_rank_block(
+    position: Optional[float], as_of: Optional[str]
+) -> dict[str, Any]:
+    """「我方当前排名」这一块。
+
+    ⚠️ ``position`` 为 None 时必须给出 ``available: False`` 和原因，不能给
+    ``{"position": None}`` —— 那是「不知道排第几」，与「排在最后」是两件
+    事（与 ``alerts.py`` 里同一口径）。
+    """
+    if position is None:
+        return {
+            "available": False,
+            "source": "rank_history",
+            "reason": "该目标 URL 在 rank_history 里没有记录：先跑 "
+            "`seoclaw rank-import` 或 POST /sites/{id}/rankings",
+        }
+    return {
+        "available": True,
+        "source": "rank_history",
+        "position": position,
+        "as_of": as_of,
+        "note": "来源是自家接入的日级排名，不是本工具抓的 SERP。",
+    }
+
+
 def generate_brief(
     keyword: str,
     *,
@@ -299,6 +328,8 @@ def generate_brief(
     intent: Optional[Intent] = None,
     serp_entries: Sequence[SerpEntry] = (),
     own_pages: Sequence[PageSignal] = (),
+    own_position: Optional[float] = None,
+    own_as_of: Optional[str] = None,
 ) -> ContentBrief:
     """生成一份内容 Brief。
 
@@ -308,13 +339,18 @@ def generate_brief(
     entries = list(serp_entries)
     common = analyze_serp_titles(entries)
     baseline = own_length_baseline(own_pages)
+    rank = own_rank_block(own_position, own_as_of)
 
     not_available: list[str] = [
         "竞品正文长度（本工具未抓竞品正文，只存了标题/摘要）",
         "竞品正文结构（标题层级、字数、素材数量）",
         "该词的实际搜索量（无付费数据源）",
-        "我方当前排名（需接 Search Console）",
     ]
+    # 「我方当前排名」只在真的没有时才列进缺失清单。2026-10-18 补上排名数据
+    # 入口之后这里还硬编码「需接 Search Console」，等于把已经接好的数据说成
+    # 没有——与 brief 其它地方的诚实口径直接相抵。
+    if not rank["available"]:
+        not_available.append("我方当前排名（rank_history 里没有该 URL 的记录）")
 
     site = _site_of(target_url)
     brief = ContentBrief(
@@ -332,6 +368,7 @@ def generate_brief(
         title_candidates=build_title_candidates(keyword, intent, site),
         serp_common=common,
         own_length_baseline=baseline,
+        own_rank=rank,
         opportunities=find_opportunities(keyword, entries, own_pages),
         not_available=not_available,
     )

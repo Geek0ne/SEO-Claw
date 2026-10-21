@@ -410,6 +410,95 @@ def test_keyword_and_serp(acall, uow: UnitOfWork, session: AsyncSession) -> None
     assert [s.position for s in latest] == [1, 2]
 
 
+def test_serp_upsert_is_idempotent(acall, uow: UnitOfWork, session: AsyncSession) -> None:
+    """SERP 写入必须真的幂等。
+
+    ⚠️ ``serp_snapshots`` 的建表注释一直写着「唯一约束让重跑 SERP 抓取变成
+    幂等 upsert」，但此前只有裸 INSERT 的 ``bulk_create``：重跑同一份导出
+    会撞 IntegrityError，而不是更新那一行。注释承诺的东西得有实现兜着，
+    这条用例就是钉住它。
+    """
+    site = acall(seed_site(session))
+    kw = acall(uow.keywords.create(site.id, "seo 工具"))
+    base = {
+        "keyword_id": kw.id, "site_id": site.id, "position": 1,
+        "url": "https://a.com/", "title": "A", "captured_at": _dt(2026, 9, 1),
+    }
+
+    row, created = acall(uow.serp.upsert(**base))
+    assert created is True
+
+    again, created2 = acall(uow.serp.upsert(**{**base, "title": "A 换了标题"}))
+    assert created2 is False and again.id == row.id
+    assert again.title == "A 换了标题"
+    assert acall(uow.serp.latest_for_keyword(kw.id))[0].position == 1
+
+    # 微秒不参与幂等键：同一份文件重跑导出方的时间戳会带新的微秒，
+    # 认它等于每次重跑都新增一次「伪历史」，把真历史挤出 latest_for_keyword
+    micro, created3 = acall(uow.serp.upsert(
+        **{**base, "captured_at": _dt(2026, 9, 1).replace(microsecond=123456)}
+    ))
+    assert created3 is False and micro.id == row.id
+
+    # recent() 一次 join 带回关键词原文：异步会话下靠关系属性会 MissingGreenlet
+    rows = acall(uow.serp.recent(site.id))
+    assert [(r.url, term) for r, term in rows] == [("https://a.com/", "seo 工具")]
+
+
+def test_serp_ingest_creates_keywords_and_is_idempotent(
+    acall, uow: UnitOfWork, session: AsyncSession
+) -> None:
+    """CLI `serp-import` 走的落库路径（ingest_captures）必须自己测。
+
+    它干两件事：**按 (词, 市场) 建或复用关键词档案**，再幂等写快照。
+    前者决定「导一份 500 个词的文件」之后关键词列表里到底有没有 500 条
+    ——只写快照不建词的话，那些快照挂在 no key 上，谁都读不到；
+    后者决定「同一份导出跑第二遍」会不会变成两份伪历史。
+    """
+    from seoclaw.serpdata import (
+        capture_from_fields,
+        ingest_captures,
+        result_from_fields,
+    )
+
+    site = acall(seed_site(session))
+    cap = capture_from_fields(
+        keyword="登山鞋",
+        market="baidu",
+        captured_at="2026-09-01T00:00:00+00:00",
+        results=[
+            result_from_fields(url="https://a.test/1", position=1, title="A"),
+            result_from_fields(url="https://b.test/2", position=2, title="B"),
+        ],
+    )
+    # 没给市场也没给时刻：市场归一到默认档、时刻走「今天 00:00 UTC」
+    bare = capture_from_fields(
+        keyword="裸词",
+        results=[result_from_fields(url="https://c.test/3", position=3)],
+    )
+
+    out = acall(ingest_captures(session, site.id, [cap, bare]))
+    acall(session.commit())
+    assert out["keywords_created"] == 2 and out["keywords_existing"] == 0
+    assert out["inserted"] == 3 and out["updated"] == 0
+    assert out["captured_at"].endswith("+00:00"), "摘要里的时刻必须是带时区的"
+
+    kw = acall(uow.keywords.get_by_term(site.id, "登山鞋", market="baidu"))
+    assert kw is not None and kw.is_tracked is True
+    assert [s.position for s in acall(uow.serp.latest_for_keyword(kw.id))] == [1, 2]
+    # 市场归一不能悄悄改档：裸词落在默认市场（google）下
+    bare_kw = acall(uow.keywords.get_by_term(site.id, "裸词"))
+    assert bare_kw is not None and bare_kw.market.value == "google"
+
+    # 同一份导出重跑：词不再建、快照只更新。伪历史比漏一次严重——
+    # latest_for_keyword 会把真历史挤出 Top N。
+    again = acall(ingest_captures(session, site.id, [cap, bare]))
+    acall(session.commit())
+    assert again["keywords_created"] == 0 and again["keywords_existing"] == 2
+    assert again["inserted"] == 0 and again["updated"] == 3
+    assert len(acall(uow.serp.latest_for_keyword(kw.id))) == 2
+
+
 def test_rank_history_upsert_is_idempotent(acall, uow: UnitOfWork, session: AsyncSession) -> None:
     """GSC/GA4 每天回补近 3 天数据，重复写入必须幂等，否则趋势图失真。"""
     site = acall(seed_site(session))

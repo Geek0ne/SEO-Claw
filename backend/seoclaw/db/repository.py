@@ -1186,14 +1186,78 @@ class SerpRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def bulk_create(self, rows: Iterable[dict[str, Any]]) -> list[m.SerpSnapshot]:
-        out = []
-        for payload in rows:
-            snap = m.SerpSnapshot(**payload)
-            self.session.add(snap)
-            out.append(snap)
+    async def get(
+        self, keyword_id: int, captured_at: datetime, url: str
+    ) -> Optional[m.SerpSnapshot]:
+        """按幂等键 (关键词, 抓取时刻, URL) 取一条快照。"""
+        stmt = select(m.SerpSnapshot).where(
+            m.SerpSnapshot.keyword_id == keyword_id,
+            m.SerpSnapshot.captured_at == captured_at,
+            m.SerpSnapshot.url == url,
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def upsert(
+        self, *, keyword_id: int, site_id: int, captured_at: datetime, url: str, **fields: Any
+    ) -> tuple[m.SerpSnapshot, bool]:
+        """按 ``uq_serp_kw_time_url`` 幂等写入，返回 (行, 是否新建)。
+
+        ⚠️ 表上那句「唯一约束让重跑变成幂等 upsert」的注释，在只有
+        ``bulk_create``（裸 INSERT）的时候是**空头承诺**：重跑同一份 SERP
+        数据会撞 IntegrityError，而不是更新。现在写入统一走这里。
+
+        抓取时刻统一抹掉微秒：幂等键里带时间戳，微秒来自导出方的本地时钟，
+        第二次导出必然不同 —— 不抹掉就等于每次重跑都新增一次「伪历史」，
+        而 ``latest_for_keyword`` 取的是最新一次，真历史会被挤下去。
+        """
+        if captured_at.microsecond:
+            captured_at = captured_at.replace(microsecond=0)
+        if isinstance(fields.get("market"), str):
+            fields["market"] = m.Market(fields["market"])
+        existing = await self.get(keyword_id, captured_at, url)
+        if existing is None:
+            row = m.SerpSnapshot(
+                keyword_id=keyword_id, site_id=site_id,
+                captured_at=captured_at, url=url, **fields
+            )
+            self.session.add(row)
+            await self.session.flush()
+            return row, True
+        for key, value in fields.items():
+            if hasattr(existing, key):
+                setattr(existing, key, value)
         await self.session.flush()
+        return existing, False
+
+    async def bulk_create(self, rows: Iterable[dict[str, Any]]) -> list[m.SerpSnapshot]:
+        """批量写入 —— 走 :meth:`upsert`，因此重跑同一批数据不会堆重复行。"""
+        out: list[m.SerpSnapshot] = []
+        for payload in rows:
+            snap, _ = await self.upsert(**payload)
+            out.append(snap)
         return out
+
+    async def recent(
+        self, site_id: int, *, limit: int = 50
+    ) -> list[tuple[m.SerpSnapshot, str]]:
+        """某站最近的 SERP 记录：[(快照, 关键词原文)]，按抓取时刻倒序。
+
+        返回元组而不是靠 ``snapshot.keyword`` 关系取词：异步会话下关系是
+        懒加载的，一读就 MissingGreenlet。这里一次 join 把词带回来，
+        调用方不需要第二个查询。
+        """
+        stmt = (
+            select(m.SerpSnapshot, m.Keyword.term)
+            .join(m.Keyword, m.Keyword.id == m.SerpSnapshot.keyword_id)
+            .where(m.SerpSnapshot.site_id == site_id)
+            .order_by(
+                m.SerpSnapshot.captured_at.desc(),
+                m.SerpSnapshot.keyword_id,
+                m.SerpSnapshot.position,
+            )
+            .limit(limit)
+        )
+        return [(row[0], row[1]) for row in (await self.session.execute(stmt)).all()]
 
     async def latest_for_keyword(
         self, keyword_id: int, *, limit: int = 10

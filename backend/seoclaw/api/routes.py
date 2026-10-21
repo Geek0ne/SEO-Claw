@@ -43,6 +43,10 @@ from .schemas import (
     RankingsIn,
     RankingsOut,
     RankingsPage,
+    SerpEntryOut,
+    SerpIngestIn,
+    SerpIngestOut,
+    SerpPage,
     ScheduleOut,
     ScheduleUpdate,
     ScorePoint,
@@ -532,27 +536,30 @@ async def make_brief(
     await _require_site(uow, site_id)
     caveats: list[str] = []
 
+    market_val = m.Market(body.market)
     serp_entries: list[SerpEntry] = []
-    try:
-        # ⚠️ latest_for_keyword 收的是 keyword_id（整型），不是词字符串。
-        # 得先把词翻成 id；翻不到就是「这个词没被抓过」，不是异常。
-        kw = await uow.keywords.get_by_term(site_id, body.keyword)
-        if kw is not None:
-            serp_entries = [
-                SerpEntry(
-                    position=sn.position,
-                    url=sn.url,
-                    title=sn.title or "",
-                    snippet=sn.snippet,
-                )
-                for sn in await uow.serp.latest_for_keyword(kw.id, limit=10)
-            ]
-    except Exception:  # noqa: BLE001 —— 没 SERP 数据不该让整个端点失败
-        serp_entries = []
+    # ⚠️ latest_for_keyword 收的是 keyword_id（整型），不是词字符串。
+    # 得先把词翻成 id；翻不到就是「这个词没被抓过」，不是异常。
+    # 查词必须带上市场：同一个词在 google 与 baidu 的 Top10 是两份完全
+    # 不同的竞品集，而 SERP 入口建档的键就是 (站点, 市场, 词)。
+    # 以前这里整段包在 `except Exception` 里，DB 故障会被读成「没 SERP 数据」
+    # ——那是把「无法判断」伪装成「没有」，与 alerts.py 的口径相反，已去掉。
+    kw = await uow.keywords.get_by_term(site_id, body.keyword, market=market_val.value)
+    if kw is not None:
+        serp_entries = [
+            SerpEntry(
+                position=sn.position,
+                url=sn.url,
+                title=sn.title or "",
+                snippet=sn.snippet,
+            )
+            for sn in await uow.serp.latest_for_keyword(kw.id, limit=10)
+        ]
     if not serp_entries:
         caveats.append(
             "竞品数据缺失：serp_snapshots 里没有该词的记录，"
-            "本 Brief 的 Top10 共性与标题候选**只基于本站**，不可当作竞品全貌"
+            "本 Brief 的 Top10 共性与标题候选**只基于本站**，不可当作竞品全貌。"
+            "补数据：`seoclaw serp-import` 或 POST /sites/{id}/serp"
         )
 
     own_pages = [
@@ -567,6 +574,16 @@ async def make_brief(
     if not own_pages:
         caveats.append("本站无可用页面：字数基线缺失，标题长度建议将不可靠")
 
+    # 我方当前排名：取**最近一条有位次**的日级记录。position=None 是
+    # 「那天没数据」而不是「排最后」，拿它当排名会把 unknown 说成事实。
+    own_position: Optional[float] = None
+    own_as_of: Optional[str] = None
+    for row in reversed(await uow.ranks.series(site_id, body.target_url)):
+        if row.position is not None:
+            own_position = row.position
+            own_as_of = row.date.isoformat()
+            break
+
     brief: ContentBrief = generate_brief(
         body.keyword,
         target_url=body.target_url,
@@ -574,10 +591,12 @@ async def make_brief(
         # 以前传的是 models.Market —— 领域层和库里各养了一套同名枚举，
         # mypy 直接红「两个不同的 Market」。先在边界上显式转换，
         # 枚举合一留给后续阶段。
-        market=m.Market(body.market) if body.market else m.Market.GOOGLE,
+        market=market_val,
         intent=m.Intent(body.intent) if body.intent else None,
         serp_entries=serp_entries,
         own_pages=own_pages,
+        own_position=own_position,
+        own_as_of=own_as_of,
     )
     return BriefOut(
         keyword=brief.keyword,
@@ -588,6 +607,7 @@ async def make_brief(
         title_candidates=list(brief.title_candidates),
         serp_common=dict(brief.serp_common),
         own_length_baseline=dict(brief.own_length_baseline),
+        own_rank=dict(brief.own_rank),
         opportunities=list(brief.opportunities),
         not_available=list(brief.not_available),
         caveats=caveats,
@@ -744,7 +764,7 @@ async def ack_rank_drops(
 async def ingest_rankings(
     site_id: int,
     body: RankingsIn,
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> RankingsOut:
     """程序化接入日级排名/流量数据（监测闭环的数据入口）。
 
@@ -782,7 +802,7 @@ async def list_rankings(
     site_id: int,
     url: Optional[str] = Query(None, description="只看某个页面；不给则返回全站"),
     days: int = Query(30, ge=1, le=365),
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> RankingsPage:
     """读回日级排名时序（趋势图/告警的数据源）。"""
     from datetime import date as _date
@@ -806,6 +826,106 @@ async def list_rankings(
         if r.date.toordinal() >= cutoff
     ]
     return RankingsPage(items=items, count=len(items))
+
+
+@router.post("/sites/{site_id}/serp", response_model=SerpIngestOut, status_code=201)
+async def ingest_serp(
+    site_id: int,
+    body: SerpIngestIn,
+    uow=Depends(get_uow),
+) -> SerpIngestOut:
+    """程序化接入 SERP 快照（Top10 / 竞品数据的入口）。
+
+    ⚠️ 这一端点补的是「Brief 的竞品维度永远为空」这个**静默装死**的洞：
+    ``serp_snapshots`` 表、仓储、brief 里读它的代码早就就位，唯独没有写入
+    路径 —— 于是 brief 端点每次都走「竞品数据缺失」的 caveat 分支，而
+    README 宣称 Brief 基于 SERP 快照。数据入口与校验口径在
+    :mod:`seoclaw.serpdata`，与 CLI ``serp-import`` 共用同一份。
+
+    幂等：同一 (关键词, 抓取时刻, URL) 重复推送是更新，不新增行。
+    ⚠️ 坏行跳过并**逐条报位置**，好行照常入库 —— 与 ``/rankings`` 同一条
+    底线：整批拒绝与静默丢行都不可接受。
+    """
+    from ..serpdata import capture_from_fields, ingest_captures, result_from_fields
+
+    await _require_site(uow, site_id)
+    captures: list[Any] = []
+    errors: list[str] = []
+    for i, c in enumerate(body.captures, 1):
+        items = []
+        for j, e in enumerate(c.entries, 1):
+            try:
+                items.append(result_from_fields(
+                    url=e.url, position=e.position, title=e.title,
+                    snippet=e.snippet or "", features=e.features,
+                ))
+            except ValueError as exc:
+                errors.append(f"第 {i} 组第 {j} 条跳过：{exc}")
+        try:
+            captures.append(capture_from_fields(
+                keyword=c.keyword,
+                market=c.market or body.market,
+                captured_at=c.captured_at or body.captured_at or "",
+                results=items,
+            ))
+        except ValueError as exc:
+            errors.append(f"第 {i} 组「{c.keyword}」整组丢弃：{exc}")
+    if not captures:
+        raise HTTPException(
+            status_code=422,
+            detail={"message": "没有任何一组可用，什么都没写入", "errors": errors},
+        )
+    info = await ingest_captures(uow.session, site_id, captures)
+    return SerpIngestOut(
+        keywords_created=info["keywords_created"],
+        keywords_existing=info["keywords_existing"],
+        snapshots_inserted=info["inserted"],
+        snapshots_updated=info["updated"],
+        captured_at=info["captured_at"],
+        skipped=len(errors),
+        errors=errors,
+    )
+
+
+@router.get("/sites/{site_id}/serp", response_model=SerpPage)
+async def list_serp(
+    site_id: int,
+    keyword: Optional[str] = Query(None, description="给定词则返回该词最近一次抓取的 Top N"),
+    market: str = Query("google", description="与 keyword 配对的市场；词库存的是 (站点, 市场, 词)"),
+    limit: int = Query(10, ge=1, le=100),
+    uow=Depends(get_uow),
+) -> SerpPage:
+    """回读 SERP 快照 —— 「导进来了没有」必须能被用户自己查证。
+
+    给 ``keyword``：返回该词**最近一次**抓取（``latest_for_keyword``，与
+    brief 端点吃的同一份数据，两处口径必须一致，否则用户核对时对不上）。
+    不给：返回全站最近若干条，用于确认导入是否落库。
+    """
+    await _require_site(uow, site_id)
+
+    def _out(sn: m.SerpSnapshot, term: str) -> SerpEntryOut:
+        return SerpEntryOut(
+            keyword=term,
+            market=getattr(sn.market, "value", str(sn.market)),
+            captured_at=sn.captured_at.isoformat() if sn.captured_at else None,
+            position=sn.position,
+            url=sn.url,
+            title=sn.title or "",
+            snippet=sn.snippet,
+            features=list(sn.features or []),
+        )
+
+    stamp: Optional[str] = None
+    if keyword:
+        kw = await uow.keywords.get_by_term(site_id, keyword, market=market)
+        snaps = await uow.serp.latest_for_keyword(kw.id, limit=limit) if kw else []
+        items = [_out(sn, keyword) for sn in snaps]
+    else:
+        rows = await uow.serp.recent(site_id, limit=limit)
+        items = [_out(sn, term) for sn, term in rows]
+    if items:
+        stamp = items[0].captured_at
+    return SerpPage(items=items, count=len(items), keyword=keyword, captured_at=stamp)
 
 
 @router.get("/sites/{site_id}/usage", response_model=UsageOut)
@@ -935,7 +1055,7 @@ async def export_fixpack(
     site_id: int,
     format: str = Query("md", pattern="^(md|json|csv|diff)$"),  # noqa: A002
     brand: Optional[str] = Query(None, max_length=80),
-    uow=__import__("fastapi").Depends(get_uow),
+    uow=Depends(get_uow),
 ) -> Response:
     """导出整改工单（处方包）：每条问题给「改前 → 改后」的可落地改法。
 

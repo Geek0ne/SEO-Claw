@@ -180,7 +180,9 @@ class KeywordExpandOut(BaseModel):
 class BriefIn(BaseModel):
     keyword: str = Field(min_length=1, max_length=120)
     target_url: str = Field(min_length=1)
-    market: str = "google"
+    # 白名单而不是裸 str：非法市场以前会在 m.Market(...) 处抛 ValueError，
+    # 端点直接 500 —— 参数错误必须是 422，不能是服务不可用。
+    market: str = Field(default="google", pattern="^(base|google|baidu|cnh_eco)$")
     intent: Optional[str] = None
 
 
@@ -194,6 +196,9 @@ class BriefOut(BaseModel):
     title_candidates: list[str] = Field(default_factory=list)
     serp_common: dict[str, Any] = Field(default_factory=dict)
     own_length_baseline: dict[str, Any] = Field(default_factory=dict)
+    #: 我方当前排名（来源 rank_history）。available=False 时 reason 说明
+    #: 为什么没有 —— 「不知道排第几」不等于「排在最后」。
+    own_rank: dict[str, Any] = Field(default_factory=dict)
     opportunities: list[dict[str, Any]] = Field(default_factory=list)
     not_available: list[str] = Field(default_factory=list)
     #: 明确写出哪些输入缺失导致结论受限 —— 缺 SERP 数据时不该让用户
@@ -363,6 +368,70 @@ class RankPointOut(BaseModel):
 class RankingsPage(BaseModel):
     items: list[RankPointOut]
     count: int
+
+
+class SerpEntryIn(BaseModel):
+    """SERP 里的一条结果。校验规则在 ``serpdata.result_from_fields``，
+    这里只管形状 —— 两份校验迟早分叉（见该模块文档）。"""
+
+    url: str
+    position: int
+    title: str = ""
+    snippet: Optional[str] = None
+    features: list[str] = Field(default_factory=list)
+
+
+class SerpCaptureIn(BaseModel):
+    """一个关键词的一次抓取（一份 Top N 快照）。"""
+
+    keyword: str
+    market: Optional[str] = Field(default=None, examples=["google"])
+    captured_at: Optional[str] = Field(
+        default=None, examples=["2026-10-21T09:00:00Z"],
+        description="ISO8601；留空 = 与顶层 captured_at 相同，都没有则记为今天 00:00 UTC",
+    )
+    entries: list[SerpEntryIn] = Field(min_length=1, max_length=100)
+
+
+class SerpIngestIn(BaseModel):
+    """批量上报 SERP 快照。
+
+    上限按「行数」而不是「组数」来理解：50 组 × 100 条 = 5000 条，
+    与 ``/rankings`` 的单次 5000 行一致 —— 超过就该分批送，
+    而不是让一个请求把事务占住。
+    """
+
+    market: Optional[str] = None
+    captured_at: Optional[str] = None
+    captures: list[SerpCaptureIn] = Field(min_length=1, max_length=50)
+
+
+class SerpIngestOut(BaseModel):
+    keywords_created: int
+    keywords_existing: int
+    snapshots_inserted: int
+    snapshots_updated: int
+    captured_at: str
+    skipped: int = 0
+    errors: list[str] = Field(default_factory=list)
+
+
+class SerpEntryOut(BaseModel):
+    keyword: str
+    market: str
+    captured_at: Optional[str] = None
+    position: int
+    url: str
+    title: str = ""
+    snippet: Optional[str] = None
+    features: list[str] = Field(default_factory=list)
+
+
+class SerpPage(BaseModel):
+    items: list[SerpEntryOut]
+    count: int
+    keyword: Optional[str] = None
+    captured_at: Optional[str] = None
 
 
 #: 托管定时复扫的最小间隔（秒）。为什么是 1 小时：一次扫描本身就要

@@ -1000,3 +1000,197 @@ def test_report_top_actions_capped_at_five(client):
     assert len(rep["top_actions"]) <= 5
     # 全部问题仍在明细里，Top 5 只是入口不是过滤器
     assert len(rep["issues"]) >= len(rep["top_actions"])
+
+
+# --------------------------------------------------------------------------
+# SERP 数据入口（阶段 4：把 Brief 的竞品维度从「永远为空」接通）
+# --------------------------------------------------------------------------
+
+
+def _serp_body(
+    keyword: str = "rust ownership",
+    *,
+    market: str = "google",
+    n: int = 3,
+    captured_at: str = "2026-10-20T00:00:00+00:00",
+    titles: bool = True,
+) -> dict:
+    entries = [
+        {
+            "url": f"https://rival{j}.test/{j}",
+            "position": j,
+            "title": f"{keyword} 详解 第{j}版" if titles else "",
+            "snippet": f"摘要 {j}",
+        }
+        for j in range(1, n + 1)
+    ]
+    return {
+        "captures": [
+            {"keyword": keyword, "market": market, "captured_at": captured_at, "entries": entries}
+        ]
+    }
+
+
+def _site_with_scan(client) -> int:
+    site = client.post("/api/v1/sites", json={"domain": client.domain}).json()
+    client.post(f"/api/v1/sites/{site['id']}/scan", json={"max_pages": 2})
+    return site["id"]
+
+
+def test_serp_import_then_read_back(client):
+    site_id = _site_with_scan(client)
+    r = client.post(f"/api/v1/sites/{site_id}/serp", json=_serp_body())
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["keywords_created"] == 1, "关键词档案应由 SERP 入口顺带建起来"
+    assert body["snapshots_inserted"] == 3
+    assert body["errors"] == []
+
+    r = client.get(f"/api/v1/sites/{site_id}/serp?keyword=rust+ownership")
+    assert r.status_code == 200
+    items = r.json()["items"]
+    assert [i["position"] for i in items] == [1, 2, 3], "回读按位次升序，与 Brief 吃的是同一份"
+    assert items[0]["title"].startswith("rust ownership")
+
+
+def test_serp_reimport_is_an_update_not_a_duplicate(client):
+    """同一份数据重推 = 当日回补。堆重复行会让 latest_for_keyword 取到半新半旧。"""
+    site_id = _site_with_scan(client)
+    client.post(f"/api/v1/sites/{site_id}/serp", json=_serp_body())
+    r = client.post(f"/api/v1/sites/{site_id}/serp", json=_serp_body())
+    assert r.status_code == 201
+    body = r.json()
+    assert body["snapshots_inserted"] == 0
+    assert body["snapshots_updated"] == 3
+    assert body["keywords_existing"] == 1 and body["keywords_created"] == 0
+    assert client.get(f"/api/v1/sites/{site_id}/serp?keyword=rust+ownership").json()["count"] == 3
+
+
+def test_new_capture_time_adds_history(client):
+    site_id = _site_with_scan(client)
+    client.post(f"/api/v1/sites/{site_id}/serp", json=_serp_body(captured_at="2026-10-01T00:00:00+00:00"))
+    r = client.post(
+        f"/api/v1/sites/{site_id}/serp",
+        json=_serp_body(captured_at="2026-10-15T00:00:00+00:00", n=5),
+    )
+    assert r.json()["snapshots_inserted"] == 5, "换了抓取时刻就是一次新的抓取，不该覆盖旧的"
+    latest = client.get(f"/api/v1/sites/{site_id}/serp?keyword=rust+ownership").json()
+    assert latest["count"] == 5, "latest_for_keyword 取最近一次，不是历史全部"
+    assert latest["captured_at"].startswith("2026-10-15")
+
+
+def test_serp_bad_entries_are_skipped_and_named(client):
+    site_id = _site_with_scan(client)
+    body = {
+        "captures": [{
+            "keyword": "rust ownership",
+            "entries": [
+                {"url": "https://ok.test/1", "position": 1, "title": "ok"},
+                {"url": "https://no-pos.test/2", "position": 0},
+                {"url": "relative/path", "position": 2},
+            ],
+        }]
+    }
+    r = client.post(f"/api/v1/sites/{site_id}/serp", json=body)
+    assert r.status_code == 201
+    out = r.json()
+    assert out["snapshots_inserted"] == 1, "好行照常入库"
+    assert out["skipped"] == 2
+    assert any("第 1 组第 2 条" in e for e in out["errors"]), out["errors"]
+    assert any("第 1 组第 3 条" in e for e in out["errors"])
+
+
+def test_serp_with_nothing_usable_is_422(client):
+    site_id = _site_with_scan(client)
+    body = {"captures": [{"keyword": "  ", "entries": [{"url": "https://a.test/1", "position": 1}]}]}
+    r = client.post(f"/api/v1/sites/{site_id}/serp", json=body)
+    assert r.status_code == 422, "一组都没进来必须拒绝，不能 201 一个空导入"
+
+    r = client.post("/api/v1/sites/99999/serp", json=_serp_body())
+    assert r.status_code == 404
+
+
+def test_brief_actually_consumes_serp_data(client):
+    """⚠️ 阶段 4 的验收钉子：导入 SERP 之后，Brief 的竞品维度必须真的用起来。
+
+    以前这条永远走不到：表、仓储、brief 里的读取代码都就位，唯独没有写入
+    路径，于是「竞品数据缺失」的 caveat 永远挂着，而 README 宣称 Brief 基于
+    SERP 快照。静默装死比没做更坏。
+    """
+    site_id = _site_with_scan(client)
+    client.post(f"/api/v1/sites/{site_id}/serp", json=_serp_body())
+    r = client.post(
+        f"/api/v1/sites/{site_id}/brief",
+        json={"keyword": "rust ownership", "target_url": "https://x.test/a"},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert not any("竞品数据缺失" in c for c in body["caveats"]), body["caveats"]
+    assert body["serp_common"]["available"] is True
+    assert body["serp_common"]["titles_analyzed"] == 3
+
+
+def test_brief_does_not_cross_use_serp_between_markets(client):
+    """同一个词在 google 与 baidu 的 Top10 是两份不同的竞品集，不能混用。"""
+    site_id = _site_with_scan(client)
+    client.post(f"/api/v1/sites/{site_id}/serp", json=_serp_body(market="baidu"))
+    r = client.post(
+        f"/api/v1/sites/{site_id}/brief",
+        json={"keyword": "rust ownership", "target_url": "https://x.test/a", "market": "google"},
+    )
+    assert any("竞品数据缺失" in c for c in r.json()["caveats"]), (
+        "百度快照被当成谷歌竞品集用上了——查词必须带市场"
+    )
+    r = client.post(
+        f"/api/v1/sites/{site_id}/brief",
+        json={"keyword": "rust ownership", "target_url": "https://x.test/a", "market": "baidu"},
+    )
+    assert r.json()["serp_common"]["available"] is True
+
+
+def test_brief_reports_own_rank_once_ranking_data_exists(client):
+    """排名入口（2026-10-18）接通之后，Brief 不能还硬说「需接 Search Console」。"""
+    site_id = _site_with_scan(client)
+    target = "https://x.test/a"
+    r = client.post(
+        f"/api/v1/sites/{site_id}/rankings",
+        json={"rows": [
+            {"date": "2026-10-18", "url": target, "position": 12.0, "clicks": 3, "impressions": 90},
+            {"date": "2026-10-19", "url": target, "position": 9.5, "clicks": 4, "impressions": 110},
+        ]},
+    )
+    assert r.status_code == 201, r.text
+    body = client.post(
+        f"/api/v1/sites/{site_id}/brief",
+        json={"keyword": "rust ownership", "target_url": target},
+    ).json()
+    assert body["own_rank"]["available"] is True
+    assert body["own_rank"]["position"] == 9.5
+    assert body["own_rank"]["as_of"] == "2026-10-19"
+    assert not any("我方当前排名" in x for x in body["not_available"]), body["not_available"]
+
+
+def test_brief_own_rank_stays_unavailable_when_position_is_null(client):
+    """position=None 是「那天没数据」，不是「排最后」——不能拿来充数。"""
+    site_id = _site_with_scan(client)
+    target = "https://x.test/none"
+    client.post(
+        f"/api/v1/sites/{site_id}/rankings",
+        json={"rows": [{"date": "2026-10-19", "url": target, "clicks": 1, "impressions": 50}]},
+    )
+    body = client.post(
+        f"/api/v1/sites/{site_id}/brief",
+        json={"keyword": "rust ownership", "target_url": target},
+    ).json()
+    assert body["own_rank"]["available"] is False
+    assert any("我方当前排名" in x for x in body["not_available"])
+
+
+def test_brief_rejects_unknown_market_with_422(client):
+    """非法 market 以前在 m.Market(...) 处抛 ValueError → 500。参数错就该 422。"""
+    site_id = _site_with_scan(client)
+    r = client.post(
+        f"/api/v1/sites/{site_id}/brief",
+        json={"keyword": "x", "target_url": "https://x.test/a", "market": "bing"},
+    )
+    assert r.status_code == 422, r.text

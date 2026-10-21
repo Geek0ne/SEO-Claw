@@ -253,3 +253,82 @@ def test_db_flag_exists_and_defaults_to_off():
     assert args.db is None
     args2 = parser.parse_args(["scan", "https://demo.test/", "--db", "x.db"])
     assert args2.db == "x.db"
+
+
+def test_serp_import_cli_end_to_end(tmp_path, capsys):
+    """⚠️ CLI 那条薄接线得有一个人踩过的用例。
+
+    解析层（`test_serpdata.py`）与落库层（`test_db.py`）各自都绿，但中间这段
+    「读文件 → 判格式 → 按域名找站点 → 打印归一说明」此前只人肉跑过。
+    它偏偏是用户真正敲的那一行：格式判断写反、站点匹配不上、归一说明漏打印，
+    上面两层再正确也到不了用户手里。
+
+    这里用真文件 + 真临时库（不用 :memory:：命令内部自己起事件循环和引擎，
+    内存库跨循环不可见）。
+    """
+    from argparse import Namespace
+
+    from seoclaw.cli import cmd_serp_import
+    from seoclaw.db import session as sess_mod
+    from seoclaw.db.session import create_engine_from_url
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+    db = tmp_path / "seo.db"
+    (tmp_path / "serp.csv").write_text(
+        "keyword,url,position,title,snippet,market,captured_at\n"
+        "seo 工具,https://competitor.test/a,1,竞品 A,介绍,baidu,2026-10-20T08:00:00+00:00\n"
+        "seo 工具,https://b.test/2,2,竞品 B,,baidu,2026-10-20T08:00:00+00:00\n"
+        "seo 工具,https://bad.test/3,abc,坏位次,,baidu,2026-10-20T08:00:00+00:00\n"
+        "seo 工具,https://n.test/4,4,,,,\n",
+        encoding="utf-8",
+    )
+
+    url = "sqlite+aiosqlite:///" + db.as_posix()
+
+    async def _seed() -> None:
+        eng = create_engine_from_url(url)
+        async with eng.begin() as conn:
+            await conn.run_sync(m.Base.metadata.create_all)
+        factory = async_sessionmaker(
+            bind=eng, class_=AsyncSession, expire_on_commit=False
+        )
+        async with factory() as sess:
+            # 库里只有 demo.test，命令却要按 www.demo.test 找——域名归一
+            # 靠 get_by_domain，这条也一并钉住。
+            sess.add(m.Site(domain="demo.test", markets=["base", "baidu"]))
+            await sess.commit()
+        await eng.dispose()
+
+    asyncio.run(_seed())
+
+    args = Namespace(
+        file=str(tmp_path / "serp.csv"), db=str(db), site="www.demo.test",
+        format=None, captured_at=None,
+    )
+    assert cmd_serp_import(args) == 0
+    first = capsys.readouterr().err
+    # 坏行报行号；两次抓取三条结果；两个市场各建一条词档
+    assert "第 4 行跳过" in first, first
+    assert "新增 3" in first and "关键词新建 2" in first, first
+    # 没给抓取时间的那组必须被点名——否则用户不知道跨天重跑会变成「新历史」
+    assert "没有抓取时间" in first and "不是更新" in first, first
+
+    assert cmd_serp_import(args) == 0
+    second = capsys.readouterr().err
+    assert "更新 3" in second and "新增 0" in second, second
+    assert "关键词新建 0" in second, second
+
+    # 站点不在库里：退出码非 0，且告诉用户下一步做什么
+    missing = Namespace(**{**vars(args), "site": "nosuch.test"})
+    assert cmd_serp_import(missing) == 1
+    third = capsys.readouterr().err
+    assert "不在库里" in third and "seoclaw scan" in third, third
+
+    # 收尾：命令内部按 URL 建了**全局缓存**的引擎，它的连接绑的是刚才那个
+    # 已经关闭的 loop。显式 dispose 一次，别把这条连接留给下个用例。
+    # （实测本文件那条 aiosqlite 「There is no current event loop」
+    # DeprecationWarning 是既有的，与本条无关——`-k "not serp_import"` 照样出。）
+    async def _cleanup() -> None:
+        await sess_mod.dispose_engine()
+
+    asyncio.run(_cleanup())

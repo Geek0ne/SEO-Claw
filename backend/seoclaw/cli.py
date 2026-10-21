@@ -579,6 +579,89 @@ def cmd_rank_import(args: argparse.Namespace) -> int:
     return asyncio.run(_run())
 
 
+def cmd_serp_import(args: argparse.Namespace) -> int:
+    """导入 SERP 快照（Top10 / 竞品数据入口），喂给内容 Brief 的竞品维度。"""
+    from .db.session import get_session_factory, session_scope
+    from .serpdata import ingest_captures, parse_serp_csv, parse_serp_json
+
+    if args.file == "-":
+        text = sys.stdin.read()
+        name = ""
+    else:
+        path = Path(args.file)
+        text = path.read_text(encoding="utf-8-sig")
+        name = path.suffix.lower()
+
+    fmt = args.format or ("json" if name == ".json" or text.lstrip()[:1] in ("[", "{") else "csv")
+    parsed = parse_serp_json(text) if fmt == "json" else parse_serp_csv(text)
+    for err in parsed.errors:
+        print(f"⚠️ {err}", file=sys.stderr)
+    for warn in parsed.warnings:
+        print(f"ℹ️ {warn}", file=sys.stderr)
+    if not parsed.captures:
+        print("没有可导入的抓取快照——文件里解析不出任何有效记录。", file=sys.stderr)
+        return 1
+
+    # ⚠️ 站点必须显式给：SERP 结果里竞品域名占多数，按「URL 出现最多的
+    # 域名」自动匹配会把竞品当成用户自己的站点，数据灌进一个陌生站点。
+    if not args.site:
+        print(
+            "必须用 --site 指明站点域名。SERP 里多数结果是竞品页面，"
+            "自动按域名匹配会把数据灌到竞品名下。",
+            file=sys.stderr,
+        )
+        return 1
+
+    db_url = args.db if "://" in args.db else f"sqlite+aiosqlite:///{args.db}"
+    stamp = None
+    if args.captured_at:
+        from .serpdata import parse_captured_at
+
+        try:
+            stamp = parse_captured_at(args.captured_at)
+        except ValueError as exc:
+            print(f"--captured-at：{exc}", file=sys.stderr)
+            return 1
+
+    async def _run() -> int:
+        from .db.repository import SiteRepository
+
+        factory = get_session_factory(db_url)
+        async with factory() as session:
+            async with session_scope(session):
+                site = await SiteRepository(session).get_by_domain(args.site)
+                if site is None:
+                    print(
+                        f"站点 {args.site} 不在库里。先对它跑一次 "
+                        f"`seoclaw scan {args.site} --db {args.db}`，再导 SERP 数据。",
+                        file=sys.stderr,
+                    )
+                    return 1
+                info = await ingest_captures(session, site.id, parsed.captures, captured_at=stamp)
+                total = info["inserted"] + info["updated"]
+                # 归一规则必须说出来：用户下次导入同一份文件时，
+                # 跨了自然日就是「新增一次抓取」而不是「更新」。
+                # ⚠️ 按「有几组没给时刻」计数，而不是「整个文件没给」——
+                # 混合文件里被补默认时刻的那几组同样需要被告知。
+                implicit = sum(1 for c in parsed.captures if not c.captured_at)
+                print(
+                    f"→ 已导入 {len(parsed.captures)} 次抓取 / {total} 条结果"
+                    f"（新增 {info['inserted']}、更新 {info['updated']}）· "
+                    f"关键词新建 {info['keywords_created']} · 跳过 {parsed.skipped} 行",
+                    file=sys.stderr,
+                )
+                if not stamp and implicit:
+                    print(
+                        f"   其中 {implicit} 次抓取没有抓取时间，落库时刻按 "
+                        f"{info['captured_at']}（今天 00:00 UTC）记为一次快照；"
+                        "明天再导同一份文件就是「新增一次抓取」，不是更新",
+                        file=sys.stderr,
+                    )
+                return 0
+
+    return asyncio.run(_run())
+
+
 def build_parser() -> argparse.ArgumentParser:
     """构造参数解析器。
 
@@ -649,6 +732,21 @@ def build_parser() -> argparse.ArgumentParser:
                     help="数据库（同 scan --db：SQLite 路径或 DATABASE_URL）")
     rk.add_argument("--site", help="站点域名（默认按 CSV 里 URL 的多数域名自动匹配）")
     rk.set_defaults(func=cmd_rank_import)
+
+    sp = sub.add_parser(
+        "serp-import",
+        help="导入 SERP 快照（CSV/JSON，排名跟踪器或 SERP API 导出），喂给内容 Brief 的竞品维度",
+    )
+    sp.add_argument("file", help="CSV/JSON 文件路径（给 - 则读标准输入）")
+    sp.add_argument("--db", metavar="PATH_OR_URL", required=True,
+                    help="数据库（同 scan --db：SQLite 路径或 DATABASE_URL）")
+    sp.add_argument("--site", required=True,
+                    help="站点域名；必填——SERP 里竞品域名占多数，自动匹配会灌到竞品名下")
+    sp.add_argument("--format", choices=("csv", "json"),
+                    help="文件格式；不给按扩展名/内容自动判断")
+    sp.add_argument("--captured-at", metavar="ISO8601",
+                    help="给没带抓取时间的文件统一指定时刻；都不给则记为今天 00:00 UTC")
+    sp.set_defaults(func=cmd_serp_import)
 
     return parser
 

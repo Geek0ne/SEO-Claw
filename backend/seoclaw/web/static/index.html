@@ -908,6 +908,14 @@ function renderBrief(b) {
     el("div",{class:"kv"}, el("div",{class:"k"},"目标页面"), el("div",{class:"v"}, b.target_url)),
     el("div",{class:"kv"}, el("div",{class:"k"},"页面类型"), el("div",{class:"v"}, b.page_type || "—")),
     el("div",{class:"kv"}, el("div",{class:"k"},"意图"), el("div",{class:"v"}, b.intent || "—")));
+  // 我方当前排名：后端没数据时给的是 available:false + 原因，
+  // 界面必须把原因原样说出来——「—」会被读成「排在最后」，那是两件事。
+  const own = b.own_rank || {};
+  card.append(el("div",{class:"kv"},
+    el("div",{class:"k"},"我方当前排名"),
+    el("div",{class:"v"}, own.available
+      ? `第 ${own.position} 位${own.as_of ? " · 截至 " + own.as_of : ""}`
+      : "不可用：" + (own.reason || "rank_history 里没有该 URL 的记录"))));
   if ((b.title_candidates||[]).length) {
     card.append(el("h3",{},"标题候选"),
       el("ul",{}, ...b.title_candidates.map(t => el("li",{}, t))));
