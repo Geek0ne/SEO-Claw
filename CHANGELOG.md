@@ -4,6 +4,69 @@
 
 ## [未发布]
 
+### 新增（SERP 快照数据入口 · 阶段 4）
+- **`serpdata.py`：内容 Brief 的竞品维度从「永远为空」变成「导一次就有」**。
+  `serp_snapshots` 表从 M0 就在 schema 里，但**没有任何路径能往里写**——
+  `latest_for_keyword()` 恒空，Brief 的 Top10 共性一律走「竞品数据缺失」分支，
+  caveat 只说「没有记录」而不说**怎么才会有记录**（用户无从下手）；同一份
+  Brief 里「我方当前排名」那行还硬编码着「需接 Search Console」，而排名入口
+  早在 `rank-import` 就通了——把已经接得到的数据说成没接，是另一种谎报。
+  - CLI：`seoclaw serp-import <csv|json> --db seo.db --site example.com`；
+    API：`POST /api/v1/sites/{id}/serp`（201）+ `GET .../serp?keyword=&market=&limit=`。
+  - CSV 与 JSON 共用同一份校验（`result_from_fields` / `capture_from_fields`），
+    坏行逐行报行号、坏组逐组报组号，好行照常入库——错误比 DB 层的错误便宜。
+  - `position` 必须是**正整数名次**。小数的「平均排名」属于排名时序，请走
+    `rank-import`；两种口径混进一张表，位次字段会被搜索量、竞品数之类的数字
+    污染，Top N 就废了。这里选择拒收，不做「兼容」。
+  - `--site` **必填**，不按 URL 猜域名：一次抓取里竞品域名占多数，
+    「出现最多的 host」自动匹配会把数据灌到竞品名下。
+  - 文件没写抓取时间 → 记为「今天 00:00 UTC」的一次快照，并把这条归一
+    **当场打印**：跨自然日重跑同一份文件是「新增一次抓取」而不是「更新」，
+    用户不知道这一点就会以为历史被重复了。
+  - 一次抓取里一条标题都没有 → warning 而非 error：共性算不出来必须说，
+    但不足以把整份位次数据拒了。
+- **仓库层补 `SerpRepository.upsert` / `recent`**。幂等键
+  `(keyword_id, captured_at, url)`，且**微秒不参与幂等键**：导出方的时间戳
+  带本地时钟微秒，第二次导出就变了，认它等于每次重跑都新增一份伪历史，
+  把真历史挤出 `latest_for_keyword`。`recent()` 一次 join 带回关键词原文——
+  异步会话下靠关系属性取 `keyword.term` 会 `MissingGreenlet`。
+  ⚠️ 此前 `bulk_create` 的注释写着「靠唯一约束变成幂等 upsert」，实现却是
+  无脑 INSERT，重跑同一份导出直接撞 `IntegrityError`。**注释是谎报不是省略**，
+  实现与用例一并补上。
+- **Brief 真的消费 SERP 数据**：`market` 参与取词（此前只按 term 查，
+  同一个词在 baidu / google 下会串数据）；`not_available` 文案改为指向
+  `serp-import`；`POST /brief` 的 `market` 只认四个已知市场，其余 422。
+- **Brief 新增 `own_rank`**：我方当前排名从 `rank_history` 取该 URL 最近一个
+  有 `position` 的日期；取不到就明说不可用并给出补救路径，不写「排名 0」
+  （0 既不是名次也不是「没有」）。
+
+### 修复（分支收敛后的类型检查与测试隔离）
+- **`test_web.py` 的 DNS 打桩改为一个真查询都不发**。开发机上代理的 fake-IP
+  模式（198.18.0.0/15 基准测试网段）会把 `example.com` 也解析成保留网段地址，
+  SSRF 守卫拒得对（400），但「测试过不过」就此取决于本机开没开代理。
+  守卫自身的解析/拒绝用例在 `test_guard.py` 逐条控制解析结果。
+- **「同域不重复建站」那条改为翻页查**（`?limit=200&offset=N`）。列表默认
+  只给 50 条，套件建站数早已过一页，只看第一页得到空列表——症状是
+  「单文件跑绿、全量跑红」。
+- **mypy 存量 10 处归零**（`fixpack.py` / `rankdata.py`）：`_fix_*` 系列返回
+  的「改前」实际会是 `None`（那正是「这页压根没有这个字段」）而签名写着
+  `str`；`Counter()` 缺参数化标注；`RENDERERS` 被两个 lambda 的签名绑架推断。
+  另删掉 `_detect_site_suffix` 里永不成立的 `(None, 0)` 假分支。
+  门槛口径见 `pyproject.toml [tool.mypy]`：**类型检查扫的恰是测试的盲区**。
+- 三处 `__import__("fastapi").Depends(get_uow)` 改回 `Depends(get_uow)`。
+- **`serp-import` 的两处输出缺陷是人肉冒烟跑出来的**（已补命令级用例
+  `test_serp_import_cli_end_to_end` 钉住，真文件 + 真临时库）：
+  - 混合文件（部分行带抓取时间、部分不带）时，「按今天 00:00 UTC 记一次
+    快照」这句归一说明**整段不打印**——判据写成了「整个文件都没给时刻」，
+    而被补了默认时刻的那几组恰恰最需要被告知。改成按「没给时刻的组数」计数。
+  - 零标题的提示写成「Top1 条结果一条标题都没有」，那个 `Top` 是多余的，
+    读起来像在报名次；改成「1 条结果里一条标题都没有」。
+  这两条都在解析层与落库层的用例之外：它们绿着，命令照样说错话。
+- **分支收敛**：master 上的阶段 1 / 2a / 2b / 3（结构化日志 + CI mypy、
+  持久任务队列、定时复扫调度、Top 5 口径统一）合回 main，master 删除，
+  此后只有一条 main。两边的活儿都收进来再删——直接以 main 为准会丢掉
+  约 2,400 行实现与 555 行测试。详见 PLAN「当前状态」。
+
 ### 新增（整改工单 / 排名数据入口 / 白标交付）
 - **整改工单（处方包，`fixpack.py`）**：把规则命中转成「改前 → 改后」的
   可落地修复动作，产品从「体检报告」跨到「照着改的工单」。

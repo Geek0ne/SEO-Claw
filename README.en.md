@@ -84,8 +84,9 @@ Markets are additive (`base` always included): `--market google`, `--market baid
 uvicorn seoclaw.main:app --port 8000
 ```
 
-Browser UI with background scans and progress polling, a 28-endpoint REST API
-(sites, jobs, issues, keywords, content briefs, rank alerts, usage quota, API
+Browser UI with background scans and progress polling, a 36-operation REST API
+(sites, jobs, issues, keywords, daily rank imports, SERP snapshot imports,
+content briefs, rank alerts, usage quota, API
 keys, ownership verification) and an MCP server exposing 3 read-only tools.
 
 Before going public, read `DEPLOY.md` and run the guard smoke test:
@@ -104,7 +105,7 @@ adding concurrency does not shorten it.
 ## Development
 
 ```bash
-pytest backend/tests -q    # 618 tests (1 skipped without optional mcp)
+pytest backend/tests -q    # 713 tests (3 skipped without optional mcp)
 ```
 
 Design rules the codebase enforces (see README.md for details): positive-evidence

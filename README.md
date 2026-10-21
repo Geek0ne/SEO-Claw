@@ -5,8 +5,8 @@
 **基于正面证据的站点 SEO 审计工具 —— 宁可漏报，不报假问题**
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-657%20✓-2EA44F?logo=pytest&logoColor=white)](#-开发与测试)
-[![Coverage](https://img.shields.io/badge/coverage-82%25-2EA44F)](#-开发与测试)
+[![Tests](https://img.shields.io/badge/tests-713%20✓-2EA44F?logo=pytest&logoColor=white)](#-开发与测试)
+[![Coverage](https://img.shields.io/badge/coverage-79.5%25-2EA44F)](#-开发与测试)
 [![License](https://img.shields.io/badge/license-MIT-FF9900)](#-license)
 [![Code style](https://img.shields.io/badge/style-audit%20grade-black)](./DESIGN.md)
 
@@ -65,11 +65,13 @@
 | 🧾 | **多格式报告** —— 终端 / Markdown / JSON / 单文件 HTML（无外链、可离线打开、可直接交付客户） |
 | 🩹 | **整改工单（处方包）** —— 把问题变成「改前 → 改后」的可落地修复动作，md / json / csv / diff 四格式；可信度分三档（可照抄 / 机器起草待润色 / 只给配方），判不了的转人工不硬凑 |
 | 📉 | **排名监测数据入口** —— 日级排名/流量 CSV 导入（`rank-import`）+ REST 接入，喂活排名时序与跌落告警；坏行逐行报错，区间聚合数据拒收 |
+| 🔍 | **SERP 快照数据入口** —— 竞品位次导入（CSV / JSON，`serp-import`）+ REST 接入，喂活内容 Brief 的竞品维度；位次必须是整数名次，「平均排名」请走 `rank-import` |
 | 🔑 | **关键词模块** —— 语料挖掘 + 词形聚类，**纯离线、确定性、无需任何 API key** |
-| 📝 | **内容 Brief** —— 基于 SERP 快照与本站页面生成写作 Brief，数据边界如实标注 |
+| 📝 | **内容 Brief** —— 竞品共性取自 SERP 快照、我方位次取自排名历史、结构建议取自本站页面；哪块没数据就明说哪块缺失 |
 | 🤖 | **可选 LLM 总结** —— `--llm-summary`，兼容任意 OpenAI 协议端点（OpenRouter / DeepSeek / Ollama / 自建网关） |
 | 🖥️ | **Web 工作台** —— 仪表盘、一键体检、问题流转、报告导出、排名监测、多租户 API Key 与额度 |
-| 🗄️ | **持久化** —— 12 张表 + Alembic 迁移，默认 SQLite，生产可切 PostgreSQL |
+| ⏱️ | **持久任务队列与定时复扫** —— 扫描任务落库、进程重启不丢活儿；托管站点按周期自动复扫（认领先于入队，宁可少扫一次也不给目标站双倍压力） |
+| 🗄️ | **持久化** —— 13 张表 + Alembic 迁移，默认 SQLite，生产可切 PostgreSQL |
 | 🔌 | **MCP Server** —— 3 个只读工具，供 AI 助手直接调用审计能力 |
 | 🎭 | **JS 渲染** —— `--render-js` 可选启用（需 Chromium，不随默认镜像分发） |
 
@@ -167,6 +169,23 @@ seoclaw rules                             # 📏 看看会查些什么
 监测与跌落告警。列名认别名（`page`/`average position`/`query`…）；⚠️ GSC
 **网页版**导出是区间聚合（无日期列），会直接拒收——假时序比没时序更糟。
 
+### `seoclaw serp-import <csv|json> --db seo.db --site example.com`
+
+导入一次 SERP 抓取快照（Top10 竞品位次），喂给内容 Brief 的竞品维度。
+CSV / JSON 都认（不给 `--format` 时按扩展名和内容自动判断），列名同样认
+别名（`keyword`/`query`/`搜索词`、`url`/`link`、`position`/`rank`/`排名`…）。
+
+两条硬规矩，都是「宁可拒收也不污染结论」：
+
+- ⚠️ `--site` **必填**。一次抓取里多数结果是竞品页面，按「出现最多的域名」
+  自动匹配会把数据灌到竞品名下，所以不猜。
+- ⚠️ `position` 必须是**整数名次**（1、2、3…）。小数平均排名属于排名时序，
+  请走 `rank-import`；把两者混进一张表，Top N 会算出一堆假共性。
+
+文件没写抓取时间时按「今天 00:00 UTC」记为一次快照（终端会明确打出来），
+重复导入同一 (关键词, 时刻, URL) 是更新而不是插第二份。REST 侧对应
+`POST /api/v1/sites/{id}/serp` 与 `GET /api/v1/sites/{id}/serp`。
+
 <a id="-规则覆盖"></a>
 ## 📏 规则覆盖
 
@@ -228,7 +247,7 @@ uvicorn seoclaw.main:app --port 8000
 - 📈 **趋势与历史**：健康分曲线 + 扫描任务列表
 - 🩹 **整改工单**：`GET /sites/{id}/fixpack`（md / json / csv / diff）+ 排名数据接入 `POST /sites/{id}/rankings`
 - 🔑 **多租户**：API Key（只存哈希）、额度、站点归属验证
-- 🔌 **REST API**：30 个端点 + **MCP Server**（3 个只读工具）
+- 🔌 **REST API**：28 个路径、36 个操作（按 OpenAPI 实数）+ **MCP Server**（3 个只读工具）
 
 <a id="-爬虫礼仪与性能边界"></a>
 ## 🤝 爬虫礼仪与性能边界
@@ -269,9 +288,15 @@ backend/seoclaw/
 │   ├── ⚙️ engine.py    规则执行 + 站点级事实（覆盖率、hit_page_limit）
 │   └── 📏 rules/       base / google / baidu / cnh_eco / geo
 ├── 🔑 keywords/        关键词扩展 + 聚类（纯离线，无需 API key）
-├── 📝 brief.py         内容 Brief 生成
+├── 📝 brief.py         内容 Brief 生成（竞品维度取 SERP，我方位次取排名历史）
+├── 📉 rankdata.py      日级排名数据入口（CSV 别名 + 逐行报错 + 幂等 upsert）
+├── 🔍 serpdata.py      SERP 快照数据入口（CSV / JSON，位次必须是整数名次）
+├── 🩹 fixpack.py       整改工单：问题 → 「改前 → 改后」，三档可信度
 ├── 🤖 llm.py           可选 LLM 总结（OpenAI 兼容协议，0 新增依赖）
-├── 🗄️ db/              12 表 + Alembic 迁移
+├── ⏱️ tasks.py          持久任务队列：认领 → 执行 → 收尾，重启不丢活儿
+├── ⏰ scheduler.py     定时复扫：到期站点变成队列里的一条任务
+├── 🧾 log.py           结构化日志收口（替代 print 到 stderr）
+├── 🗄️ db/              13 表 + Alembic 迁移
 ├── 🧾 report.py        Markdown 报告
 ├── 🌐 report_html.py   单文件 HTML 报告
 ├── 🖥️ web/             在线工作台（quick-scan + 进度轮询）
@@ -279,13 +304,13 @@ backend/seoclaw/
 └── 🧰 mcp_server.py    MCP Server（3 个只读工具）
 ```
 
-**约 14,600 行实现代码 · 约 8,900 行测试代码 · 657 个测试（656 通过 / 1 跳过）。**
+**约 17,800 行实现代码 · 约 10,800 行测试代码 · 713 个测试（实跑全绿；行数按 `backend/seoclaw` 与 `backend/tests` 下的 `.py` 统计）。**
 
 ### 🗄️ 数据库
 
-12 张表：`sites` / `crawl_jobs` / `pages` / `issues` / `keywords` /
+13 张表：`sites` / `crawl_jobs` / `pages` / `issues` / `keywords` /
 `serp_snapshots` / `content_briefs` / `suggestions` / `api_keys` /
-`rank_alert_acks` / `usage_events` / `rank_history`。
+`rank_alert_acks` / `usage_events` / `rank_history` / `scan_tasks`。
 
 ```bash
 cd backend && alembic -c migrations/alembic.ini upgrade head
@@ -303,8 +328,13 @@ pip install -e ".[api,dev]"
 pytest backend/tests -q
 ```
 
-- ✅ **657 个测试**：656 通过、1 跳过（`mcp` 为可选依赖，安装 `mcp` extra 后全量运行）
-- 📊 覆盖率约 82%（CI 门禁 78%，为波动留余量）
+- ✅ **713 个测试**：本机全绿；未安装可选依赖 `mcp` 时其中 3 条（`test_mcp_server.py`）跳过
+- 📊 覆盖率 79.5%（本机 `pytest --cov` 实测 79.48%–79.52%，随跑法微调；
+  CI 门禁 78%）。⚠️ 余量只剩 1.5 个百分点：缺口集中在 `cli.py`（28%）与
+  `api/routes.py`（37%）——规则层、
+  DB 层、解析层都有用例，**薄接线基本没测**。下一笔提交只要多写几十行胶水
+  就可能把门禁顶红。补覆盖优先补 CLI 的命令级用例（`test_cli_persist.py` 里
+  `serp-import` 那条是范本：真文件 + 真临时库），而不是下调阈值
 - 🤖 **CI 双任务**：① 全量测试 + 覆盖率 + CLI 冒烟 + wheel 构建；② `guard_smoke.sh` 真容器验收（四道闸）
 - 🧰 部分环境用 `run.sh` 封装本机依赖安装方式（`.deps/` 隔离 + `PYTHONPATH`），见脚本内注释
 
@@ -338,9 +368,9 @@ pytest backend/tests -q
 
 当前版本聚焦「技术 SEO 审计」的准确性与可交付性。规划中的方向（详见 [REQUIREMENTS.md](REQUIREMENTS.md) / [PLAN.md](PLAN.md)）：
 
-- 📈 SERP 排名与流量监测、异动告警（数据入口已通：`rank-import` / `POST /rankings`；接真实数据源即用）
+- 📈 SERP 排名与流量监测、异动告警（两类数据入口都已通：日级排名 `rank-import` / `POST /rankings`，SERP 快照 `serp-import` / `POST /serp`；接真实数据源即用）
 - ✍️ 页面改写与执行闭环第二步：处方已能开「改前 → 改后」，下一步是平台适配器（WordPress/Shopify 插件）与 PR diff 自动提交
-- 🆚 竞品追踪与内容缺口分析
+- 🆚 竞品追踪与内容缺口分析（竞品位次已能落库并喂给 Brief；跨词缺口对比、竞品集合管理还没做）
 - 📅 内容日历与批量 Brief
 - 📤 一键导出 PR diff / PDF / Excel
 
