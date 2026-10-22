@@ -531,6 +531,10 @@ def _read_input_file(path_arg: str, label: str) -> str | None:
     except FileNotFoundError:
         print(f"{label}：文件不存在——{path_arg}", file=sys.stderr)
     except IsADirectoryError:
+        # ⚠️ 看着像死代码，别顺手删：上面的 `is_dir()` 与这里的 `read_text()`
+        # 之间有个窗口——同名目录是在那之后才被建出来时，POSIX 抛 EISDIR 落到
+        # 这里。所以这一行本机测不到（测的是竞态不是常规输入），删掉它就等于
+        # 让这条竞态回退到下面的通用分支，提示退化成「读不了这个文件」。
         print(f"{label}：那是个目录，不是文件——{path_arg}", file=sys.stderr)
     except UnicodeDecodeError:
         print(
@@ -538,6 +542,8 @@ def _read_input_file(path_arg: str, label: str) -> str | None:
             file=sys.stderr,
         )
     except OSError as exc:  # 权限、磁盘、路径过长……统一成人话，不抛栈
+        # 兜底分支，同样测不到：`chmod 000` 在 Windows 上不限制读权限，
+        # 只在 CI 的 Linux 上有意义，为一行覆盖率专门进 CI-only 用例不值当。
         print(f"{label}：读不了这个文件：{exc}", file=sys.stderr)
     return None
 

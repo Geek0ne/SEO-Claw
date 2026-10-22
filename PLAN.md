@@ -403,7 +403,7 @@ class Rule(ABC):
 - **孤岛页检测依赖覆盖率**：`hit_page_limit` 时一律不下结论，即使已抓 1000 页。这是**设计取舍不是 bug**——「我没发现指向它的内链」只有在确信「大部分页面都看到了」时才成立。建议 M1 加「分批跑完整个站点」的扫描模式。
 - ~~**`baidu` 包本地移植了 google 的像素宽度表**~~ **已清偿（2026-10-12）**：宽度表上提到中立模块 `audit/rules/_serp_px.py`（不 import 任何规则包，不会成环），两包改为引用同一份，「改 google 必须同步 baidu」的人工约定删除。指标值不变（test_fp_baidu_2026 的像素断言钉着）。
 - **GEO 规则包需显式开启**：`default_registry()` 不加载它，以免证据强度较弱的新规则污染 base 的 97.0% 准确率基线。✅ 2026-10-22 决策：维持现状直到方法论验证做完（`--market geo` 点名启用；`cli.py` 的规则列表处已打印这条差异）。
-- **薄接线层没测（2026-10-22 开始收）**：覆盖率 80.1%、门禁 78%，余量 2.1 个点。
+- **薄接线层没测（2026-10-22 开始收）**：覆盖率 80.2%、门禁 78%，余量 2.2 个点。
   `cli.py` 原 28% → **41%**：`rank-import`（别名表头 + 坏行报号 + 幂等重跑 +
   位次留空落成 NULL 而不是 0 + 推断出的域名 + 站点缺失时的下一步提示）、
   `rules`（按注册表实况逐条比对，防「已注册但看不见」）、`main([...])` 派发
@@ -420,8 +420,27 @@ class Rule(ABC):
   `PermissionError(13)`、POSIX 上才是 `IsADirectoryError(EISDIR)`**，所以先自己
   `is_dir()` 判、再兜异常，否则同一句提示两个系统长得不一样（用例在 Linux/CI 上
   会绿、Windows 上红，反过来也一样）。补覆盖**不要靠下调门禁续命**。
+  ℹ️ `cli.py` 41% 里剩的两处未覆盖（`_read_input_file()` 的 `IsADirectoryError`
+  分支与兜底 `OSError` 分支）是**测不到的兜底**，不是漏测：前者只在「`is_dir()`
+  判完之后目录才出现」这个竞态窗口里走（本机测的是常规输入），后者要靠
+  `chmod 000` 才有意义，而 Windows 上不限制读权限——为它们专门进 CI-only 用例
+  会让本机与 CI 的覆盖率口径分叉，不值当。代码处已写注释，别当死代码删。
 - **Windows 上 `alembic` 读不了自家 ini**：`backend/migrations/alembic.ini`
   里有中文注释，alembic 用 `encoding="locale"` 读它，中文环境下直接
   `UnicodeDecodeError: 'gbk'`。CI 是 Linux 所以从未暴露。临时绕法是把 ini
   拷成 ASCII 版再 `-c` 指过去；根治要么给 ini 加 BOM/改英文注释，要么在
   `run.sh` 里固化这个绕法——**别改成「读不出来就算了」**，那等于关掉这道闸。
+- **测试跑法有非确定性（2026-10-22 复查发现，未修）**：同一份代码全量连跑，
+  覆盖率在 **80.14%–80.18%** 之间漂，漂的那一条固定在 `db/session.py:233`
+  （`create_all` 里的 `run_sync`）。原因是多个测试模块**共用引擎单例与同一个
+  sqlite 文件**（`test_multitenant.py` 的 `_db_path()` 注释就记着这件事），个别
+  跑法下建表撞上 `sqlite3.OperationalError: database is locked`，异常被吞进日志
+  ——用例仍全绿，但那条语句没执行到，于是今天的门面数字出现「726 passed、
+  missed 1425/1426/1427/1428」这种一跑一个样的读数。
+  ⚠️ 把 `RuntimeWarning` 升级成错误（`-W error::RuntimeWarning`）能放大这个问题：
+  一次跑出 `test_multitenant.py` 两条用例 **ERROR**（就死在 `create_all` 的锁库上），
+  另一次直接**挂住不退**（8 分钟无 CPU 活动，只能杀进程）。默认跑法今天多次全绿，
+  所以四道闸照旧能过——但别把它读成「测试很稳」。
+  根治方向：让这几条多租户用例不再复用全局引擎（各自建引擎、或把建表收敛到
+  session fixture 里加 `busy_timeout` 后串行执行）。**别用 retry 掩盖**——锁打不开
+  就 retry，等于把「两个模块同时写一个库」这件事藏得更深。

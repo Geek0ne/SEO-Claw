@@ -330,7 +330,11 @@ pytest backend/tests -q
 ```
 
 - ✅ **726 个测试**：本机全绿；未安装可选依赖 `mcp` 时其中 3 条（`test_mcp_server.py`）跳过
-- 📊 覆盖率 80.2%（本机 `pytest --cov` 实测，CI 门禁 78%，余量 2.2 个点）。缺口
+- 📊 覆盖率 80.2%（本机 `pytest --cov` 实测，CI 门禁 78%，余量 2.2 个点）。同一份
+  代码连跑会在 80.14%–80.18% 之间微漂，漂的是 `db/session.py` 里的 `create_all`
+  那一行：测试用例共用一个引擎单例与同一个 sqlite 文件，个别跑法下它会以
+  `database is locked` 失败并被吞进日志（用例仍全绿，但那条语句没被执行到）。
+  **别再追着这 0.04 个点改文档**，根因与修法记在 PLAN 技术债。缺口
   正在收：`cli.py` 从 28% 提到 41%（`rank-import` / `rules` / argparse 派发已补
   命令级用例），`api/routes.py` 仍是 37% 的薄接线——规则层、DB 层、解析层都有
   用例，**接线层靠人肉冒烟的时代该结束了**。补法照 `test_cli_persist.py` 里的
