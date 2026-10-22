@@ -825,22 +825,34 @@ async function tabOverview(host, site) {
       } catch (e) { toast(e.message,"err"); save.disabled = false; off.disabled = !cur.enabled; }
     }
 
-    save.addEventListener("click", () => putSchedule({
-      interval_s: Number(interval.value),
-      url: surl.value.trim() || null,
-      max_pages: Number(spages.value) || 30,
-      max_depth: Number(sdepth.value),
-      markets: [smarket.value],
-      respect_robots: srobots.checked,
-      render_js: sjs.checked,
-    }, cur.enabled ? "已更新托管参数" : "已开启托管：第一次复扫立即安排"));
+    save.addEventListener("click", () => {
+      const pages = Number(spages.value), depth = Number(sdepth.value);
+      // 空框会被 Number() 变成 0，而这里的 0 是有含义的（深度 0 = 只抓入口页）。
+      // 让一个「手滑清空」静默改成物理范围极小的扫描，不如当场挡下来。
+      if (!Number.isInteger(pages) || pages < 1 || pages > 500) {
+        toast("最大页数得是 1–500 的整数","err"); return;
+      }
+      if (!Number.isInteger(depth) || depth < 0 || depth > 20) {
+        toast("最大深度得是 0–20 的整数（0 = 只抓入口页）","err"); return;
+      }
+      putSchedule({
+        interval_s: Number(interval.value),
+        url: surl.value.trim() || null,
+        max_pages: pages,
+        max_depth: depth,
+        markets: [smarket.value],
+        respect_robots: srobots.checked,
+        render_js: sjs.checked,
+      }, cur.enabled ? "已更新托管参数" : "已开启托管：第一次复扫立即安排");
+    });
     off.addEventListener("click", () => putSchedule({interval_s: null}, "已停用托管"));
 
+    const human = (opts.find(o => o[0] === cur.interval_s) || [0, "—"])[1];
     sched.append(
       el("p",{class:"page-sub"},
         cur.enabled
           ? el("span",{}, el("span",{class:"pill"},"已托管"),
-              `　每 ${Math.round(cur.interval_s/3600)} 小时复扫一次　· 下次 `,
+              `　${human}复扫一次　· 下次 `,
               el("span",{class:"mono"}, fmtTime(cur.next_scan_at)))
           : el("span",{}, el("span",{class:"pill"},"未开启"),
               "　开启后第一次复扫立即安排，之后按所选周期滚动。"),
