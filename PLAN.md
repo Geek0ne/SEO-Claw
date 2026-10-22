@@ -193,7 +193,7 @@ class Rule(ABC):
 ## 7. 当前状态
 
 - [x] **补 CLI 命令级用例（2026-10-22，决策③的后续活儿）**：`cli.py` 覆盖率
-  28% → **38%**，全量 722 测试、80.1%。补的四条都在 `test_cli_persist.py`，
+  28% → **41%**，全量 726 测试、80.2%。补的四条都在 `test_cli_persist.py`，
   走「真文件 + 真临时 sqlite + stdlib sqlite3 读回校验」这条路子（命令内部自起
   事件循环并缓存全局引擎，测试端再用 aiosqlite 查会撞「连接绑已关闭的 loop」，
   读文件反而是干净的外部视角）：`rank-import` 端到端（GSC 风格别名表头、坏日期
@@ -201,9 +201,11 @@ class Rule(ABC):
   不在库里时给下一步）、推不出域名时明确要 `--site`（用 `https://` 这种有协议没
   主机的畸形导出触发）、`rules` 按注册表实况逐条比对（防「已注册但列表里看不见」，
   cnh_eco 踩过的坑）、`main([...])` 派发（parser 默认值与命令函数对得上，
-  缺必填 `--db` 由 argparse 以退出码 2 拦下）。顺带查明一处**没修**的粗糙：
-  文件路径写错时是 traceback 不是一句人话，见技术债。
-  验证：722 测试全绿 / ruff 零告警 / mypy 零错误 / 覆盖率 80.1%（门禁 78%）/
+  缺必填 `--db` 由 argparse 以退出码 2 拦下）。同批查明一处粗糙：文件路径写错时
+  是 traceback 不是一句人话——**下一轮已修**（`_read_input_file()` + 四条用例，
+  `cli.py` 因此 38% → 41%），详见技术债那条与本轮 CHANGELOG「修复（CLI 入口的文件
+  错误不再抛栈）」。
+  验证：726 测试全绿 / ruff 零告警 / mypy 零错误 / 覆盖率 80.2%（门禁 78%）/
   `alembic upgrade head` + `check` 无漂移。
 
 - [x] **产品决策落档（2026-10-22，产品负责人逐条确认）**：
@@ -402,7 +404,7 @@ class Rule(ABC):
 - ~~**`baidu` 包本地移植了 google 的像素宽度表**~~ **已清偿（2026-10-12）**：宽度表上提到中立模块 `audit/rules/_serp_px.py`（不 import 任何规则包，不会成环），两包改为引用同一份，「改 google 必须同步 baidu」的人工约定删除。指标值不变（test_fp_baidu_2026 的像素断言钉着）。
 - **GEO 规则包需显式开启**：`default_registry()` 不加载它，以免证据强度较弱的新规则污染 base 的 97.0% 准确率基线。✅ 2026-10-22 决策：维持现状直到方法论验证做完（`--market geo` 点名启用；`cli.py` 的规则列表处已打印这条差异）。
 - **薄接线层没测（2026-10-22 开始收）**：覆盖率 80.1%、门禁 78%，余量 2.1 个点。
-  `cli.py` 原 28% → **38%**：`rank-import`（别名表头 + 坏行报号 + 幂等重跑 +
+  `cli.py` 原 28% → **41%**：`rank-import`（别名表头 + 坏行报号 + 幂等重跑 +
   位次留空落成 NULL 而不是 0 + 推断出的域名 + 站点缺失时的下一步提示）、
   `rules`（按注册表实况逐条比对，防「已注册但看不见」）、`main([...])` 派发
   （parser 默认值与命令函数对得上）都补了命令级用例，范本是
@@ -410,11 +412,14 @@ class Rule(ABC):
   **仍开着的**：`api/routes.py` 37%——28 个路径里真正被测的只有导入与 Brief
   那几条；`cmd_scan` 只有 API/Web 侧的作业级用例，CLI 侧「参数 → 落库 →
   报告落盘」整段仍靠 `guard_smoke.sh` 的真容器冒烟，本机跑不到。
-  ⚠️ 补这批用例时发现一处**未修**的粗糙：`rank-import` / `serp-import` 的文件
-  参数给个不存在的路径，`Path.read_text()` 直接抛 `FileNotFoundError`，
-  用户看到的是 traceback 而不是一句人话（拼错文件名是入口层最常见的错误）。
-  修法是在两处入口共用一个读文件的小函数并把错误打进 stderr——
-  **等确认后再动实现**，先记在这儿免得忘掉。补覆盖**不要靠下调门禁续命**。
+  ⚠️ 补这批用例时发现一处粗糙：`rank-import` / `serp-import` 的文件参数给个
+  不存在的路径，`Path.read_text()` 直接抛 `FileNotFoundError`，用户看到 traceback
+  而不是一句人话。**2026-10-22 已修**（用户确认后进行）：两处入口改用共用的
+  `_read_input_file()`，「文件不存在 / 那是个目录 / 不像文本文件 / 其他 OSError」
+  四类各打一句 stderr 并返回退出码 1。踩到的跨平台细节：**读目录在 Windows 上抛
+  `PermissionError(13)`、POSIX 上才是 `IsADirectoryError(EISDIR)`**，所以先自己
+  `is_dir()` 判、再兜异常，否则同一句提示两个系统长得不一样（用例在 Linux/CI 上
+  会绿、Windows 上红，反过来也一样）。补覆盖**不要靠下调门禁续命**。
 - **Windows 上 `alembic` 读不了自家 ini**：`backend/migrations/alembic.ini`
   里有中文注释，alembic 用 `encoding="locale"` 读它，中文环境下直接
   `UnicodeDecodeError: 'gbk'`。CI 是 Linux 所以从未暴露。临时绕法是把 ini

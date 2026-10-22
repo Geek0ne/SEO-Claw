@@ -20,6 +20,7 @@ asyncpg/aiosqlite 的连接绑定在创建它的 loop 上，换 loop 后连接�
 from __future__ import annotations
 
 import asyncio
+import io
 from typing import Any, Callable, Coroutine
 
 import pytest
@@ -509,3 +510,96 @@ def test_cli_main_dispatches_subcommands(tmp_path, capsys):
     with pytest.raises(SystemExit) as boom:
         main(["rank-import", str(tmp_path / "nope.csv")])
     assert boom.value.code == 2
+
+
+# ---------------------------------------------------------------------------
+# 入口层的「读文件」错误处理：拼错路径不该长得像程序崩了
+# ---------------------------------------------------------------------------
+
+
+def test_cli_import_missing_file_is_not_a_traceback(tmp_path, capsys):
+    """文件不存在 → 一句人话 + 退出码 1，而不是 traceback。
+
+    这是入口层最常见的用户错误（路径打错、文件挪了地方）。`cmd_*` 里
+    裸奔的 `Path.read_text()` 会抛 FileNotFoundError，被 argparse 之外的
+    地方接住就是整屏栈——用户读不出「哪个路径错了」。
+    """
+    from argparse import Namespace
+
+    from seoclaw.cli import cmd_rank_import, cmd_serp_import
+
+    ghost = str(tmp_path / "nope.csv")
+    db = str(tmp_path / "seo.db")
+
+    assert cmd_rank_import(Namespace(csv=ghost, db=db, site=None)) == 1
+    err = capsys.readouterr().err
+    assert "文件不存在" in err and "nope.csv" in err, err
+    assert "Traceback" not in err, err
+
+    assert cmd_serp_import(
+        Namespace(file=ghost, db=db, site="demo.test", format=None, captured_at=None)
+    ) == 1
+    err = capsys.readouterr().err
+    assert "文件不存在" in err, err
+    assert "Traceback" not in err, err
+
+
+def test_cli_import_directory_says_so(tmp_path, capsys):
+    """把目录当文件给：说清「那是个目录」，别抛栈。"""
+    from argparse import Namespace
+
+    from seoclaw.cli import cmd_rank_import
+
+    assert cmd_rank_import(
+        Namespace(csv=str(tmp_path), db=str(tmp_path / "seo.db"), site=None)
+    ) == 1
+    err = capsys.readouterr().err
+    assert "那是个目录" in err and "Traceback" not in err, err
+
+
+def test_cli_import_binary_file_says_so(tmp_path, capsys):
+    """UTF-8 解不了的二进制：提示「请导出 UTF-8」，而不是 UnicodeDecodeError 栈。"""
+    from argparse import Namespace
+
+    from seoclaw.cli import cmd_rank_import
+
+    bin_path = tmp_path / "utf16.csv"
+    bin_path.write_bytes(b"\xff\xfe\x00d\x00a\x00t\x00e")
+    assert cmd_rank_import(
+        Namespace(csv=str(bin_path), db=str(tmp_path / "seo.db"), site=None)
+    ) == 1
+    err = capsys.readouterr().err
+    assert "不像文本文件" in err and "UTF-8" in err, err
+    assert "Traceback" not in err, err
+
+
+def test_cli_import_reads_stdin(tmp_path, capsys):
+    """`-` 是标准输入，不是一个名叫 `-` 的文件。"""
+    import sys
+    from argparse import Namespace
+
+    from seoclaw.cli import cmd_rank_import
+
+    db = tmp_path / "seo.db"
+    _seed_site("sqlite+aiosqlite:///" + db.as_posix())
+    monkey_stdin = io.StringIO(
+        "date,url,position\n"
+        "2026-10-19,https://www.demo.test/,3.5\n"
+        "2026-10-20,https://www.demo.test/guide,2\n"
+    )
+    old = sys.stdin
+    sys.stdin = monkey_stdin
+    try:
+        assert cmd_rank_import(Namespace(csv="-", db=str(db), site="demo.test")) == 0
+    finally:
+        sys.stdin = old
+    err = capsys.readouterr().err
+    assert "已导入 2 行日级数据" in err, err
+    assert _count_rank_rows(db) == (2, 0), _count_rank_rows(db)
+
+    from seoclaw.db import session as sess_mod
+
+    async def _cleanup() -> None:
+        await sess_mod.dispose_engine()
+
+    asyncio.run(_cleanup())

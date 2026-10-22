@@ -5,8 +5,8 @@
 **基于正面证据的站点 SEO 审计工具 —— 宁可漏报，不报假问题**
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-722%20✓-2EA44F?logo=pytest&logoColor=white)](#-开发与测试)
-[![Coverage](https://img.shields.io/badge/coverage-80.1%25-2EA44F)](#-开发与测试)
+[![Tests](https://img.shields.io/badge/tests-726%20✓-2EA44F?logo=pytest&logoColor=white)](#-开发与测试)
+[![Coverage](https://img.shields.io/badge/coverage-80.2%25-2EA44F)](#-开发与测试)
 [![License](https://img.shields.io/badge/license-MIT-FF9900)](#-license)
 [![Code style](https://img.shields.io/badge/style-audit%20grade-black)](./DESIGN.md)
 
@@ -305,7 +305,7 @@ backend/seoclaw/
 └── 🧰 mcp_server.py    MCP Server（3 个只读工具）
 ```
 
-**约 17,800 行实现代码 · 约 11,100 行测试代码 · 722 个测试（实跑全绿；行数按 `backend/seoclaw` 与 `backend/tests` 下的 `.py` 统计）。**
+**约 17,800 行实现代码 · 约 11,200 行测试代码 · 726 个测试（实跑全绿；行数按 `backend/seoclaw` 与 `backend/tests` 下的 `.py` 统计）。**
 
 ### 🗄️ 数据库
 
@@ -329,9 +329,9 @@ pip install -e ".[api,dev]"
 pytest backend/tests -q
 ```
 
-- ✅ **722 个测试**：本机全绿；未安装可选依赖 `mcp` 时其中 3 条（`test_mcp_server.py`）跳过
-- 📊 覆盖率 80.1%（本机 `pytest --cov` 实测，CI 门禁 78%，余量 2.1 个点）。缺口
-  正在收：`cli.py` 从 28% 提到 38%（`rank-import` / `rules` / argparse 派发已补
+- ✅ **726 个测试**：本机全绿；未安装可选依赖 `mcp` 时其中 3 条（`test_mcp_server.py`）跳过
+- 📊 覆盖率 80.2%（本机 `pytest --cov` 实测，CI 门禁 78%，余量 2.2 个点）。缺口
+  正在收：`cli.py` 从 28% 提到 41%（`rank-import` / `rules` / argparse 派发已补
   命令级用例），`api/routes.py` 仍是 37% 的薄接线——规则层、DB 层、解析层都有
   用例，**接线层靠人肉冒烟的时代该结束了**。补法照 `test_cli_persist.py` 里的
   命令级范本（真文件 + 真临时库），**而不是下调阈值**

@@ -510,6 +510,38 @@ def _parse_robots_directives(text: str) -> list[tuple[str, list[str]]]:
     return out
 
 
+def _read_input_file(path_arg: str, label: str) -> str | None:
+    """「给 `-` 就读标准输入，否则读文件」收在一处，并把错误说成人话。
+
+    ⚠️ 直接 `Path(p).read_text()` 会让一个拼错的文件名以 traceback 的形式
+    糊在用户脸上。文件不存在是**入口层最常见的用户错误**，它不该长得像
+    程序崩了。返回 None 表示原因已经打进 stderr，调用方直接 return 1。
+    """
+    if path_arg == "-":
+        return sys.stdin.read()
+    target = Path(path_arg)
+    if target.is_dir():
+        # ⚠️ 先自己判目录：Windows 上 `read_text()` 目录抛的是
+        # PermissionError(13)，POSIX 上才是 IsADirectoryError(EISDIR)。
+        # 只靠 except 分支会让同一句提示在两个系统上长得不一样。
+        print(f"{label}：那是个目录，不是文件——{path_arg}", file=sys.stderr)
+        return None
+    try:
+        return target.read_text(encoding="utf-8-sig")
+    except FileNotFoundError:
+        print(f"{label}：文件不存在——{path_arg}", file=sys.stderr)
+    except IsADirectoryError:
+        print(f"{label}：那是个目录，不是文件——{path_arg}", file=sys.stderr)
+    except UnicodeDecodeError:
+        print(
+            f"{label}：不像文本文件——{path_arg}。请导出 UTF-8 的 CSV/JSON。",
+            file=sys.stderr,
+        )
+    except OSError as exc:  # 权限、磁盘、路径过长……统一成人话，不抛栈
+        print(f"{label}：读不了这个文件：{exc}", file=sys.stderr)
+    return None
+
+
 def cmd_rules(args: argparse.Namespace) -> int:
     registry = default_registry()
     # 用全部市场过滤，不写死清单：漏一个市场就会让它的规则「已注册但看不见」，
@@ -533,10 +565,9 @@ def cmd_rank_import(args: argparse.Namespace) -> int:
     from .db.session import get_session_factory, session_scope
     from .rankdata import ingest_rows, infer_domain, parse_rank_csv
 
-    if args.csv == "-":
-        text = sys.stdin.read()
-    else:
-        text = Path(args.csv).read_text(encoding="utf-8-sig")
+    text = _read_input_file(args.csv, "rank-import")
+    if text is None:
+        return 1
 
     parsed = parse_rank_csv(text)
     for err in parsed.errors:
@@ -584,13 +615,10 @@ def cmd_serp_import(args: argparse.Namespace) -> int:
     from .db.session import get_session_factory, session_scope
     from .serpdata import ingest_captures, parse_serp_csv, parse_serp_json
 
-    if args.file == "-":
-        text = sys.stdin.read()
-        name = ""
-    else:
-        path = Path(args.file)
-        text = path.read_text(encoding="utf-8-sig")
-        name = path.suffix.lower()
+    text = _read_input_file(args.file, "serp-import")
+    if text is None:
+        return 1
+    name = "" if args.file == "-" else Path(args.file).suffix.lower()
 
     fmt = args.format or ("json" if name == ".json" or text.lstrip()[:1] in ("[", "{") else "csv")
     parsed = parse_serp_json(text) if fmt == "json" else parse_serp_csv(text)
