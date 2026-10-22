@@ -332,3 +332,180 @@ def test_serp_import_cli_end_to_end(tmp_path, capsys):
         await sess_mod.dispose_engine()
 
     asyncio.run(_cleanup())
+
+# ---------------------------------------------------------------------------
+# 命令级冒烟：rank-import / rules / argparse 派发
+# ---------------------------------------------------------------------------
+#
+# 为什么单列这一组：解析层（test_rankdata.py / test_serpdata.py）和落库层
+# （test_db.py）各自都绿，但「读文件 → 认列名别名 → 推断域名 → 按域名找
+# 站点 → 打印跳过行数」这段中间层此前只人肉跑过。它是用户真正敲的那一行，
+# 也正是最容易写错的一段（阶段 4 的两处输出缺陷就是这么发现的）。
+
+
+def _seed_site(url: str, domain: str = "demo.test") -> None:
+    """建表 + 塞一个站点。单独一个 loop，跑完就 dispose。"""
+    from seoclaw.db.session import create_engine_from_url
+
+    async def _go() -> None:
+        eng = create_engine_from_url(url)
+        async with eng.begin() as conn:
+            await conn.run_sync(m.Base.metadata.create_all)
+        from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+        factory = async_sessionmaker(bind=eng, class_=AsyncSession, expire_on_commit=False)
+        async with factory() as sess:
+            sess.add(m.Site(domain=domain))
+            await sess.commit()
+        await eng.dispose()
+
+    asyncio.run(_go())
+
+
+def _count_rank_rows(db_path) -> tuple:
+    """用 stdlib sqlite3 读回行数——绕开 aiosqlite 的「连接绑 loop」。
+
+    命令内部自己起事件循环并缓存全局引擎，测试这边再拿同一个 URL 去查，
+    查到的可能是绑在已关闭 loop 上的连接。读文件是外部视角，反而干净。
+    """
+    import sqlite3
+
+    con = sqlite3.connect(str(db_path))
+    try:
+        return con.execute(
+            "select count(*), coalesce(sum(case when position is null then 1 else 0 end), 0) "
+            "from rank_history"
+        ).fetchone()
+    finally:
+        con.close()
+
+
+def test_rank_import_cli_end_to_end(tmp_path, capsys):
+    """日级排名导入：认别名、坏行报号、幂等、留空位次不被当成 0。"""
+    from argparse import Namespace
+
+    from seoclaw.cli import cmd_rank_import
+
+    csv_path = tmp_path / "rank.csv"
+    # 表头故意用 GSC 风格的别名（page / average position），列序也与文档相反：
+    # 别名映射与列序无关这条得钉住。第 4 行日期格式坏 → 跳过并报行号。
+    csv_path.write_text(
+        "date,page,average position,impressions,clicks\n"
+        "2026-10-19,https://www.demo.test/,3.5,100,10\n"
+        "2026-10-20,https://www.demo.test/guide,,50,2\n"
+        "20/10/2026,https://www.demo.test/x,4,10,1\n",
+        encoding="utf-8",
+    )
+    db = tmp_path / "seo.db"
+    _seed_site("sqlite+aiosqlite:///" + db.as_posix())
+
+    args = Namespace(csv=str(csv_path), db=str(db), site=None)
+    assert cmd_rank_import(args) == 0
+    out = capsys.readouterr().err
+    assert "第 4 行跳过" in out, out
+    assert "已导入 2 行日级数据" in out and "跳过 1 行" in out, out
+    # 没给 --site 时按 URL 里出现最多的 host（剥 www.）推断
+    assert "demo.test" in out, out
+
+    total, nulls = _count_rank_rows(db)
+    assert (total, nulls) == (2, 1), f"落库 {total} 行 / 空位次 {nulls} 行"
+
+    # 重跑同一份文件：唯一键是 (site, url, date)，不该长出第三行
+    assert cmd_rank_import(args) == 0
+    capsys.readouterr()
+    assert _count_rank_rows(db) == (2, 1), "重复导入长出了第二份"
+
+    # 站点不在库里：非 0 退出 + 下一步做什么
+    missing = Namespace(**{**vars(args), "site": "nosuch.test"})
+    assert cmd_rank_import(missing) == 1
+    err = capsys.readouterr().err
+    assert "不在库里" in err and "seoclaw scan" in err, err
+
+    from seoclaw.db import session as sess_mod
+
+    async def _cleanup() -> None:
+        await sess_mod.dispose_engine()
+
+    asyncio.run(_cleanup())
+
+
+def test_rank_import_cannot_infer_domain_says_so(tmp_path, capsys):
+    """推不出域名时明确让用户给 --site，而不是默默灌进一个空站点。
+
+    触发条件用 `https://`（有协议、没主机）：`row_from_fields` 只要求
+    完整地址前缀，所以这行能进 rows，但 `urlparse().netloc` 是空的——
+    这正是畸形导出会让推断失手的形状。
+    """
+    from argparse import Namespace
+
+    from seoclaw.cli import cmd_rank_import
+
+    csv_path = tmp_path / "nohost.csv"
+    csv_path.write_text(
+        "date,url,position\n2026-10-19,https://,3\n", encoding="utf-8"
+    )
+    db = tmp_path / "seo.db"
+    _seed_site("sqlite+aiosqlite:///" + db.as_posix())
+
+    assert cmd_rank_import(Namespace(csv=str(csv_path), db=str(db), site=None)) == 1
+    err = capsys.readouterr().err
+    assert "推断不出站点域名" in err and "--site" in err, err
+    assert _count_rank_rows(db) == (0, 0), "推不出域名却写了库"
+
+    from seoclaw.db import session as sess_mod
+
+    async def _cleanup() -> None:
+        await sess_mod.dispose_engine()
+
+    asyncio.run(_cleanup())
+
+
+def test_rules_cli_shows_every_registered_rule(capsys):
+    """`seoclaw rules` 必须列出**已加载的全部规则**，且 geo 只说明不列。
+
+    踩过的坑是清单写死：某个包的规则已注册却在列表里看不见，用户以为
+    没生效（cnh_eco）。这里按注册表实况逐条比对，写死/漏市场都会红。
+    实验包 geo 反过来：它不进默认注册表，所以既不能出现在清单里，
+    又必须在末尾说明「默认不加载、怎么启用」——否则用户不知道它存在。
+    """
+    from argparse import Namespace
+
+    from seoclaw.audit.engine import default_registry
+    from seoclaw.cli import cmd_rules
+    from seoclaw.models import Market
+
+    reg = default_registry()
+    rules = reg.page_rules_for(list(Market)) + reg.site_rules_for(list(Market))
+    assert rules, "注册表里一条规则都没有，这条测试就白跑了"
+
+    assert cmd_rules(Namespace()) == 0
+    out = capsys.readouterr().out
+    missing = [r.code for r in rules if r.code not in out]
+    assert not missing, f"已注册但列表里看不见：{missing}"
+
+    assert "默认不加载" in out and "geo" in out, out
+    for geo_code in (
+        "geo.no_question_headings",
+        "geo.no_outbound_references",
+        "geo.flat_structure",
+        "geo.faq_structure_mismatch",
+    ):
+        assert geo_code not in out, f"实验包 geo 的规则混进了默认清单：{geo_code}"
+
+
+def test_cli_main_dispatches_subcommands(tmp_path, capsys):
+    """argparse 那层的默认值要和命令函数对得上。
+
+    `main([...])` 走的是用户敲的那串参数：--format/--captured-at 不给时
+    落成什么，完全由 parser 决定；命令函数的行为已经在上面几条用例里钉过，
+    这里补的是「参数名/默认值写错，命令收到 None 之外的东西」这一类错。
+    """
+    from seoclaw.cli import main
+
+    assert main(["rules"]) == 0
+    assert "页面级" in capsys.readouterr().out
+
+    # 缺 --db（必填）→ argparse 自己以 SystemExit(2) 结束，不该走到命令体里
+    with pytest.raises(SystemExit) as boom:
+        main(["rank-import", str(tmp_path / "nope.csv")])
+    assert boom.value.code == 2
