@@ -5,15 +5,15 @@
 **基于正面证据的站点 SEO 审计工具 —— 宁可漏报，不报假问题**
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-713%20✓-2EA44F?logo=pytest&logoColor=white)](#-开发与测试)
-[![Coverage](https://img.shields.io/badge/coverage-79.5%25-2EA44F)](#-开发与测试)
+[![Tests](https://img.shields.io/badge/tests-722%20✓-2EA44F?logo=pytest&logoColor=white)](#-开发与测试)
+[![Coverage](https://img.shields.io/badge/coverage-80.1%25-2EA44F)](#-开发与测试)
 [![License](https://img.shields.io/badge/license-MIT-FF9900)](#-license)
 [![Code style](https://img.shields.io/badge/style-audit%20grade-black)](./DESIGN.md)
 
 抓取站点 → 执行规则审计 → 产出可直接照着改的报告<br>
 每一条问题都要求正面证据支撑；证据不足时保持沉默，并明确列出未覆盖的页面
 
-**English** · [README.en.md](README.en.md) 　|　 **快速上手** · [安装](#-安装) · [一键体检](#-快速开始)
+[English](README.en.md) 　|　 **快速上手** · [安装](#-安装) · [一键体检](#-快速开始)
 
 </div>
 
@@ -256,7 +256,8 @@ uvicorn seoclaw.main:app --port 8000
 
 - 🐢 默认 **3 req/s**，遵守 `robots.txt` 与对方声明的 `Crawl-delay`
 - 📉 遇 429/403 自适应降速；连续 5 次连接失败熔断中止本域（避免延长封禁）
-- ⏳ **1000 页的站点约需 5.5 分钟**：`3 req/s × 1000 页 ≈ 333 秒` 是墙钟下界，实测 382 秒中 87% 花在等待限速。**增加并发无法缩短**——限速器按墙钟串行放行。这是设计取舍，不是性能缺陷
+- ⏳ **1000 页的站点实测约需 6.4 分钟**：`3 req/s × 1000 页 ≈ 333 秒` 是墙钟下界（5.5 分钟），实测 382 秒中 87% 花在等待限速。**增加并发无法缩短**——限速器按墙钟串行放行。这是设计取舍，不是性能缺陷
+- 🚫 **不为了让数字好看而提高默认速率**。2026-10-22 明确决策：默认 3 req/s 保持不动，「1000 页 ≤5 分钟」这条早期拍的验收指标**作废**，改为按实测引用（见 `PLAN.md` M0 清单）
 - ✅ 实测 `docs.python.org` 抓取 1000 页：382 秒，991 成功 / 9 失败，中断后可续跑
 
 <a id="-部署"></a>
@@ -304,7 +305,7 @@ backend/seoclaw/
 └── 🧰 mcp_server.py    MCP Server（3 个只读工具）
 ```
 
-**约 17,800 行实现代码 · 约 10,800 行测试代码 · 713 个测试（实跑全绿；行数按 `backend/seoclaw` 与 `backend/tests` 下的 `.py` 统计）。**
+**约 17,800 行实现代码 · 约 11,100 行测试代码 · 722 个测试（实跑全绿；行数按 `backend/seoclaw` 与 `backend/tests` 下的 `.py` 统计）。**
 
 ### 🗄️ 数据库
 
@@ -328,13 +329,15 @@ pip install -e ".[api,dev]"
 pytest backend/tests -q
 ```
 
-- ✅ **713 个测试**：本机全绿；未安装可选依赖 `mcp` 时其中 3 条（`test_mcp_server.py`）跳过
-- 📊 覆盖率 79.5%（本机 `pytest --cov` 实测 79.48%–79.52%，随跑法微调；
-  CI 门禁 78%）。⚠️ 余量只剩 1.5 个百分点：缺口集中在 `cli.py`（28%）与
-  `api/routes.py`（37%）——规则层、
-  DB 层、解析层都有用例，**薄接线基本没测**。下一笔提交只要多写几十行胶水
-  就可能把门禁顶红。补覆盖优先补 CLI 的命令级用例（`test_cli_persist.py` 里
-  `serp-import` 那条是范本：真文件 + 真临时库），而不是下调阈值
+- ✅ **722 个测试**：本机全绿；未安装可选依赖 `mcp` 时其中 3 条（`test_mcp_server.py`）跳过
+- 📊 覆盖率 80.1%（本机 `pytest --cov` 实测，CI 门禁 78%，余量 2.1 个点）。缺口
+  正在收：`cli.py` 从 28% 提到 38%（`rank-import` / `rules` / argparse 派发已补
+  命令级用例），`api/routes.py` 仍是 37% 的薄接线——规则层、DB 层、解析层都有
+  用例，**接线层靠人肉冒烟的时代该结束了**。补法照 `test_cli_persist.py` 里的
+  命令级范本（真文件 + 真临时库），**而不是下调阈值**
+- 🔢 README 自己的宣传数字有回归网（`test_docs_stats.py`）：表数与表名对着
+  `Base.metadata.tables` 核、路径/操作数对着 `app.openapi()` 核、中英两份的测试数
+  与覆盖率徽标必须彼此一致。**数字写两处就一定会分叉**，这条不是洁癖
 - 🤖 **CI 双任务**：① 全量测试 + 覆盖率 + CLI 冒烟 + wheel 构建；② `guard_smoke.sh` 真容器验收（四道闸）
 - 🧰 部分环境用 `run.sh` 封装本机依赖安装方式（`.deps/` 隔离 + `PYTHONPATH`），见脚本内注释
 

@@ -99,13 +99,16 @@ Before going public, read `DEPLOY.md` and run the guard smoke test:
 
 Default 3 req/s per domain, `robots.txt` + `Crawl-delay` respected, adaptive
 backoff on 429/403, circuit breaker after 5 consecutive failures. A 1000-page
-site takes ~5.5 minutes by design — the rate limiter is wall-clock serial;
-adding concurrency does not shorten it.
+site takes **~6.4 minutes in practice** (333 s is the wall-clock floor, and
+87% of the measured 382 s was spent waiting on the limiter) — the limiter
+releases serially, so adding concurrency does not shorten it. We keep 3 req/s
+rather than raise the default to hit a prettier number; the early
+"1000 pages ≤ 5 minutes" acceptance target was retired on 2026-10-22.
 
 ## Development
 
 ```bash
-pytest backend/tests -q    # 713 tests (3 skipped without optional mcp)
+pytest backend/tests -q    # 722 tests (3 skipped without optional mcp)
 ```
 
 Design rules the codebase enforces (see README.md for details): positive-evidence
