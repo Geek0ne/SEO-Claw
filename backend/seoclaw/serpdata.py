@@ -265,6 +265,19 @@ def _warn_titleless(capture: SerpCapture, label: str, out: list[str]) -> None:
         )
 
 
+def detect_format(text: str, filename: str = "") -> str:
+    """这份导出是 JSON 还是 CSV —— 判定口径**只此一份**。
+
+    CLI 有文件名（按 ``.json`` 后缀判），界面走 FileReader 拿到的是纯文本
+    （没有后缀可问）。两边各写一遍迟早分叉，而判错一次的代价是把 JSON 喂给
+    CSV 解析器 —— 它会指着 ``{"keyword": ...`` 那一行报「第 1 行缺列」，
+    用户完全看不出是格式认错了。所以两条路都调这里。
+    """
+    if filename.lower().endswith(".json") or text.lstrip()[:1] in ("[", "{"):
+        return "json"
+    return "csv"
+
+
 def parse_serp_csv(text: str) -> ParseResult:
     """解析 SERP CSV：一行一条结果，按 (词, 市场, 抓取时刻) 归成快照。
 

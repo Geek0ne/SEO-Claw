@@ -5,8 +5,8 @@
 **基于正面证据的站点 SEO 审计工具 —— 宁可漏报，不报假问题**
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-726%20✓-2EA44F?logo=pytest&logoColor=white)](#-开发与测试)
-[![Coverage](https://img.shields.io/badge/coverage-80.2%25-2EA44F)](#-开发与测试)
+[![Tests](https://img.shields.io/badge/tests-737%20✓-2EA44F?logo=pytest&logoColor=white)](#-开发与测试)
+[![Coverage](https://img.shields.io/badge/coverage-80.0%25-2EA44F)](#-开发与测试)
 [![License](https://img.shields.io/badge/license-MIT-FF9900)](#-license)
 [![Code style](https://img.shields.io/badge/style-audit%20grade-black)](./DESIGN.md)
 
@@ -245,9 +245,11 @@ uvicorn seoclaw.main:app --port 8000
 - 🧩 **问题流转**：筛选、单条/按根因批量标记（待处理 / 已知晓 / 已修复 / 误报）
 - 🧾 **报告与导出**：md / html / json 一键带走
 - 📈 **趋势与历史**：健康分曲线 + 扫描任务列表
-- 🩹 **整改工单**：`GET /sites/{id}/fixpack`（md / json / csv / diff）+ 排名数据接入 `POST /sites/{id}/rankings`
+- 🩹 **整改工单**：`GET /sites/{id}/fixpack`（md / json / csv / diff），抬头可写出具方名称
+- 📥 **数据接入**：日级排名与 SERP 快照都能在界面里上传（选文件或粘贴原始导出），解析口径与 CLI 共用同一份；导入后当场回读核对
+- ⏱ **定时托管复扫**：概览页开关，执行参数在提交那一刻定格成快照
 - 🔑 **多租户**：API Key（只存哈希）、额度、站点归属验证
-- 🔌 **REST API**：28 个路径、36 个操作（按 OpenAPI 实数）+ **MCP Server**（3 个只读工具）
+- 🔌 **REST API**：30 个路径、38 个操作（按 OpenAPI 实数）+ **MCP Server**（3 个只读工具）
 
 <a id="-爬虫礼仪与性能边界"></a>
 ## 🤝 爬虫礼仪与性能边界
@@ -305,7 +307,7 @@ backend/seoclaw/
 └── 🧰 mcp_server.py    MCP Server（3 个只读工具）
 ```
 
-**约 17,800 行实现代码 · 约 11,200 行测试代码 · 726 个测试（实跑全绿；行数按 `backend/seoclaw` 与 `backend/tests` 下的 `.py` 统计）。**
+**约 18,000 行实现代码 · 约 11,400 行测试代码 · 737 个测试（实跑全绿；行数按 `backend/seoclaw` 与 `backend/tests` 下的 `.py` 统计）。**
 
 ### 🗄️ 数据库
 
@@ -329,9 +331,9 @@ pip install -e ".[api,dev]"
 pytest backend/tests -q
 ```
 
-- ✅ **726 个测试**：本机全绿；未安装可选依赖 `mcp` 时其中 3 条（`test_mcp_server.py`）跳过
-- 📊 覆盖率 80.2%（本机 `pytest --cov` 实测，CI 门禁 78%，余量 2.2 个点）。同一份
-  代码连跑会在 80.14%–80.18% 之间微漂，漂的是 `db/session.py` 里的 `create_all`
+- ✅ **737 个测试**：本机全绿；未安装可选依赖 `mcp` 时其中 3 条（`test_mcp_server.py`）跳过
+- 📊 覆盖率 80.0%（本机 `pytest --cov` 实测，CI 门禁 78%，余量 2.0 个点）。同一份
+  代码连跑会在 79.99%–80.03% 之间微漂，漂的是 `db/session.py` 里的 `create_all`
   那一行：测试用例共用一个引擎单例与同一个 sqlite 文件，个别跑法下它会以
   `database is locked` 失败并被吞进日志（用例仍全绿，但那条语句没被执行到）。
   **别再追着这 0.04 个点改文档**，根因与修法记在 PLAN 技术债。缺口

@@ -108,7 +108,7 @@ rather than raise the default to hit a prettier number; the early
 ## Development
 
 ```bash
-pytest backend/tests -q    # 726 tests (3 skipped without optional mcp)
+pytest backend/tests -q    # 737 tests (3 skipped without optional mcp)
 ```
 
 Design rules the codebase enforces (see README.md for details): positive-evidence

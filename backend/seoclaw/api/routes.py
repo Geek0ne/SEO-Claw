@@ -40,12 +40,14 @@ from .schemas import (
     RankAlertOut,
     RankDropRequest,
     RankPointOut,
+    RankRawIn,
     RankingsIn,
     RankingsOut,
     RankingsPage,
     SerpEntryOut,
     SerpIngestIn,
     SerpIngestOut,
+    SerpRawIn,
     SerpPage,
     ScheduleOut,
     ScheduleUpdate,
@@ -55,6 +57,10 @@ from .schemas import (
     UsageOut,
     SiteCreate,
     SiteOut,
+    # 量上限只有一份定义（在 schemas），路由不另写数字
+    MAX_IMPORT_ERROR_MESSAGES,
+    MAX_RANK_ROWS_PER_REQUEST,
+    MAX_SERP_CAPTURES_PER_REQUEST,
 )
 from .scan_service import run_scan
 
@@ -797,6 +803,70 @@ async def ingest_rankings(
     return RankingsOut(upserted=info["upserted"], skipped=len(errors), errors=errors)
 
 
+def _bounded(errors: list[str]) -> list[str]:
+    """坏行**逐条回报**是底线，但响应体不该被几千条同类原因撑爆。
+
+    截断必须留下「还有多少条没列出来」——静默省略等于骗人，用户会以为
+    只有这几行有问题。
+    """
+    if len(errors) <= MAX_IMPORT_ERROR_MESSAGES:
+        return list(errors)
+    return [
+        *errors[:MAX_IMPORT_ERROR_MESSAGES],
+        f"（已截断：另有 {len(errors) - MAX_IMPORT_ERROR_MESSAGES} 条同类原因未列出）",
+    ]
+
+
+@router.post("/sites/{site_id}/rankings/import", response_model=RankingsOut, status_code=201)
+async def ingest_rankings_raw(
+    site_id: int,
+    body: RankRawIn,
+    uow=Depends(get_uow),
+) -> RankingsOut:
+    """把**原始 CSV 导出**直接入库 —— 界面上「选文件 / 粘贴」走的那条路。
+
+    为什么不让前端解析 CSV：表头别名（``page`` / ``average position`` / ``网址``）、
+    日期格式、坏行判定全在 :func:`seoclaw.rankdata.parse_rank_csv` 里，CLI 的
+    ``rank-import`` 用的就是它。前端再写一套，收场一定是「CLI 导得进去、
+    网页导不进去」，而用户没法判断哪套口径是对的。所以这里只做一件事：
+    收文本、调同一份解析、按同一份底线写库。
+
+    ⚠️ 行数上限与结构化入口**同一个常量**（``MAX_RANK_ROWS_PER_REQUEST``）：
+    超限给一句「请分批」，而不是让一个请求把事务占住或回一句看不懂的 500。
+    ⚠️ 不自动建站：排名数据灌进一个不存在的站点，等于挂在无人认领的域名上
+    （与 CLI 的「站点不在库里」分支同一立场）。
+    """
+    from ..rankdata import ingest_rows, parse_rank_csv
+
+    await _require_site(uow, site_id)
+    parsed = parse_rank_csv(body.text)
+    if not parsed.rows:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "message": "解析不出任何有效行，什么都没写入。"
+                "常见原因：表头不是排名导出的列名（需要 date / page|url / "
+                "average position 一类），或文件不是 UTF-8。",
+                "errors": _bounded(parsed.errors),
+            },
+        )
+    if len(parsed.rows) > MAX_RANK_ROWS_PER_REQUEST:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "message": f"一次最多 {MAX_RANK_ROWS_PER_REQUEST} 行，"
+                f"这份有 {len(parsed.rows)} 行——请分批送。",
+                "errors": [],
+            },
+        )
+    info = await ingest_rows(uow.session, site_id, parsed.rows)
+    return RankingsOut(
+        upserted=info["upserted"],
+        skipped=parsed.skipped,
+        errors=_bounded(parsed.errors),
+    )
+
+
 @router.get("/sites/{site_id}/rankings", response_model=RankingsPage)
 async def list_rankings(
     site_id: int,
@@ -884,6 +954,66 @@ async def ingest_serp(
         captured_at=info["captured_at"],
         skipped=len(errors),
         errors=errors,
+    )
+
+
+@router.post("/sites/{site_id}/serp/import", response_model=SerpIngestOut, status_code=201)
+async def ingest_serp_raw(
+    site_id: int,
+    body: SerpRawIn,
+    uow=Depends(get_uow),
+) -> SerpIngestOut:
+    """原始 SERP 导出（CSV 或 JSON）入库 —— 界面的「选文件 / 粘贴」入口。
+
+    与 ``/rankings/import`` 同一个立场：解析只在
+    :mod:`seoclaw.serpdata` 里有一份，CLI ``serp-import`` 用的就是它，界面不
+    重写第二套。格式判定也共用 :func:`seoclaw.serpdata.detect_format`
+    （判错的收场是「把 JSON 喂给 CSV 解析器」，它会指着第一行报缺列）。
+
+    ⚠️ 与 CLI 一样**不自动推断站点**：SERP 里多数结果是竞品页面，按「URL
+    出现最多的域名」匹配会把数据灌到竞品名下，所以只能打在路径里这个
+    已存在的 ``site_id`` 上。
+    """
+    from ..serpdata import (
+        detect_format,
+        ingest_captures,
+        parse_serp_csv,
+        parse_serp_json,
+    )
+
+    await _require_site(uow, site_id)
+    fmt = body.format or detect_format(body.text)
+    parsed = parse_serp_json(body.text) if fmt == "json" else parse_serp_csv(body.text)
+    if not parsed.captures:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "message": "解析不出任何一次有效抓取，什么都没写入。"
+                "CSV 需要 keyword / url / position 三类列（中英文别名都认，"
+                "如「搜索词」「位次」）；JSON 需要 captures 或词+entries 的形状。"
+                "认不出格式时可以显式传 format。",
+                "errors": _bounded(parsed.errors),
+            },
+        )
+    if len(parsed.captures) > MAX_SERP_CAPTURES_PER_REQUEST:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "message": f"一次最多 {MAX_SERP_CAPTURES_PER_REQUEST} 个词的快照，"
+                f"这份有 {len(parsed.captures)} 个——请分批送。",
+                "errors": [],
+            },
+        )
+    info = await ingest_captures(uow.session, site_id, parsed.captures)
+    return SerpIngestOut(
+        keywords_created=info["keywords_created"],
+        keywords_existing=info["keywords_existing"],
+        snapshots_inserted=info["inserted"],
+        snapshots_updated=info["updated"],
+        captured_at=info["captured_at"],
+        skipped=parsed.skipped,
+        errors=_bounded(parsed.errors),
+        warnings=_bounded(parsed.warnings),
     )
 
 

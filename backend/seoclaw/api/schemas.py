@@ -329,6 +329,20 @@ class ReportSummary(BaseModel):
     issues: list[IssueOut]
 
 
+#: 单次请求的量上限。结构化入口（rows / captures）与原始文本入口
+#: （:class:`RankRawIn` / :class:`SerpRawIn`）**共用同一份数**：超过就该客户端
+#: 分批送，而不是让一个请求把事务占住。两处各写一个数，早晚有一个先撑不住，
+#: 而「同一个 API 两种上限」是最难查的那种不一致。
+MAX_RANK_ROWS_PER_REQUEST = 5000
+MAX_SERP_CAPTURES_PER_REQUEST = 50
+#: 原始文本入口的体积上限（字符）。5000 行 GSC 导出约 500KB，留足余量；
+#: 再大就该分批，而不是让一次上传吃掉整个请求体解析。
+MAX_RAW_IMPORT_CHARS = 2_000_000
+#: 坏行原因的返回条数上限。逐行报号是底线，但 5000 行全坏时把 5000 条原因
+#: 塞进响应没有意义；截断必须**说明截了多少**，静默省略等于骗人。
+MAX_IMPORT_ERROR_MESSAGES = 200
+
+
 class RankPointIn(BaseModel):
     """一行日级排名数据（程序化接入：GSC API / BigQuery / 排名跟踪器）。
 
@@ -347,7 +361,22 @@ class RankPointIn(BaseModel):
 
 
 class RankingsIn(BaseModel):
-    rows: list[RankPointIn] = Field(min_length=1, max_length=5000)
+    rows: list[RankPointIn] = Field(
+        min_length=1, max_length=MAX_RANK_ROWS_PER_REQUEST
+    )
+
+
+class RankRawIn(BaseModel):
+    """把**原始导出文本**交上来，由服务器解析（界面的「选文件 / 粘贴」走这里）。
+
+    ⚠️ 刻意不在前端写 CSV 解析：列别名（``page`` / ``average position`` /
+    ``网址``……）、坏行规则、日期格式这些口径在
+    :func:`seoclaw.rankdata.parse_rank_csv` 里只有一份，CLI 与 API 已经共用了
+    半年。界面再写一套，就是同一份数据两处判——最典型的收场是「CLI 导进去
+    没事、网页导进去报一堆行号」，而用户无从知道哪套是对的。
+    """
+
+    text: str = Field(min_length=1, max_length=MAX_RAW_IMPORT_CHARS)
 
 
 class RankingsOut(BaseModel):
@@ -403,7 +432,26 @@ class SerpIngestIn(BaseModel):
 
     market: Optional[str] = None
     captured_at: Optional[str] = None
-    captures: list[SerpCaptureIn] = Field(min_length=1, max_length=50)
+    captures: list[SerpCaptureIn] = Field(
+        min_length=1, max_length=MAX_SERP_CAPTURES_PER_REQUEST
+    )
+
+
+class SerpRawIn(BaseModel):
+    """原始 SERP 导出（CSV 或 JSON）直接入库 —— 界面的上传入口。
+
+    与 :class:`RankRawIn` 同一个理由：解析只在
+    :func:`seoclaw.serpdata.parse_serp_csv` / :func:`parse_serp_json` 里有
+    一份。``format`` 留空时由 :func:`seoclaw.serpdata.detect_format` 判，
+    CLI 用的是同一个函数。
+
+    ⚠️ 与 CLI 那条一致：**不自动推断站点域名**。SERP 里多数结果是竞品页面，
+    按「URL 出现最多的域名」匹配会把数据灌到竞品名下，所以这里必须打在
+    已有的 ``site_id`` 上（路径参数），站点不存在就是 404。
+    """
+
+    text: str = Field(min_length=1, max_length=MAX_RAW_IMPORT_CHARS)
+    format: Optional[Literal["csv", "json"]] = None
 
 
 class SerpIngestOut(BaseModel):
@@ -411,9 +459,16 @@ class SerpIngestOut(BaseModel):
     keywords_existing: int
     snapshots_inserted: int
     snapshots_updated: int
+    #: ⚠️ 这是**兜底时刻**，不是「这批数据的抓取时刻」：带了抓取时间的那几组
+    #: 按文件里的时刻落库，没带的才按这里返回的值。界面与文档别把它写成
+    #: 「本批抓取时间」——那会把 10-20 的快照说成 10-22。
     captured_at: str
     skipped: int = 0
     errors: list[str] = Field(default_factory=list)
+    #: 不是错误但必须让用户知道的事（例如「一组结果里一条标题都没有」——
+    #: 位次进了库，可 Brief 的「Top10 标题共性」算不出来）。CLI 是打到
+    #: stderr 的 ``ℹ️``，界面与 API 没有 stderr，只能靠这个字段说。
+    warnings: list[str] = Field(default_factory=list)
 
 
 class SerpEntryOut(BaseModel):

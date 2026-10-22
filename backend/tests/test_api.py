@@ -1194,3 +1194,142 @@ def test_brief_rejects_unknown_market_with_422(client):
         json={"keyword": "x", "target_url": "https://x.test/a", "market": "bing"},
     )
     assert r.status_code == 422, r.text
+
+
+# --------------------------------------------------------------------------
+# 原始文本入口：界面上「选文件 / 粘贴」走的那条路，解析必须与 CLI 同一份
+# --------------------------------------------------------------------------
+
+_RANK_CSV = """date,page,average position,clicks,impressions
+2026-10-01,https://demo.test/hot,5,10,300
+2026-10-02,https://demo.test/hot,7,12,320
+2026-10-03,https://demo.test/hot,,8,310
+"""
+
+
+def test_rankings_raw_import_end_to_end(client):
+    """GSC 风格表头（page / average position）的原始 CSV 直接入库。
+
+    这条对着的是**界面那条路**：前端不解析，只把文本送上来。列别名、日期
+    格式、空位次的处理必须和 CLI 一模一样，否则「CLI 导得进、网页导不进」
+    这种对账噩梦就会出现。
+    """
+    site_id = _scanned_site(client)
+    r = client.post(
+        f"/api/v1/sites/{site_id}/rankings/import", json={"text": _RANK_CSV}
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["upserted"] == 3, body
+    assert body["errors"] == [] and body["skipped"] == 0
+
+    # 空位次 → NULL（「那天没有排名数据」），不是 0（「排第 0 位」）。
+    # 抹平这个区分，跌落告警会算出一段假跌。
+    got = client.get(f"/api/v1/sites/{site_id}/rankings?days=60").json()
+    assert got["count"] == 3
+    positions = sorted(i["position"] for i in got["items"] if i["position"] is not None)
+    assert positions == [5.0, 7.0]
+    assert any(i["position"] is None for i in got["items"])
+
+    # 重推同一份 = 当日回补，不翻倍
+    assert client.post(
+        f"/api/v1/sites/{site_id}/rankings/import", json={"text": _RANK_CSV}
+    ).status_code == 201
+    assert client.get(f"/api/v1/sites/{site_id}/rankings?days=60").json()["count"] == 3
+
+
+def test_rankings_raw_bad_row_names_the_line(client):
+    site_id = _scanned_site(client)
+    text = _RANK_CSV + "not-a-date,https://demo.test/hot,9,1,1\n"
+    r = client.post(f"/api/v1/sites/{site_id}/rankings/import", json={"text": text})
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["upserted"] == 3 and body["skipped"] == 1
+    assert any("行" in e for e in body["errors"]), body["errors"]
+
+
+def test_rankings_raw_all_bad_is_422_and_writes_nothing(client):
+    site_id = _scanned_site(client)
+    r = client.post(
+        f"/api/v1/sites/{site_id}/rankings/import",
+        json={"text": "foo,bar,baz\n1,2,3\n"},
+    )
+    assert r.status_code == 422, r.text
+    detail = r.json()["detail"]
+    assert "什么都没写入" in detail["message"], detail
+    assert client.get(f"/api/v1/sites/{site_id}/rankings?days=60").json()["count"] == 0
+
+
+def test_rankings_raw_site_missing_is_404(client):
+    """站点必须先存在——不自动建站，也不让数据挂到无人认领的域名上。"""
+    r = client.post("/api/v1/sites/999999/rankings/import", json={"text": _RANK_CSV})
+    assert r.status_code == 404, r.text
+
+
+def test_rankings_raw_over_row_limit_asks_to_split(client):
+    """超限是「请分批」的一句人话，不是一个把事务占住的大请求。"""
+    from seoclaw.api.schemas import MAX_RANK_ROWS_PER_REQUEST
+
+    site_id = _scanned_site(client)
+    rows = [
+        f"2026-01-01,https://demo.test/p{i},{i + 1},1,10"
+        for i in range(MAX_RANK_ROWS_PER_REQUEST + 1)
+    ]
+    text = "date,page,average position,clicks,impressions\n" + "\n".join(rows) + "\n"
+    assert len(text) < 2_000_000, "用例本身别撞上体积上限，否则测不到行数上限"
+    r = client.post(f"/api/v1/sites/{site_id}/rankings/import", json={"text": text})
+    assert r.status_code == 422, r.text
+    assert "分批" in r.json()["detail"]["message"]
+
+
+def test_serp_raw_json_import_matches_structured_shape(client):
+    """界面粘贴 JSON（Provider 导出形状）→ 与结构化入口共用同一份解析。"""
+    import json as _json
+
+    site_id = _site_with_scan(client)
+    r = client.post(
+        f"/api/v1/sites/{site_id}/serp/import",
+        json={"text": _json.dumps(_serp_body())},
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["keywords_created"] == 1 and body["snapshots_inserted"] == 3
+    assert body["errors"] == [] and body["warnings"] == [], body
+
+    items = client.get(f"/api/v1/sites/{site_id}/serp?keyword=rust+ownership").json()["items"]
+    assert [i["position"] for i in items] == [1, 2, 3]
+
+
+_SERP_CSV_TITLELESS = """keyword,url,position,captured_at
+rust ownership,https://a.test/1,1,2026-10-20
+rust ownership,https://b.test/2,2,2026-10-20
+"""
+
+
+def test_serp_raw_csv_without_titles_says_so(client):
+    """一条标题都没有 → 位次进得了库，但 Brief 的「Top10 标题共性」算不出来。
+
+    CLI 把这句话打到 stderr（ℹ️），界面没有 stderr，所以它必须出现在响应的
+    ``warnings`` 里——否则用户只看到一份少了维度的 Brief，不知道是数据没导全。
+    """
+    site_id = _site_with_scan(client)
+    r = client.post(
+        f"/api/v1/sites/{site_id}/serp/import", json={"text": _SERP_CSV_TITLELESS}
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["snapshots_inserted"] == 2
+    assert body["warnings"] and any("标题" in w for w in body["warnings"]), body
+
+
+def test_serp_raw_wrong_format_is_actionable_422(client):
+    """显式 format 认错时不能崩，也不能假装导入成功。"""
+    import json as _json
+
+    site_id = _site_with_scan(client)
+    r = client.post(
+        f"/api/v1/sites/{site_id}/serp/import",
+        json={"text": _json.dumps(_serp_body()), "format": "csv"},
+    )
+    assert r.status_code == 422, r.text
+    assert "什么都没写入" in r.json()["detail"]["message"]

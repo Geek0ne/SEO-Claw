@@ -58,7 +58,7 @@ def test_table_claim_matches_models() -> None:
 
 
 def test_rest_api_claim_matches_openapi() -> None:
-    """「28 个路径、36 个操作」钉到 `app.openapi()` 的实数。
+    """「30 个路径、38 个操作」钉到 `app.openapi()` 的实数。
 
     ⚠️ 「端点」这个词本身就不该用：一个路径下可以有 GET/POST 两个操作，
     数法不同结论不同。所以断言按 OpenAPI 的两个客观计数来。

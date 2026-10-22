@@ -356,8 +356,19 @@ class Rule(ABC):
   四格式输出（md/json/csv/diff）+ 白标 `--brand`。CLI 与 API 同一份逻辑。
 - [x] **2026-10-18 排名数据入口（`rankdata.py`）**：`rank-import` CLI +
   `POST/GET /rankings`，监测闭环从「只能看」变成真的能响。
-- [ ] 待办：单站 1000 URL 压进 5 分钟 —— **待用户决策**：3 rps 下墙钟下界 333s > 300s 目标，
-  并行化无法突破（见第 109 行更正）。需先定「是否接受 5.56 分钟 / 是否提高默认 rps」
+- [x] **2026-10-22 Web 界面补四处「后端有、界面没接」的入口**：日级排名导入、
+  SERP 快照导入、定时托管复扫、整改工单导出。为此新增两个**原始文本**端点
+  （`POST /sites/{id}/rankings/import`、`POST /sites/{id}/serp/import`），
+  解析口径仍只有 `rankdata` / `serpdata` 一份——**界面不解析任何字段**，
+  前端写一套别名的收场一定是「CLI 导得进、网页导不进」。格式判定也收成
+  一份（`serpdata.detect_format`）。每条导入卡配**回读表**，让用户自己查证。
+  顺带钉了一条不变量用例：页面上 JS 用到的每条 `/api/v1/...` 路径必须能在
+  `app.openapi()` 里找到（`app.routes` 看不到——API 挂在子应用上）。
+- [x] 待办：单站 1000 URL 压进 5 分钟 —— **2026-10-22 决策（方案③）已落**：
+  默认 3 rps 不动，「≤5 分钟」这条硬指标作废，改为引用实测
+  「1000 页 ≈ 6.4 分钟（333s 墙钟下界 / 实测 382s）」。**加并发压不下去**——
+  限速器按墙钟串行放行；要达标只能提高默认速率，代价是对第三方站更激进。
+  取舍：礼貌优先，数字改成引用实测（见第 1.3 节 M0 清单与 CHANGELOG）。
 
 ## 8. 待办清单（按优先级）
 
@@ -403,15 +414,16 @@ class Rule(ABC):
 - **孤岛页检测依赖覆盖率**：`hit_page_limit` 时一律不下结论，即使已抓 1000 页。这是**设计取舍不是 bug**——「我没发现指向它的内链」只有在确信「大部分页面都看到了」时才成立。建议 M1 加「分批跑完整个站点」的扫描模式。
 - ~~**`baidu` 包本地移植了 google 的像素宽度表**~~ **已清偿（2026-10-12）**：宽度表上提到中立模块 `audit/rules/_serp_px.py`（不 import 任何规则包，不会成环），两包改为引用同一份，「改 google 必须同步 baidu」的人工约定删除。指标值不变（test_fp_baidu_2026 的像素断言钉着）。
 - **GEO 规则包需显式开启**：`default_registry()` 不加载它，以免证据强度较弱的新规则污染 base 的 97.0% 准确率基线。✅ 2026-10-22 决策：维持现状直到方法论验证做完（`--market geo` 点名启用；`cli.py` 的规则列表处已打印这条差异）。
-- **薄接线层没测（2026-10-22 开始收）**：覆盖率 80.2%、门禁 78%，余量 2.2 个点。
+- **薄接线层没测（2026-10-22 开始收）**：覆盖率 80.0%、门禁 78%，余量 2.0 个点。
   `cli.py` 原 28% → **41%**：`rank-import`（别名表头 + 坏行报号 + 幂等重跑 +
   位次留空落成 NULL 而不是 0 + 推断出的域名 + 站点缺失时的下一步提示）、
   `rules`（按注册表实况逐条比对，防「已注册但看不见」）、`main([...])` 派发
   （parser 默认值与命令函数对得上）都补了命令级用例，范本是
   `test_cli_persist.py` 里的 `serp-import` 那条（真文件 + 真临时库）。
-  **仍开着的**：`api/routes.py` 37%——28 个路径里真正被测的只有导入与 Brief
-  那几条；`cmd_scan` 只有 API/Web 侧的作业级用例，CLI 侧「参数 → 落库 →
-  报告落盘」整段仍靠 `guard_smoke.sh` 的真容器冒烟，本机跑不到。
+  **仍开着的**：`api/routes.py` 37%——30 个路径里真正被测的仍只有导入、Brief、
+  fixpack 那几条。2026-10-22 给界面补的两个原始文本端点是有用例的（9 条），
+  但比例被同批新增的行数摊平，**没涨不代表白测**；`cmd_scan` 只有 API/Web 侧的
+  作业级用例，CLI 侧「参数 → 落库 → 报告落盘」整段仍靠 `guard_smoke.sh` 的真容器冒烟，本机跑不到。
   ⚠️ 补这批用例时发现一处粗糙：`rank-import` / `serp-import` 的文件参数给个
   不存在的路径，`Path.read_text()` 直接抛 `FileNotFoundError`，用户看到 traceback
   而不是一句人话。**2026-10-22 已修**（用户确认后进行）：两处入口改用共用的
@@ -427,16 +439,28 @@ class Rule(ABC):
   会让本机与 CI 的覆盖率口径分叉，不值当。代码处已写注释，别当死代码删。
 - **Windows 上 `alembic` 读不了自家 ini**：`backend/migrations/alembic.ini`
   里有中文注释，alembic 用 `encoding="locale"` 读它，中文环境下直接
-  `UnicodeDecodeError: 'gbk'`。CI 是 Linux 所以从未暴露。临时绕法是把 ini
-  拷成 ASCII 版再 `-c` 指过去；根治要么给 ini 加 BOM/改英文注释，要么在
-  `run.sh` 里固化这个绕法——**别改成「读不出来就算了」**，那等于关掉这道闸。
+  `UnicodeDecodeError: 'gbk'`。CI 是 Linux 所以从未暴露。
+  ⚠️ **2026-10-22 实测：环境变量救不了**——`PYTHONUTF8=1` 与 `-X utf8` 都试了，
+  `locale.getpreferredencoding(False)` 在 UTF-8 模式下确实返回 utf-8，
+  但 configparser 把 `encoding="locale"` 折成 `None` 交给 `open()`，
+  `open()` 走的是启动期缓存的 ANSI 代码页（cp936），照样炸。别再猜「加 BOM」，
+  那条也没用（读的时候编码已经定死了）。
+  两条能用的绕法：① 拷一份 ASCII ini 再 `-c` 指过去——会在仓库里留垃圾，
+  用完必须删；② **根本不读 ini**：`Config()` +
+  `set_main_option("script_location", os.path.abspath("migrations"))`，
+  直接 `command.upgrade(cfg, "head")` + `command.check(cfg)`。②今天实测通过
+  （末行 `No new upgrade operations detected.`），不落任何临时文件。
+  根治：ini 里的注释改成 ASCII（中文说明挪进 `env.py` 或 `DEPLOY.md`），
+  或在 `scripts/` 固化 ② 这个无 ini 的检查入口——**别改成「读不出来就算了」**，
+  那等于关掉这道闸。
 - **测试跑法有非确定性（2026-10-22 复查发现，未修）**：同一份代码全量连跑，
-  覆盖率在 **80.14%–80.18%** 之间漂，漂的那一条固定在 `db/session.py:233`
+  覆盖率在 **79.99%–80.03%** 之间漂（本轮补界面后端时又实测两轮），漂的那一条固定在
+  `db/session.py:233`
   （`create_all` 里的 `run_sync`）。原因是多个测试模块**共用引擎单例与同一个
   sqlite 文件**（`test_multitenant.py` 的 `_db_path()` 注释就记着这件事），个别
   跑法下建表撞上 `sqlite3.OperationalError: database is locked`，异常被吞进日志
-  ——用例仍全绿，但那条语句没执行到，于是今天的门面数字出现「726 passed、
-  missed 1425/1426/1427/1428」这种一跑一个样的读数。
+  ——用例仍全绿，但那条语句没执行到，于是今天的门面数字出现「737 passed、
+  missed 1444/1446」这种一跑一个样的读数。
   ⚠️ 把 `RuntimeWarning` 升级成错误（`-W error::RuntimeWarning`）能放大这个问题：
   一次跑出 `test_multitenant.py` 两条用例 **ERROR**（就死在 `create_all` 的锁库上），
   另一次直接**挂住不退**（8 分钟无 CPU 活动，只能杀进程）。默认跑法今天多次全绿，

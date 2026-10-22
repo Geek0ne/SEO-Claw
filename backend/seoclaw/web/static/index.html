@@ -132,6 +132,11 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var
   padding:10px 12px;background:var(--surface);min-height:42px}
 .fld input:focus-visible,.fld select:focus-visible,.fld textarea:focus-visible{border-color:var(--accent)}
 .fld .hint{font-size:11.5px;color:var(--muted)}
+/* 文件选择框：默认样式在纸上会顶出一条灰带，这里压成与控件同规格的 2px 边框 */
+.fld input[type=file]{padding:8px 10px;background:var(--bg-sunken);font-size:12.5px}
+.fld input[type=file]::file-selector-button{border:1px solid var(--line-strong);background:var(--surface);
+  padding:6px 10px;border-radius:var(--r-ctl);font:500 12px var(--mono);cursor:pointer;margin-right:10px}
+.fld textarea{width:100%;line-height:1.6}
 .fld-row{display:grid;grid-template-columns:1.6fr 1fr;gap:12px}
 @media (max-width:640px){.fld-row{grid-template-columns:1fr}}
 .chk{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;font-size:13px}
@@ -229,9 +234,18 @@ const API = {
     try { data = txt ? JSON.parse(txt) : null; } catch { data = null; }
     if (!res.ok) {
       // 错误必须说清「是什么、下一步」——不许只抛一句红色
-      const detail = (data && (data.detail || data.reason)) ||
-                     (typeof data === "string" && data) || `HTTP ${res.status}`;
-      const e = new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+      const raw = (data && (data.detail || data.reason)) ||
+                  (typeof data === "string" && data) || `HTTP ${res.status}`;
+      let e;
+      if (raw && typeof raw === "object") {
+        // 导入类端点的 detail 是 {message, errors}：message 当话术，errors
+        // 挂在异常上由界面逐条渲染。整包 JSON.stringify 甩给用户，等于把
+        // 「第 3 行日期不对」这种真正有用的东西埋进一串花括号里。
+        e = new Error(raw.message || raw.reason || JSON.stringify(raw));
+        e.errors = raw.errors || [];
+      } else {
+        e = new Error(String(raw));
+      }
       e.status = res.status; e.data = data;
       throw e;
     }
@@ -240,6 +254,7 @@ const API = {
   get:  p       => API.req("GET", p),
   post: (p,b)   => API.req("POST", p, b ?? {}),
   patch:(p,b)   => API.req("PATCH", p, b),
+  put:  (p,b)   => API.req("PUT", p, b),
   del:  p       => API.req("DELETE", p),
   // —— 站点 / 扫描 ——
   sites:      ()        => API.get("/api/v1/sites"),
@@ -250,10 +265,16 @@ const API = {
   jobs:       id        => API.get(`/api/v1/sites/${id}/jobs`),
   quickScan:  b         => API.post("/api/v1/web/quick-scan", b),
   quickJob:   jid       => API.get(`/api/v1/web/jobs/${jid}`),
+  // —— 托管定时复扫（保存这一刻定格成执行参数快照）——
+  schedule:   id        => API.get(`/api/v1/sites/${id}/schedule`),
+  setSchedule:(id,b)    => API.put(`/api/v1/sites/${id}/schedule`, b),
   // —— 报告 / 问题 ——
   report:     id        => API.get(`/api/v1/sites/${id}/report`),
   aiSummary:  id        => API.get(`/api/v1/sites/${id}/report/summary`),
   exportUrl:  (id,fmt)  => `/api/v1/sites/${id}/report/export?format=${fmt}`,
+  fixpackUrl: (id,fmt,brand) =>
+              `/api/v1/sites/${id}/fixpack?format=${fmt}`
+              + (brand ? `&brand=${encodeURIComponent(brand)}` : ""),
   issues:     (id,q)    => API.get(`/api/v1/sites/${id}/issues` + (q||"")),
   setIssue:   (id,iid,st) => API.patch(`/api/v1/sites/${id}/issues/${iid}`, {status:st}),
   bulkIssue:  (id,fp,st)  => API.patch(`/api/v1/sites/${id}/issues`, {fingerprint:fp,status:st}),
@@ -265,6 +286,14 @@ const API = {
   brief:      (id,b)    => API.post(`/api/v1/sites/${id}/brief`, b),
   rankDrops:  (id,b)    => API.post(`/api/v1/sites/${id}/rank-drops`, b),
   ackDrops:   (id,keys) => API.post(`/api/v1/sites/${id}/rank-drops/ack`, {alert_keys:keys}),
+  // —— 数据导入：前端**不解析**，只搬运文本，口径在服务器一份 —— //
+  // 界面 FileReader 拿到的是纯文本，没有后缀可问，所以格式判定也交给
+  // serpdata.detect_format（与 CLI 同一个函数）。
+  importRankCsv:(id,text)       => API.post(`/api/v1/sites/${id}/rankings/import`, {text}),
+  rankings:   (id,days) => API.get(`/api/v1/sites/${id}/rankings?days=${days||30}`),
+  importSerpRaw:(id,text,format)=> API.post(`/api/v1/sites/${id}/serp/import`,
+                                  format ? {text, format} : {text}),
+  serp:       (id,q)    => API.get(`/api/v1/sites/${id}/serp` + (q||"")),
   // —— 计量 / 租户 ——
   usage:      id        => API.get(`/api/v1/sites/${id}/usage`),
   me:         ()        => API.get("/api/v1/me"),
@@ -391,6 +420,71 @@ function modal(title, bodyNode, onClose) {
     if (ev.key === "Escape") { close(); document.removeEventListener("keydown", esc); }
   });
   return { close, box };
+}
+
+/* ── 原始导出上传：文件 / 粘贴 → 交给服务器解析 ─────────────────────
+   ⚠️ 刻意**不在前端解析** CSV 或 JSON。表头别名（page / average position /
+   搜索词）、日期格式、坏行判定在 rankdata 与 serpdata 里各只有一份，CLI 用的
+   就是那两份。前端再写一套，收场一定是「CLI 导得进、网页导不进」，而用户没法
+   判断哪套口径是对的。这里只搬运文本，解析结果由调用方负责转述。
+   send(text, format) 返回服务器响应；render(out, resp) 画成功侧的面。 */
+function rawImportCard(o) {
+  const file = el("input",{type:"file",
+    accept: o.accept || ".csv,.json,text/csv,application/json"});
+  const text = el("textarea",{rows:"6",
+    placeholder: o.placeholder || "",
+    style:"font:400 12px/1.6 var(--mono);resize:vertical"});
+  const fmt = o.allowFormat ? el("select",{},
+    el("option",{value:""},"自动判断（看内容开头）"),
+    el("option",{value:"csv"},"CSV（一行一条结果）"),
+    el("option",{value:"json"},"JSON（captures 形状）")) : null;
+  const btn = el("button",{class:"btn btn-primary"},"导入");
+  const out = el("div",{});
+
+  file.addEventListener("change", async () => {
+    const f = file.files && file.files[0];
+    if (!f) return;
+    text.value = await f.text();   // 读进来只是文本，一个字段都不解析
+    toast(`已读入 ${f.name}（${Math.max(1, Math.round(f.size/1024))} KB）`);
+  });
+
+  btn.addEventListener("click", async () => {
+    const t = text.value.trim();
+    if (!t) { toast("先选个文件，或把内容粘进来。", "err"); return; }
+    btn.disabled = true; out.textContent = ""; out.append(loading("解析并写入中…"));
+    try {
+      const resp = await o.send(t, fmt ? (fmt.value || null) : null);
+      out.textContent = "";
+      o.render(out, resp);
+    } catch (e) {
+      out.textContent = "";
+      out.append(errBox(e));
+      if (e.errors && e.errors.length) out.append(errLines(e.errors));
+    } finally { btn.disabled = false; }
+  });
+
+  const pick = el("div",{class:"fld"}, el("label",{},"选文件"), file,
+    el("div",{class:"hint"},"界面不解析：文本原样送服务器，与 CLI 共用同一份解析器。"));
+  if (fmt) pick.append(el("label",{style:"margin-top:10px"},"格式"), fmt);
+
+  return el("div",{class:"card"},
+    el("h2",{}, o.title),
+    el("p",{class:"page-sub"}, o.sub),
+    pick,
+    el("div",{class:"fld"}, el("label",{},"或直接粘贴内容"), text),
+    el("div",{class:"btn-row"}, btn),
+    out);
+}
+
+/* 逐行原因清单。坏行数得清是底线，但界面不该铺 5000 行：折叠时**必须说
+   总数**，只列前 50 条却不写「还有 N 条」，用户会以为问题就这 50 个。 */
+function errLines(items, cap) {
+  const n = cap || 50;
+  const kids = items.slice(0, n).map(x => el("div",{}, x));
+  if (items.length > n) kids.push(el("div",{}, `（另有 ${items.length - n} 条同类原因未列出）`));
+  return el("div",{class:"note warn"},
+    el("div",{style:"font-weight:600;margin-bottom:6px"}, `未入库的行（${items.length} 条）`),
+    el("div",{class:"mono",style:"font-size:11.5px"}, ...kids));
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -688,6 +782,95 @@ async function tabOverview(host, site) {
     ai.textContent = ""; ai.append(el("h2",{},"AI 总结"), el("div",{class:"note"},
       "AI 总结不可用（", e.message, "）。规则报告不受影响。"));
   }
+
+  /* 托管定时复扫：GET/PUT /schedule 早就在后端了，界面上却没有开关 ——
+     「托管」这个能力只能靠 curl 用。接上时顺带把「执行参数在提交这一刻
+     定格成快照」这条语义原样说给用户，否则他会以为改站点设置就能改到
+     已在跑的复扫上。 */
+  const sched = el("div",{class:"card"}, el("h2",{},"托管定时复扫"), loading());
+  host.append(sched);
+
+  async function loadSchedule() {
+    sched.textContent = "";
+    sched.append(el("h2",{},"托管定时复扫"));
+    let cur;
+    try { cur = await API.schedule(site.id); }
+    catch (e) { sched.append(errBox(e)); return; }
+    const p = cur.params || {};
+
+    const opts = [[3600,"每小时"],[10800,"每 3 小时"],[21600,"每 6 小时"],
+                  [43200,"每 12 小时"],[86400,"每天"],[259200,"每 3 天"],[604800,"每周"]];
+    if (cur.interval_s && !opts.some(o => o[0] === cur.interval_s))
+      opts.unshift([cur.interval_s, `每 ${cur.interval_s} 秒（现有设置）`]);
+    const interval = el("select",{}, ...opts.map(o => el("option",{value:String(o[0])},o[1])));
+    if (cur.interval_s) interval.value = String(cur.interval_s);
+    const surl = el("input",{value: p.url || `https://${site.domain}`,
+      placeholder:"复扫的入口网址"});
+    const spages = el("input",{type:"number",value:String(p.max_pages ?? 30),min:"1",max:"500"});
+    const sdepth = el("input",{type:"number",value:String(p.max_depth ?? 6),min:"0",max:"20"});
+    const smarket = el("select",{}, ...MARKETS.map(([v,l]) => el("option",{value:v},l)));
+    smarket.value = (p.markets && p.markets[0]) || (site.markets && site.markets[0]) || "base";
+    const srobots = el("input",{type:"checkbox"}); srobots.checked = p.respect_robots !== false;
+    const sjs = el("input",{type:"checkbox"}); sjs.checked = !!p.render_js;
+    const save = el("button",{class:"btn btn-primary"}, cur.enabled ? "更新托管" : "开启托管");
+    const off = el("button",{class:"btn"},"停用托管");
+    if (!cur.enabled) off.disabled = true;
+
+    async function putSchedule(body, okMsg) {
+      save.disabled = true; off.disabled = true;
+      try {
+        await API.setSchedule(site.id, body);
+        toast(okMsg);
+        await loadSchedule();   // 状态与「下次」时间以服务器返回为准，不自算
+      } catch (e) { toast(e.message,"err"); save.disabled = false; off.disabled = !cur.enabled; }
+    }
+
+    save.addEventListener("click", () => putSchedule({
+      interval_s: Number(interval.value),
+      url: surl.value.trim() || null,
+      max_pages: Number(spages.value) || 30,
+      max_depth: Number(sdepth.value),
+      markets: [smarket.value],
+      respect_robots: srobots.checked,
+      render_js: sjs.checked,
+    }, cur.enabled ? "已更新托管参数" : "已开启托管：第一次复扫立即安排"));
+    off.addEventListener("click", () => putSchedule({interval_s: null}, "已停用托管"));
+
+    sched.append(
+      el("p",{class:"page-sub"},
+        cur.enabled
+          ? el("span",{}, el("span",{class:"pill"},"已托管"),
+              `　每 ${Math.round(cur.interval_s/3600)} 小时复扫一次　· 下次 `,
+              el("span",{class:"mono"}, fmtTime(cur.next_scan_at)))
+          : el("span",{}, el("span",{class:"pill"},"未开启"),
+              "　开启后第一次复扫立即安排，之后按所选周期滚动。"),
+        // 到期→入队→执行由服务端进程里的调度循环做。进程没在跑（本地起一下
+        // 又关掉）就不会有复扫，这条边界写在界面上，不藏在文档里。
+        el("div",{class:"note",style:"margin-top:8px"},
+          "复扫由服务进程内的调度循环执行：进程停着的时间不会补跑。"
+          + "周期下限 1 小时不是技术限制——一次扫描本身要几分钟到几十分钟，"
+          + "更短只会让队列里永远耥着一条任务，也是对目标站的负载。"),
+        el("div",{class:"note",style:"margin-top:6px"},
+          "下面的执行参数在点「开启/更新」这一刻定格成快照：之后改站点设置不会影响已在跑的复扫。")),
+      el("div",{class:"fld-row",style:"margin-top:12px"},
+        el("div",{class:"fld"}, el("label",{},"复扫周期"), interval),
+        el("div",{class:"fld"}, el("label",{},"规则包"), smarket)),
+      el("div",{class:"fld"}, el("label",{},"入口网址"), surl),
+      el("div",{class:"grid g3"},
+        el("div",{class:"fld"}, el("label",{},"最大页数"), spages),
+        el("div",{class:"fld"}, el("label",{},"最大深度"), sdepth,
+          el("div",{class:"hint"},"0 = 只抓入口页")),
+        el("div",{class:"fld"}, el("label",{},"选项"),
+          el("div",{class:"btn-row",style:"margin:0"},
+            el("label",{class:"chk"}, srobots, "遵守 robots.txt"),
+            el("label",{class:"chk"}, sjs, "JS 渲染")))),
+      el("div",{class:"btn-row"}, save, off),
+      el("div",{class:"note",style:"margin-top:10px"},
+        "跑完的复扫会作为新任务出现在「趋势与历史 → 扫描历史」，并推动健康分趋势线。"));
+  }
+
+  await loadSchedule();
+
   if (!total) {
     host.append(el("div",{class:"note"},"本轮未发现问题。注意：报告只覆盖抓取到的页面，覆盖率不足时站点级结论会保持沉默。"));
   }
@@ -773,6 +956,37 @@ async function tabReport(host, site) {
       el("a",{class:"btn btn-primary", href: API.exportUrl(site.id,"md"), download:""},"Markdown"),
       el("a",{class:"btn", href: API.exportUrl(site.id,"html"), download:""},"HTML（单文件）"),
       el("a",{class:"btn", href: API.exportUrl(site.id,"json"), download:""},"JSON"))));
+
+  /* 整改工单（修复包）：报告回答「哪里不对」，工单回答「下周一改什么」——
+     每条问题给「改前 → 改后 + 怎么改」。CLI 的 --fixpack 早就有，界面上
+     却连入口都没有，等于把产品从「体检」跨到「执行」的那件交付物藏起来了。 */
+  const brand = el("input",{placeholder:"出具方名称，如「某某工作室」（选填）", maxlength:"80"});
+  const PACK_FMTS = [["md","Markdown 工单"],["json","JSON"],
+                     ["csv","CSV（一行一个处方）"],["diff","unified diff"]];
+  const packLinks = PACK_FMTS.map(([f,label]) =>
+    el("a",{class:"btn", href:"#"}, label));
+  function refreshPackLinks() {
+    const b = brand.value.trim();
+    packLinks.forEach((a, i) => { a.href = API.fixpackUrl(site.id, PACK_FMTS[i][0], b); });
+  }
+  brand.addEventListener("input", refreshPackLinks);
+  refreshPackLinks();
+
+  host.append(el("div",{class:"card"},
+    el("h2",{},"整改工单（修复包）"),
+    el("p",{class:"page-sub"},
+      "每条问题给「改前 → 改后」的可落地改法，按可信度分档；"
+      + "证据不足的一律标成「转人工」，不冒充成能直接抄的处方。"),
+    el("div",{class:"fld-row",style:"margin-top:10px"},
+      el("div",{class:"fld",style:"flex:1"}, el("label",{},"出具方名称"), brand,
+        el("div",{class:"hint"},"只写进 Markdown / JSON 的抬头；CSV 与 diff 没有这个字段。"))),
+    el("div",{class:"btn-row"}, ...packLinks),
+    el("div",{class:"note",style:"margin-top:12px"},
+      "工单是从库里重建的：库里不留图片清单，所以 img_alt 那类处方只有在 CLI 完整扫描时出得来。"
+      + "这条边界工单自己也写在「工单说明」里，不靠界面口头声明。"),
+    el("div",{class:"note",style:"margin-top:6px"},
+      "下载前不需要再生成一次扫描——内容对应当前库里的最新一轮结果；"
+      + "想让工单反映刚修完的站点，先重跑一次体检。")));
 
   if ((rep.issues||[]).length) {
     host.append(el("div",{class:"card"},
@@ -894,12 +1108,106 @@ async function tabBrief(host, site) {
 
   host.append(el("div",{class:"card"},
     el("h2",{},"内容 Brief"),
-    el("p",{class:"page-sub"},"从 SERP 快照 + 本站页面产出可执行的写作 Brief。缺 SERP 数据时会明说，不假装基于竞品全貌。"),
+    el("p",{class:"page-sub"},"从 SERP 快照 + 本站页面产出可执行的写作 Brief。缺 SERP 数据时会明说，不假装基于竞品全貌——竞品维度吃的是下面那张卡导入的快照。"),
     el("div",{class:"fld-row"},
       el("div",{class:"fld"}, el("label",{},"目标关键词"), kw),
       el("div",{class:"fld"}, el("label",{},"目标页面"), url)),
     el("div",{class:"btn-row"}, el("div",{class:"fld",style:"margin:0"}, el("label",{},"市场"), market), btn)));
   host.append(out);
+
+  /* SERP 快照的数据入口。Brief 的「Top10 标题共性 / 竞品用什么结构」全靠这份
+     数据，而它到今天只有 CLI 与 API 两条写入路径 —— 界面用户不知道这一层，
+     就只收到一句「竞品数据缺失」，却无从下手。静默装死比没做更坏。 */
+  host.append(rawImportCard({
+    title: "导入 SERP 快照（Brief 的竞品数据来源）",
+    sub: "SERP 监控导出、SERP API 导出或程序化上报都行。JSON 认 captures/results 形状；"
+       + "CSV 一行一条结果，keyword / url / position 三列必需（中英文别名都认）。"
+       + "幂等键是 (关键词, 抓取时刻, URL)：同一份重导是更新，不会堆出伪历史。",
+    allowFormat: true,
+    placeholder: "keyword,position,url,title,snippet\n"
+               + "防水登山鞋,1,https://rival.test/shoes,竞品标题,轻量防水",
+    send: (text, format) => API.importSerpRaw(site.id, text, format),
+    render: (o, r) => {
+      o.append(el("div",{class:"stats"},
+        el("div",{class:"stat"}, el("div",{class:"k"},"新建词"),
+          el("div",{class:"v"}, String(r.keywords_created))),
+        el("div",{class:"stat"}, el("div",{class:"k"},"复用词"),
+          el("div",{class:"v"}, String(r.keywords_existing))),
+        el("div",{class:"stat"}, el("div",{class:"k"},"新增结果"),
+          el("div",{class:"v"}, String(r.snapshots_inserted))),
+        el("div",{class:"stat"}, el("div",{class:"k"},"更新结果"),
+          el("div",{class:"v"}, String(r.snapshots_updated)))));
+      // ⚠️ 这个字段是**兜底时刻**，不是「这批的抓取时刻」：文件里写了时间的一组
+      // 以文件为准，没写的才按它落库。标签写错就是把 10-20 的数据说成 10-22。
+      o.append(el("div",{class:"kv"}, el("div",{class:"k"},"没写抓取时间的那几组按"),
+        el("div",{class:"v mono"}, (r.captured_at || "—") + " 落库")),
+        el("div",{class:"note"},
+          "文件里带了抓取时间的以文件为准；实际落库值看下面那张回读表。"));
+      if (r.skipped) o.append(el("div",{class:"note"},
+        `${r.skipped} 行缺 keyword / url / position，没入库（缺字段的位次不能猜）。`));
+      // warnings 不是错误，但必须说：CLI 有 stderr，界面与 API 没有别的嘴。
+      if ((r.warnings || []).length) o.append(el("div",{class:"note warn"},
+        el("div",{style:"font-weight:600;margin-bottom:6px"}, "入库了，但你得知道"),
+        ...r.warnings.map(w => el("div",{}, w))));
+      o.append(el("div",{class:"note"},
+        "下面重新生成一次 Brief，竞品维度就会用上这批数据；"
+        + "搜索量与曝光不在这份导出里，Brief 也就不会给你那些数字。"));
+    },
+  }));
+
+  // 回读：「导进来了没有」必须能被用户自己查证，而不是信一句 toast。
+  const readBack = el("div",{class:"card"},
+    el("h2",{},"库里现有的 SERP 快照"), loading());
+  const term = el("input",{placeholder:"填关键词=看该词最近一次抓取；留空=全站最近若干条"});
+  const sMarket = el("select",{},
+    el("option",{value:"google"},"Google"),
+    el("option",{value:"baidu"},"百度"),
+    el("option",{value:"base"},"通用"));
+  const sLimit = el("select",{},
+    ...[10, 25, 50, 100].map(n => el("option",{value:String(n)}, `最多 ${n} 条`)));
+  sLimit.value = "25";
+  const sBtn = el("button",{class:"btn"},"查询");
+
+  async function loadSerp() {
+    readBack.textContent = "";
+    readBack.append(el("h2",{},"库里现有的 SERP 快照"),
+      el("div",{class:"fld"}, el("label",{},"关键词"), term,
+        el("div",{class:"hint"},
+          "填了关键词才按市场筛：词库按 (站点, 市场, 词) 存 —— 导入时标 google 的词，"
+          + "切到 baidu 去查就是查不到，这不是数据丢了。")),
+      el("div",{class:"fld-row"},
+        el("div",{class:"fld"}, el("label",{},"市场"), sMarket),
+        el("div",{class:"fld"}, el("label",{},"条数"), sLimit)),
+      el("div",{class:"btn-row",style:"margin-bottom:12px"}, sBtn));
+    const q = new URLSearchParams();
+    if (term.value.trim()) { q.set("keyword", term.value.trim()); q.set("market", sMarket.value); }
+    q.set("limit", sLimit.value);
+    try {
+      const page = await API.serp(site.id, "?" + q.toString());
+      readBack.append(page.count ? el("table",{},
+        el("tr",{}, el("th",{},"关键词"), el("th",{},"市场"), el("th",{class:"num"},"位次"),
+          el("th",{},"URL"), el("th",{},"标题"), el("th",{},"抓取时刻")),
+        ...page.items.map(i => el("tr",{},
+          el("td",{}, i.keyword),
+          el("td",{}, el("span",{class:"pill"}, i.market)),
+          el("td",{class:"num"}, num(i.position)),
+          el("td",{class:"mono",style:"word-break:break-all"}, i.url),
+          el("td",{}, i.title || el("span",{class:"pill"},"无标题")),
+          el("td",{class:"mono"}, fmtTime(i.captured_at)))))
+        : emptyBox("库里还没有匹配的 SERP 快照",
+            "上面导入一份导出，或用 CLI：seoclaw serp-import 文件 --db <数据库> --site <域名>"));
+      if (page.count && page.captured_at) readBack.append(el("div",{class:"note",style:"margin-top:12px"},
+        `共 ${page.count} 条`,
+        term.value.trim() ? `　· 该词最近一次抓取：${page.captured_at}` : "　· 全站最近快照，位次来自导入文件原值"));
+    } catch (e) {
+      readBack.textContent = "";
+      readBack.append(el("h2",{},"库里现有的 SERP 快照"), errBox(e));
+    }
+  }
+  sBtn.addEventListener("click", loadSerp);
+  term.addEventListener("keydown", ev => { if (ev.key === "Enter") loadSerp(); });
+  host.append(readBack);
+  await loadSerp();
 }
 
 function renderBrief(b) {
@@ -938,6 +1246,65 @@ function renderBrief(b) {
 /* ── 排名监测 ───────────────────────────────────────── */
 async function tabRanks(host, site) {
   host.textContent = "";
+
+  /* 数据入口。告警只能对**已在库里**的数据说话——没有这一卡，
+     「排名监测」就是个只能看着的空壳（这条洞 2026-10-18 补了后端、
+     2026-10-22 补了 CLI，界面上仍然只有 CLI 用户能用）。 */
+  host.append(rawImportCard({
+    title: "导入日级排名（Search Console / 排名跟踪器导出）",
+    sub: "认得 GSC 风格表头：date / page / average position / clicks / impressions"
+       + "（中英文别名都认）。同一 (页面, 日期) 重复导入是当日回补，不会翻倍。",
+    placeholder: "date,page,average position,clicks,impressions\n"
+               + "2026-10-01,https://example.com/,5,120,3400",
+    send: (text) => API.importRankCsv(site.id, text),
+    render: (out, r) => {
+      out.append(el("div",{class:"stats"},
+        el("div",{class:"stat"}, el("div",{class:"k"},"写入/更新"),
+          el("div",{class:"v"}, String(r.upserted))),
+        el("div",{class:"stat"}, el("div",{class:"k"},"跳过的行"),
+          el("div",{class:"v"}, String(r.skipped || 0)))),
+        r.errors && r.errors.length ? errLines(r.errors) : el("div",{class:"note"},
+          "全部行都入库了。位次留空的行会记成「当天没有排名数据」，"
+          + "不是「排第 0 位」——这个区分是跌幅告警的前提。"));
+    },
+  }));
+
+  // 导入后必须能被用户自己查证：库里现在到底有什么。
+  const days = el("select",{},
+    ...[7, 30, 90].map(d => el("option",{value:String(d)}, `最近 ${d} 天`)));
+  days.value = "30";
+  const readBack = el("div",{class:"card"}, el("h2",{},"库里现有的排名"), loading());
+  async function loadRanks() {
+    readBack.textContent = "";
+    readBack.append(el("h2",{},"库里现有的排名"),
+      el("div",{class:"fld",style:"max-width:220px"}, el("label",{},"时间范围"), days));
+    try {
+      const page = await API.rankings(site.id, Number(days.value));
+      const nulls = (page.items || []).filter(i => i.position === null).length;
+      readBack.append(page.count ? el("table",{},
+        el("tr",{}, el("th",{},"日期"), el("th",{},"页面"), el("th",{class:"num"},"位次"),
+          el("th",{class:"num"},"点击"), el("th",{class:"num"},"曝光")),
+        ...page.items.slice(0, 80).map(i => el("tr",{},
+          el("td",{class:"mono"}, i.date),
+          el("td",{class:"mono",style:"word-break:break-all"}, i.url),
+          el("td",{class:"num"}, i.position === null
+            ? el("span",{class:"pill"},"无数据") : num(i.position)),
+          el("td",{class:"num"}, num(i.clicks)),
+          el("td",{class:"num"}, num(i.impressions)))))
+        : emptyBox("库里还没有排名数据",
+            "上面导入一份导出，或用 CLI：seoclaw rank-import 文件.csv --db <数据库> --site <域名>"));
+      readBack.append(el("div",{class:"note",style:"margin-top:12px"},
+        `共 ${page.count} 行（表格最多显示 80 行）`,
+        nulls ? `　· 其中 ${nulls} 行位次为空，按「当天没有排名数据」处理` : ""));
+    } catch (e) {
+      readBack.textContent = "";
+      readBack.append(el("h2",{},"库里现有的排名"), errBox(e));
+    }
+  }
+  days.addEventListener("change", loadRanks);
+  host.append(readBack);
+  await loadRanks();
+
   const window_days = el("input",{type:"number",value:"30",min:"2",max:"365"});
   const min_drop = el("input",{type:"number",value:"5",min:"0",step:"1"});
   const min_impressions = el("input",{type:"number",value:"10",min:"0"});

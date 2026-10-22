@@ -33,6 +33,7 @@ web 模块是在「505 passed」之后才写的，也就是说提交它的时候
 from __future__ import annotations
 
 import os
+import re
 import tempfile
 import time
 
@@ -197,6 +198,69 @@ def test_homepage_has_scan_form(client):
     # 断言了一个页面上根本不存在的字符串，红的是断言不是页面。
     for probe in ("btnAdd", "接入站点", "/api/v1/sites/", "开始体检"):
         assert probe in html, f"页面里找不到 {probe!r}"
+
+
+def _js_api_paths(html: str) -> set[str]:
+    """页面上 JS 写到的 /api/v1 路径（查询串去掉，模板段折成 {*} 通配位）。
+
+    ``{*}`` 不是真实路径段，只是「这里有个变量」的记号——匹配时按通配处理，
+    与路由里的 ``{site_id}`` 对齐；参数名两边本来就可能不同，比名字没意义，
+    要比的是段数和静态前缀。
+    """
+    out = set()
+    for lit in re.findall(r"/api/v1/[A-Za-z0-9_./${}?=&|-]*", html):
+        base = lit.split("?")[0].rstrip("/") or "/api/v1"
+        out.add(re.sub(r"\$\{[^}]*\}", "{*}", base))
+    return out
+
+
+def _route_paths() -> set[str]:
+    # ⚠️ 用 openapi()["paths"] 而不是 app.routes：API 路由是挂在子应用上的，
+    # 裸 app.routes 只会看到 '/'、'/static' 和几个 Mount，API 路径一条都不在，
+    # 于是这个核对会把 30 条全部判成「不存在」——红的是取数方式不是页面。
+    return {p for p in app.openapi()["paths"] if p.startswith("/api/v1")}
+
+
+def test_every_api_path_the_page_uses_is_a_real_route(client):
+    """界面里写到的每个 API 路径，后端都必须真的有这条路由。
+
+    为什么钉这条：界面和后端在两个文件里各写各的，历史上翻过的车是
+    「按钮在、点下去 404」以及「后端早就有 GET /schedule，界面上没接，
+    于是这个能力只有会 curl 的人用得到」。查中文字面量只能证明卡存在，
+    证明不了接线 —— 这条直接按路径核对，是更硬的那一侧。
+    """
+    html = client.get("/").text
+    routes = _route_paths()
+    offenders = []
+    for js_path in sorted(_js_api_paths(html)):
+        pattern = "^/" + "/".join(
+            r"[^/]+" if seg.startswith("{") else re.escape(seg)
+            for seg in js_path.lstrip("/").split("/")
+        ) + "$"
+        if not any(re.match(pattern, r) for r in routes):
+            offenders.append(js_path)
+    assert not offenders, (
+        f"页面引用了后端不存在的路径：{offenders}；后端现有路由：{sorted(routes)}"
+    )
+
+
+def test_homepage_wires_the_four_data_entries(client):
+    """排名导入 / SERP 导入 / 定时复扫 / 整改工单——四个能力都得在界面上有入口。
+
+    后端与 CLI 早就具备这四件事，界面缺入口就等于「功能存在但只有开发者
+    知道」。断言成对出现：既查**入口文案**（证明用户看得见），也查
+    **它实际调用的 API 路径**（证明不是画了个壳子）。
+    """
+    html = client.get("/").text
+    for probe, path in (
+        ("导入日级排名", "/api/v1/sites/${id}/rankings/import"),
+        ("导入 SERP 快照", "/api/v1/sites/${id}/serp/import"),
+        ("库里现有的 SERP 快照", "/api/v1/sites/${id}/serp"),
+        ("托管定时复扫", "/api/v1/sites/${id}/schedule"),
+        ("整改工单", "/api/v1/sites/${id}/fixpack"),
+    ):
+        assert probe in html, f"页面里找不到入口文案 {probe!r}"
+        assert path in html, f"{probe} 的入口在，但没调用 {path}"
 
 
 # --------------------------------------------------------------------------

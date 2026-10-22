@@ -244,3 +244,19 @@ def test_infer_domain_is_a_hint_not_a_decision():
         result_from_fields(url="https://demo.test/c", position=3),
     ])]
     assert infer_domain(caps) == "rival.test"
+
+
+def test_detect_format_is_the_only_place_format_is_judged():
+    """CLI 有文件名可问，界面只有文本 —— 判定必须只有一处，不是两套。
+
+    判错的收场很具体：把 JSON 喂给 CSV 解析器，它会指着 ``{"keyword": ...``
+    报「第 1 行缺列」，用户完全看不出是格式认错，而不是数据坏了。
+    """
+    from seoclaw.serpdata import detect_format
+
+    assert detect_format('{"captures": []}') == "json"
+    assert detect_format('  [{"keyword": "x"}]') == "json", "前导空白也要认得"
+    assert detect_format("keyword,url,position\nseo,https://a.test,1") == "csv"
+    assert detect_format("", "serp.json") == "json", "文本还空时按后缀判"
+    assert detect_format("keyword,url", "x.csv") == "csv"
+    assert detect_format("keyword,url", "") == "csv", "没文件名也没首字符 → 默认 CSV"

@@ -619,14 +619,16 @@ def cmd_rank_import(args: argparse.Namespace) -> int:
 def cmd_serp_import(args: argparse.Namespace) -> int:
     """导入 SERP 快照（Top10 / 竞品数据入口），喂给内容 Brief 的竞品维度。"""
     from .db.session import get_session_factory, session_scope
-    from .serpdata import ingest_captures, parse_serp_csv, parse_serp_json
+    from .serpdata import detect_format, ingest_captures, parse_serp_csv, parse_serp_json
 
     text = _read_input_file(args.file, "serp-import")
     if text is None:
         return 1
     name = "" if args.file == "-" else Path(args.file).suffix.lower()
 
-    fmt = args.format or ("json" if name == ".json" or text.lstrip()[:1] in ("[", "{") else "csv")
+    # 判定口径收在 serpdata.detect_format —— 界面没有后缀可问，两边各写一套
+    # 就会分叉（判错时 CSV 解析器会指着 JSON 第一行报「缺列」）。
+    fmt = args.format or detect_format(text, name)
     parsed = parse_serp_json(text) if fmt == "json" else parse_serp_csv(text)
     for err in parsed.errors:
         print(f"⚠️ {err}", file=sys.stderr)
