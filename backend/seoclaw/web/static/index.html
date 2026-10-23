@@ -183,6 +183,68 @@ pre{background:var(--bg-sunken);border:1px solid var(--line);border-radius:var(-
 code{font:400 12px/1.6 var(--mono);background:var(--bg-sunken);padding:1px 5px;border-radius:2px}
 .badge-count{font:500 11px/1.6 var(--mono);background:var(--bg-sunken);border:1px solid var(--line);
   border-radius:var(--r-ctl);padding:0 6px;color:var(--muted)}
+
+/* ── 质量与验证 ───────────────────────────────────────────
+   设计约束（沿用 DESIGN.md）：零阴影、圆角只用 2px/4px、
+   颜色永不单独表意（每个状态徽标都带文字）、数字用等宽体。
+   ────────────────────────────────────────────────────────── */
+/* 规则编号：像审计报告的条目号（R-001 那种感觉） */
+.rcode{font:500 12px/1.5 var(--mono);color:var(--fg);white-space:nowrap}
+/* 分布条里的分类名（严重级 / 规则名）：与 .rcode 分开。
+   ⚠️ 之前复用 .rcode，导致「规则编号」这个类名也套在严重级上——
+   语义混用后，样式与选择器都不能再说清「这条是编号还是分类」。 */
+.catname{font:500 12px/1.5 var(--mono);color:var(--fg-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 自检结果行：左侧状态条 + 等宽编号 + 说明 */
+.st-row{display:grid;grid-template-columns:16px 1fr;gap:10px;padding:9px 0;
+  border-bottom:1px solid var(--line);align-items:start}
+.st-row:last-child{border-bottom:0}
+/* 状态用「字符 + 颜色」双编码：颜色永不单独承载信息 */
+.st-mark{font:500 13px/1.5 var(--mono);text-align:center}
+.st-mark.ok{color:var(--ok)}
+.st-mark.no{color:var(--stamp)}
+.st-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.st-note{color:var(--fg-2);font-size:12.5px;margin-top:2px}
+.st-obs{font:400 11.5px/1.6 var(--mono);color:var(--muted);margin-top:3px;word-break:break-all}
+/* 规则条目（可展开看判据） */
+.rule-item{border-bottom:1px solid var(--line);padding:11px 0}
+.rule-item:last-child{border-bottom:0}
+.rule-head{display:flex;align-items:center;gap:9px;flex-wrap:wrap;cursor:pointer;
+  background:none;border:0;padding:0;width:100%;text-align:left;color:inherit}
+.rule-head:hover .rcode{color:var(--accent)}
+.rule-body{margin-top:9px;padding:12px 14px;background:var(--bg-sunken);
+  border:1px solid var(--line);border-radius:var(--r-ctl);font-size:13px}
+.rule-body dt{font:500 11px/1.6 var(--mono);letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);margin-top:10px}
+.rule-body dt:first-child{margin-top:0}
+.rule-body dd{margin:3px 0 0;white-space:pre-wrap;word-break:break-word}
+/* 分段控件：市场包切换 */
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:var(--r-ctl);overflow:hidden}
+.seg button{background:var(--surface);border:0;border-right:1px solid var(--line);
+  padding:7px 12px;cursor:pointer;font:500 12px/1.4 var(--mono);color:var(--fg-2);
+  min-height:34px;transition:background 120ms ease-out,color 120ms ease-out}
+.seg button:last-child{border-right:0}
+.seg button:hover{background:var(--bg-sunken);color:var(--fg)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--surface);font-weight:600}
+/* 准确率口径条：三档并列，最坏情况也在图上 */
+.prec{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden;background:var(--surface)}
+.prec>div{padding:14px 16px;border-right:1px solid var(--line)}
+.prec>div:last-child{border-right:0}
+.prec .k{font:500 11px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.prec .v{font:500 24px/1.2 var(--mono);margin-top:4px;font-variant-numeric:tabular-nums}
+.prec .x{font-size:11px;color:var(--muted);margin-top:2px}
+/* 误报分布条：横向条形，条内标数字 */
+.bar-row{display:grid;grid-template-columns:190px 1fr 56px;gap:10px;align-items:center;
+  padding:5px 0;font-size:12.5px}
+.bar-track{height:8px;background:var(--bg-sunken);border:1px solid var(--line);border-radius:2px;overflow:hidden}
+.bar-fill{height:100%;background:var(--stamp)}
+.bar-fill.ok{background:var(--ok)}
+.bar-num{font:500 12px/1.5 var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:720px){
+  .bar-row{grid-template-columns:1fr 56px}
+  .bar-row .bar-track{grid-column:1/-1}
+  .prec>div{border-right:0;border-bottom:1px solid var(--line)}
+}
 </style>
 </head>
 <body>
@@ -193,6 +255,7 @@ code{font:400 12px/1.6 var(--mono);background:var(--bg-sunken);padding:1px 5px;b
     <div class="side-scroll">
       <button class="nav-item" id="navDashboard" onclick="go('#/dashboard')">仪表盘</button>
       <button class="nav-item" id="navScan" onclick="go('#/scan')">一键体检</button>
+      <button class="nav-item" id="navQuality" onclick="go('#/quality')">质量与验证</button>
       <div class="side-h">站点</div>
       <div id="siteList"></div>
     </div>
@@ -305,6 +368,14 @@ const API = {
   checkVerification: (id, method) =>
                     API.post(`/api/v1/sites/${id}/verification/check?method=${method}`),
   health:     ()        => API.get("/api/v1/health"),
+  // —— 质量与验证（只读：规则目录 / 自检 / 准确率 / 回源台账）——
+  // ⚠️ 这组接口是「关于这个工具本身」的元信息，不碰任何站点数据。
+  // 自检那一路是**当场跑一遍规则引擎**，不是读一份静态数字。
+  qualityRules:    (m) => API.get("/api/v1/quality/rules" + (m ? `?markets=${encodeURIComponent(m)}` : "")),
+  qualitySelftest: (m) => API.get("/api/v1/quality/selftest" + (m ? `?markets=${encodeURIComponent(m)}` : "")),
+  qualityAccuracy: () => API.get("/api/v1/quality/accuracy"),
+  qualityLedger:   () => API.get("/api/v1/quality/ledger"),
+  qualityOverview: () => API.get("/api/v1/quality/overview"),
 };
 
 /* ══════════════════════════════════════════════════════════
@@ -326,6 +397,22 @@ const el = (tag, attrs={}, ...kids) => {
   return n;
 };
 const SEV = ["critical","high","medium","low","info"];
+/* 表格构造：**表头进 thead，数据行进 tbody**。
+   ⚠️ 为什么必须这么写：直接 el("table",{}, el("tr",...)) 时 tr 是挂在
+   table 下的——浏览器会容错渲染（页面看着正常），但那不符合 HTML 规范，
+   后果是 ① `tbody tr` 选择器选不到行 ② 表头与数据的样式作用域混在一起
+   ③ 无障碍语义（表头关联）失效。
+   ⚠️ 而且这层偏差是**看不出来的**：截图正常、测试全绿。我是在用 CDP
+   数 DOM 节点时发现仪表盘 `tbody` 数为 0 才查出来的 —— 页面看着好好的，
+   结构其实是错的。 */
+function table(head, rows) {
+  const t = el("table",{});
+  if (head) t.append(el("thead",{}, head));
+  const tb = el("tbody",{});
+  for (const r of rows) tb.append(r);
+  t.append(tb);
+  return t;
+}
 const SEV_LABEL = {critical:"严重",high:"高",medium:"中",low:"低",info:"提示"};
 const sevTag = s => el("span",{class:`sev sev-${s}`,title:SEV_LABEL[s]||s}, SEV_LABEL[s]||s);
 const STATUS_LABEL = {open:"待处理",acknowledged:"已知晓",fixed:"已修复",ignored:"已忽略",false_positive:"误报"};
@@ -362,6 +449,14 @@ function errBox(e, hint) {
   return el("div",{class:"err-box"}, el("div",{class:"t"},"请求失败"),
     el("div",{class:"d"}, e.message || String(e)),
     hint ? el("div",{class:"d",style:"margin-top:8px"},hint) : null);
+}
+/* 统计块：k=标签、v=数字、x=补充说明、color=数字颜色（可选）。
+   ⚠️ 数字颜色**永远配着文字**出现，不靠颜色单独表意。 */
+function stat(k, v, color, x) {
+  return el("div",{class:"stat"},
+    el("div",{class:"k"}, k),
+    el("div",{class:"v", style: color ? `color:${color}` : null}, v),
+    x ? el("div",{class:"x"}, x) : null);
 }
 
 /* ── 健康分量规：0–100 的尺，不是进度条（DESIGN.md 签名动作） ── */
@@ -512,6 +607,7 @@ function renderSide() {
   const r = parseRoute();
   $("#navDashboard").setAttribute("aria-current", String(r.head === "dashboard"));
   $("#navScan").setAttribute("aria-current", String(r.head === "scan"));
+  $("#navQuality").setAttribute("aria-current", String(r.head === "quality"));
   const host = $("#siteList");
   host.textContent = "";
   if (!S.sites.length) {
@@ -556,14 +652,14 @@ async function viewDashboard(host) {
         return { s, rep };
       } catch (e) { return { s, rep: null, err: e.message }; }
     }));
-    const table = el("table",{},
-      el("tr",{}, el("th",{},"站点"), el("th",{},"市场"),
+    const tableHead = el("tr",{}, el("th",{},"站点"), el("th",{},"市场"),
         el("th",{class:"num"},"健康分"), el("th",{class:"num"},"问题"),
-        el("th",{class:"num"},"覆盖页"), el("th",{},"")));
+        el("th",{class:"num"},"覆盖页"), el("th",{},""));
+    const tableRows = [];
     for (const { s, rep, err } of rows) {
       const counts = (rep && rep.counts) || {};
       const total = SEV.reduce((a,k)=>a+(counts[k]||0),0);
-      table.append(el("tr",{},
+      tableRows.push(el("tr",{},
         el("td",{}, el("a",{href:`#/site/${s.id}/overview`}, s.domain)),
         el("td",{class:"mono"}, (s.markets||[]).join(" · ")),
         el("td",{class:"num"}, rep && rep.health_score != null ? String(Math.round(rep.health_score)) : "—"),
@@ -571,7 +667,7 @@ async function viewDashboard(host) {
         el("td",{class:"num"}, rep ? String(rep.pages_crawled) : "—"),
         el("td",{}, el("button",{class:"btn btn-sm", onclick: () => go(`#/site/${s.id}/overview`)},"打开"))));
     }
-    body.append(el("div",{class:"card"}, el("h2",{},"站点总览"), table));
+    body.append(el("div",{class:"card"}, el("h2",{},"站点总览"), table(tableHead, tableRows)));
   } catch (e) {
     body.textContent = ""; body.append(errBox(e));
   }
@@ -675,7 +771,7 @@ function scanResult(accepted, st) {
         el("div",{class:"v"}, String(counts[k] || 0))))),
     (rep.issues||[]).length ? el("div",{},
       el("h3",{},"优先处理"),
-      el("table",{}, ...rep.issues.slice(0,5).map(i => el("tr",{},
+      table(null, rep.issues.slice(0,5).map(i => el("tr",{},
         el("td",{},sevTag(i.severity)),
         el("td",{class:"mono"},el("span",{class:"rule-id"},i.code)),
         el("td",{},i.title))))) : null);
@@ -912,10 +1008,10 @@ async function tabIssues(host, site) {
       }
       list.append(el("div",{class:"page-sub",style:"margin-bottom:10px"},
         `共 ${page.total} 条${page.has_next ? "（已显示前 200 条）" : ""}`));
-      list.append(el("table",{},
+      list.append(table(
         el("tr",{}, el("th",{},"严重级"), el("th",{},"规则"), el("th",{},"问题"),
           el("th",{},"页面 / 根因"), el("th",{},"状态"), el("th",{},"")),
-        ...page.items.map(it => el("tr",{},
+        page.items.map(it => el("tr",{},
           el("td",{}, sevTag(it.severity)),
           el("td",{}, el("span",{class:"rule-id"}, it.code)),
           el("td",{}, it.title, it.occurrences > 1
@@ -937,8 +1033,7 @@ async function tabIssues(host, site) {
                   await API.bulkIssue(site.id, it.fingerprint, "acknowledged");
                   toast("同根因问题已批量标记为已知晓"); load();
                 }},"同根因·已知晓") : null))))));
-    } catch (e) { list.textContent = ""; list.append(errBox(e)); }
-  }
+    } catch (e) { list.textContent = ""; list.append(errBox(e)); }  }
   sevSel.addEventListener("change", () => { S.q.severity = sevSel.value; load(); });
   stSel.addEventListener("change", () => { S.q.status = stSel.value; load(); });
   host.append(el("div",{class:"btn-row",style:"margin-bottom:14px"}, sevSel, stSel),
@@ -1003,9 +1098,9 @@ async function tabReport(host, site) {
   if ((rep.issues||[]).length) {
     host.append(el("div",{class:"card"},
       el("h2",{},"问题清单（按根因折叠的完整版见 CLI 报告）"),
-      el("table",{},
+      table(
         el("tr",{}, el("th",{},"严重级"), el("th",{},"规则"), el("th",{},"问题"), el("th",{},"状态")),
-        ...rep.issues.map(i => el("tr",{},
+        rep.issues.map(i => el("tr",{},
           el("td",{}, sevTag(i.severity)),
           el("td",{}, el("span",{class:"rule-id"}, i.code)),
           el("td",{}, i.title),
@@ -1022,10 +1117,10 @@ async function tabTrend(host, site) {
   const jobs = await API.jobs(site.id);
   host.append(el("div",{class:"card"},
     el("h2",{},"扫描历史"),
-    jobs.length ? el("table",{},
+    jobs.length ? table(
       el("tr",{}, el("th",{},"#"), el("th",{},"状态"), el("th",{class:"num"},"覆盖页"),
         el("th",{class:"num"},"健康分"), el("th",{},"开始"), el("th",{},"结束")),
-      ...jobs.map(j => el("tr",{},
+      jobs.map(j => el("tr",{},
         el("td",{class:"mono"}, String(j.id)),
         el("td",{}, el("span",{class:"pill"}, j.status),
           j.error ? el("div",{style:"color:var(--stamp);font-size:11px;margin-top:3px"}, j.error) : null),
@@ -1064,9 +1159,9 @@ async function tabKeywords(host, site) {
       for (const [cid, items] of byCluster) {
         list.append(el("div",{class:"card"},
           el("h3",{}, cid === "—" ? "未归簇" : `簇 #${cid}`),
-          el("table",{},
+          table(
             el("tr",{}, el("th",{},"词"), el("th",{},"意图"), el("th",{class:"num"},"得分"), el("th",{},"来源")),
-            ...items.map(k => el("tr",{},
+            items.map(k => el("tr",{},
               el("td",{}, k.term),
               el("td",{}, k.intent || "—"),
               el("td",{class:"num"}, num(k.score)),
@@ -1196,10 +1291,10 @@ async function tabBrief(host, site) {
     q.set("limit", sLimit.value);
     try {
       const page = await API.serp(site.id, "?" + q.toString());
-      readBack.append(page.count ? el("table",{},
+      readBack.append(page.count ? table(
         el("tr",{}, el("th",{},"关键词"), el("th",{},"市场"), el("th",{class:"num"},"位次"),
           el("th",{},"URL"), el("th",{},"标题"), el("th",{},"抓取时刻")),
-        ...page.items.map(i => el("tr",{},
+        page.items.map(i => el("tr",{},
           el("td",{}, i.keyword),
           el("td",{}, el("span",{class:"pill"}, i.market)),
           el("td",{class:"num"}, num(i.position)),
@@ -1293,10 +1388,10 @@ async function tabRanks(host, site) {
     try {
       const page = await API.rankings(site.id, Number(days.value));
       const nulls = (page.items || []).filter(i => i.position === null).length;
-      readBack.append(page.count ? el("table",{},
+      readBack.append(page.count ? table(
         el("tr",{}, el("th",{},"日期"), el("th",{},"页面"), el("th",{class:"num"},"位次"),
           el("th",{class:"num"},"点击"), el("th",{class:"num"},"曝光")),
-        ...page.items.slice(0, 80).map(i => el("tr",{},
+        page.items.slice(0, 80).map(i => el("tr",{},
           el("td",{class:"mono"}, i.date),
           el("td",{class:"mono",style:"word-break:break-all"}, i.url),
           el("td",{class:"num"}, i.position === null
@@ -1339,10 +1434,10 @@ async function tabRanks(host, site) {
           "阈值是「多吵才算吵」的取舍：调低 min_drop / min_impressions 会更敏感。"));
         return;
       }
-      out.append(el("table",{},
+      out.append(table(
         el("tr",{}, el("th",{},"结论"), el("th",{class:"num"},"跌幅"),
           el("th",{},"页面"), el("th",{},"")),
-        ...alerts.map(a => el("tr",{},
+        alerts.map(a => el("tr",{},
           el("td",{}, a.message),
           el("td",{class:"num"}, `-${a.drop}`),
           el("td",{class:"mono",style:"word-break:break-all"}, a.url),
@@ -1405,6 +1500,308 @@ async function tabVerify(host, site) {
 }
 
 /* ══════════════════════════════════════════════════════════
+   质量与验证：把后端的验证能力搬到界面上
+   ══════════════════════════════════════════════════════════
+   ⚠️ 这一页的价值主张：**当场证明**，不是**口头声明**。
+
+   项目里最有说服力的资产是验证记录——39 条规则、黄金样本回归、
+   107 站实跑准确率、18 条规则的回源核对台账。这些原本全躺在
+   docs/ 与 tests/ 里，界面上一个都看不到，演示时只能说「我们很准」，
+   用户只能选择信或不信。
+
+   这里把它变成可交互的：
+   - 「当场自检」按钮真的调接口跑一遍规则引擎，逐条列出通过与否
+   - 规则目录从注册表实况导出，展开看判据与修复建议
+   - 准确率给三档口径（最坏情况也摆在明面上）
+   - 台账展示每条规则核了多少条、误报多少
+
+   设计纪律：拿不到数据就说「没有」，不显示 0。颜色不单独表意。
+   ══════════════════════════════════════════════════════════ */
+
+const Q = { tab: "selftest", market: "" };
+
+const MARKET_OPTIONS = [
+  { v: "",              label: "全部" },
+  { v: "base",         label: "base 通用" },
+  { v: "google",       label: "google" },
+  { v: "baidu",        label: "baidu" },
+  { v: "cnh_eco",      label: "cnh_eco" },
+];
+
+function qSeg(onPick) {
+  return el("div",{class:"seg",role:"group","aria-label":"市场包"},
+    MARKET_OPTIONS.map(m => el("button",{
+      "aria-pressed": String(Q.market === m.v),
+      onclick: () => { Q.market = m.v; onPick(); },
+    }, m.label)));
+}
+
+/* 自检结果行：✓/✗ 双编码（字符 + 颜色），不靠颜色单独表意 */
+function stRow(c) {
+  return el("div",{class:"st-row"},
+    el("div",{class:"st-mark " + (c.passed ? "ok" : "no")}, c.passed ? "✓" : "✗"),
+    el("div",{},
+      el("div",{class:"st-title"},
+        el("span",{class:"rcode"}, c.code),
+        el("span",{class:"pill"}, c.expect === "fires" ? "应触发" : "应沉默"),
+        c.markets && c.markets.length
+          ? el("span",{class:"badge-count"}, c.markets.join("/")) : null),
+      el("div",{class:"st-note"}, c.note),
+      el("div",{class:"st-obs"},"实际检出：" + (c.observed_codes.length ? c.observed_codes.join("、") : "（无）"))));
+}
+
+/* 规则条目：点击展开看判据、修复建议、示例代码 */
+function ruleItem(r) {
+  const body = el("div",{class:"rule-body", style:"display:none"});
+  const dl = el("dl",{style:"margin:0"});
+  dl.append(el("dt",{},"判据说明"), el("dd",{}, r.description || "（该规则未提供说明）"));
+  dl.append(el("dt",{},"怎么改"), el("dd",{}, r.fix_hint || "（该规则未提供修复建议）"));
+  if (r.fix_example) dl.append(el("dt",{},"示例"), el("dd",{}, el("pre",{style:"margin-top:2px"}, r.fix_example)));
+  if (r.uses_site_facts) dl.append(el("dt",{},"依赖站点事实"),
+    el("dd",{},"是 —— 这条规则需要爬虫探到的事实（sitemap / robots 等）才敢下结论。"));
+  body.append(dl);
+
+  const head = el("button",{class:"rule-head","aria-expanded":"false"}, 
+    el("span",{class:"rcode"}, r.code),
+    sevTag(r.severity),
+    el("span",{class:"pill"}, r.scope === "site" ? "站点级" : "页面级"),
+    el("span",{class:"pill"}, r.market),
+    el("span",{style:"flex:1"}),
+    el("span",{style:"color:var(--muted);font-size:12px"}, r.title));
+  head.addEventListener("click", () => {
+    const open = body.style.display === "none";
+    body.style.display = open ? "block" : "none";
+    head.setAttribute("aria-expanded", String(open));
+  });
+  return el("div",{class:"rule-item"}, head, body);
+}
+
+/* 误报分布：横向条 + 数字（条长按最大值归一） */
+function fpBars(dist, okColor) {
+  const entries = Object.entries(dist || {});
+  if (!entries.length) return el("div",{class:"st-note"},"（无记录）");
+  const max = Math.max(...entries.map(e => e[1]), 1);
+  return el("div",{}, entries.sort((a,b) => b[1]-a[1]).map(([code, n]) =>
+    el("div",{class:"bar-row"},
+      el("span",{class:"catname"}, code),
+      el("div",{class:"bar-track"},
+        el("div",{class:"bar-fill" + (okColor ? " ok" : ""),
+          style:`width:${Math.round(n / max * 100)}%`})),
+      el("span",{class:"bar-num"}, String(n)))));
+}
+
+async function viewQuality(host) {
+  host.textContent = "";
+  host.append(el("div",{class:"head"}, el("div",{},
+    el("div",{class:"eyebrow"},"Quality & Verification"),
+    el("h1",{class:"page-title"},"质量与验证"),
+    el("p",{class:"page-sub"},
+      "这一页不讲「我们很准」，而是让你当场验：跑一遍规则引擎、看每条规则的判据、看回源核对的台账。"))));
+
+  const tabs = el("div",{class:"tabs", role:"tablist"});
+  const body = el("div",{});
+  const TABS = [
+    ["selftest", "自检"], ["rules", "规则目录"],
+    ["accuracy", "准确率"], ["ledger", "回源台账"],
+  ];
+  const draw = async () => {
+    body.textContent = "";
+    if (Q.tab === "selftest")  await drawSelftest(body);
+    else if (Q.tab === "rules")    await drawRules(body);
+    else if (Q.tab === "accuracy") await drawAccuracy(body);
+    else await drawLedger(body);
+  };
+  for (const [k, label] of TABS) {
+    tabs.append(el("button",{
+      class:"tab", role:"tab", "aria-selected": String(Q.tab === k),
+      onclick: () => { Q.tab = k; renderQualityTabs(); draw(); },
+    }, label));
+  }
+  function renderQualityTabs() {
+    [...tabs.children].forEach((b, i) => {
+      b.setAttribute("aria-selected", String(TABS[i][0] === Q.tab));
+    });
+  }
+  host.append(tabs, body);
+  await draw();
+}
+
+/* ── 自检：当场跑一遍规则引擎 ── */
+async function drawSelftest(host) {
+  const card = el("div",{class:"card"},
+    el("h2",{},"黄金样本自检"),
+    el("div",{class:"note"},
+      "点「运行自检」会真的调后端跑一遍规则引擎：把构造的 HTML 喂给每条规则，"
+      + "核对「该触发的触发了、该沉默的沉默了」。不是读一份静态数字。"),
+    el("div",{class:"btn-row",style:"margin-top:12px"},
+      el("button",{class:"btn btn-primary", id:"btnRunSelf",
+        onclick: () => runSelf()},"运行自检"),
+      qSeg(() => runSelf())),
+    el("div",{id:"selfOut",style:"margin-top:14px"}));
+  host.append(card);
+
+  async function runSelf() {
+    const out = $("#selfOut");
+    out.textContent = "";
+    out.append(loading("正在跑规则引擎…"));
+    const btn = $("#btnRunSelf");
+    if (btn) { btn.disabled = true; btn.textContent = "运行中…"; }
+    try {
+      const r = await API.qualitySelftest(Q.market);
+      out.textContent = "";
+      const s = r.summary;
+      out.append(el("div",{class:"stats"},
+        stat("总用例", String(s.total)),
+        stat("通过", String(s.passed), s.failed ? "var(--stamp)" : "var(--ok)"),
+        stat("失败", String(s.failed)),
+        stat("覆盖规则", `${s.rules_covered} / ${s.rules_registered}`),
+        stat("结论", s.all_passed ? "全绿" : "有失败", s.all_passed ? "var(--ok)" : "var(--stamp)")));
+      if (!s.all_passed) {
+        out.append(el("div",{class:"note warn",style:"margin-top:12px"},
+          "有用例没通过。下面标 ✗ 的就是——判据与预期不符，需要有人确认到底是规则变了还是预期变了。"));
+      }
+      out.append(el("h3",{},"逐条结果"));
+      const list = el("div",{});
+      for (const c of r.cases) list.append(stRow(c));
+      out.append(list);
+    } catch (e) {
+      out.textContent = ""; out.append(errBox(e));
+    } finally {
+      const b = $("#btnRunSelf");
+      if (b) { b.disabled = false; b.textContent = "运行自检"; }
+    }
+  }
+  // 进页面就跑一次：空着等用户点，演示时反而不像个成品
+  await runSelf();
+}
+
+/* ── 规则目录 ── */
+async function drawRules(host) {
+  const card = el("div",{class:"card"},
+    el("h2",{},"规则目录"),
+    el("div",{class:"note"},
+      "这份目录从后端的规则注册表现况导出，不是手抄的清单——加规则、删规则、改严重级，这里自动跟着变。"),
+    el("div",{class:"btn-row",style:"margin-top:12px"}, qSeg(() => loadRules())));
+  const list = el("div",{id:"ruleList",style:"margin-top:14px"});
+  card.append(list);
+  host.append(card);
+
+  async function loadRules() {
+    list.textContent = "";
+    list.append(loading());
+    try {
+      const r = await API.qualityRules(Q.market);
+      list.textContent = "";
+      list.append(el("div",{class:"stats"},
+        stat("规则总数", String(r.count)),
+        ...Object.entries(r.by_severity).map(([k,v]) =>
+          stat(SEV_LABEL[k] || k, String(v)))));
+      list.append(el("h3",{},"按严重级分布"));
+      list.append(fpBars(r.by_severity, true));
+      list.append(el("h3",{},"逐条规则（点击展开判据与改法）"));
+      for (const rule of r.rules) list.append(ruleItem(rule));
+    } catch (e) {
+      list.textContent = ""; list.append(errBox(e));
+    }
+  }
+  await loadRules();
+}
+
+/* ── 准确率校准 ── */
+async function drawAccuracy(host) {
+  const card = el("div",{class:"card"}, el("h2",{},"准确率校准"), loading());
+  host.append(card);
+  try {
+    const r = await API.qualityAccuracy();
+    card.textContent = "";
+    card.append(el("h2",{}, "准确率校准"));
+    if (!r.available) {
+      card.append(el("div",{class:"note warn"}, r.reason));
+      return;
+    }
+    const rc = r.recheck;
+    const pct = v => (v === null || v === undefined) ? "—" : (v * 100).toFixed(1) + "%";
+    card.append(el("div",{class:"note"},
+      "回源核对的口径：每条被报出的问题都回原站逐条查证，"
+      + "分「属实 / 误报 / 存疑」三档。存疑的是**判不了的**"
+      + "（页面变了、跳去别的域），既不算对也不算错。"),
+      el("div",{class:"note",style:"margin-top:8px"},
+        "⚠️ 下面三个数字是同一批数据的三个口径。**最坏情况那个也要看**——"
+        + "把全部存疑都算成误报时的准确率，那才是下限。"));
+    card.append(el("div",{class:"prec",style:"margin-top:14px"},
+      el("div",{}, el("div",{class:"k"},"可判定样本"), el("div",{class:"v"}, String(rc.adjudicable)),
+        el("div",{class:"x"},"已回源查证、结论明确的")),
+      el("div",{}, el("div",{class:"k"},"准确率（可判定）"), el("div",{class:"v"}, pct(rc.precision_on_adjudicable)),
+        el("div",{class:"x"},"主口径")),
+      el("div",{}, el("div",{class:"k"},"下限（存疑全算错）"), el("div",{class:"v"}, pct(rc.precision_if_inconclusive_all_false)),
+        el("div",{class:"x"},"最坏情况")),
+      el("div",{}, el("div",{class:"k"},"上限（存疑全算对）"), el("div",{class:"v"}, pct(rc.precision_if_inconclusive_all_true)),
+        el("div",{class:"x"},"最好情况"))));
+    card.append(el("h3",{},"三档计数"));
+    card.append(el("div",{class:"kv"}, el("div",{class:"k"},"属实"), el("div",{class:"v"}, String(rc.true_positive))),
+      el("div",{class:"kv"}, el("div",{class:"k"},"误报"), el("div",{class:"v"}, String(rc.false_positive))),
+      el("div",{class:"kv"}, el("div",{class:"k"},"存疑"), el("div",{class:"v"}, String(rc.inconclusive))));
+    card.append(el("h3",{},"误报分布（哪条规则在误报）"));
+    card.append(fpBars(rc.false_positive_by_code, false));
+    card.append(el("h3",{},"存疑分布（哪条规则判不了）"));
+    card.append(fpBars(rc.inconclusive_by_code, true));
+
+    if (r.batch) {
+      const b = r.batch;
+      card.append(el("h3",{},"初跑批次"));
+      card.append(el("div",{class:"kv"}, el("div",{class:"k"},"站点数"), el("div",{class:"v"}, `${b.sites_ok} / ${b.sites_total}`)),
+        el("div",{class:"kv"}, el("div",{class:"k"},"抓取页数"), el("div",{class:"v"}, String(b.pages_crawled))),
+        el("div",{class:"kv"}, el("div",{class:"k"},"报出问题"), el("div",{class:"v"}, String(b.issues_reported))),
+        el("div",{class:"kv"}, el("div",{class:"k"},"自动判定"), el("div",{class:"v"}, String(b.auto_checked))),
+        el("div",{class:"kv"}, el("div",{class:"k"},"该批准确率"), el("div",{class:"v"}, pct(b.precision))));
+    }
+  } catch (e) {
+    card.textContent = ""; card.append(errBox(e));
+  }
+}
+
+/* ── 回源台账 ── */
+async function drawLedger(host) {
+  const card = el("div",{class:"card"}, el("h2",{},"回源核对台账"), loading());
+  host.append(card);
+  try {
+    const r = await API.qualityLedger();
+    card.textContent = "";
+    card.append(el("h2",{},"回源核对台账"));
+    if (!r.available) {
+      card.append(el("div",{class:"note warn"}, r.reason));
+      return;
+    }
+    const s = r.summary;
+    card.append(el("div",{class:"note"},
+      "每条规则都抽样回原站逐条查证：工具说有问题，页面里到底有没有。"
+      + "这是**回源核对**，不是「用工具验工具」——所以结论才立得住。"));
+    card.append(el("div",{class:"stats",style:"margin-top:14px"},
+      stat("核对规则", String(s.rules)),
+      stat("核对条数", String(s.checked)),
+      stat("属实", String(s.true_positive)),
+      stat("误报", String(s.false_positive), s.false_positive ? "var(--stamp)" : "var(--ok)"),
+      stat("误报率", s.false_positive_rate === null ? "—"
+        : (s.false_positive_rate * 100).toFixed(1) + "%")));
+    card.append(el("h3",{},"逐条明细"));
+    card.append(table(
+      el("tr",{},
+        el("th",{},"规则"), el("th",{class:"num"},"核对"), el("th",{class:"num"},"属实"),
+        el("th",{class:"num"},"误报"), el("th",{class:"num"},"存疑"), el("th",{},"备注")),
+      r.rows.map(row =>
+        el("tr",{},
+          el("td",{}, el("span",{class:"rcode"}, row.rule)),
+          el("td",{class:"num"}, String(row.checked ?? "—")),
+          el("td",{class:"num"}, String(row.true_positive ?? "—")),
+          el("td",{class:"num"}, String(row.false_positive ?? "—")),
+          el("td",{class:"num"}, String(row.inconclusive ?? "—")),
+          el("td",{style:"color:var(--fg-2);font-size:12.5px"}, row.note || "")))));
+  } catch (e) {
+    card.textContent = ""; card.append(errBox(e));
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
    设置：钥匙 / 配额 / 系统状态
    ══════════════════════════════════════════════════════════ */
 async function viewSettings(host) {
@@ -1456,19 +1853,22 @@ async function viewSettings(host) {
           el("button",{class:"btn btn-primary", onclick: mint},"+ 签发新钥匙")));
         return;
       }
-      keysBox.append(el("table",{},
+      keysBox.append(table(
         el("tr",{}, el("th",{},"名称"), el("th",{},"前缀"), el("th",{},"创建"),
           el("th",{},"最后使用"), el("th",{},"状态"), el("th",{},"")),
-        ...ks.map(k => el("tr",{},
+        ks.map(k => el("tr",{},
           el("td",{}, k.name), el("td",{class:"mono"}, k.key_prefix),
           el("td",{class:"mono"}, fmtTime(k.created_at)),
           el("td",{class:"mono"}, k.last_used_at ? fmtTime(k.last_used_at) : "从未"),
           el("td",{}, el("span",{class:"pill"}, k.revoked ? "已撤销" : "有效")),
           el("td",{}, k.revoked ? null : el("button",{class:"btn btn-sm btn-danger", onclick: async () => {
             await API.revokeKey(k.id); toast("已撤销"); loadKeys();
-          }},"撤销"))))),
-        el("div",{style:"margin-top:12px"},
-          el("button",{class:"btn btn-primary", onclick: mint},"+ 签发新钥匙")));
+          }},"撤销"))))));
+      // ⚠️ 按钮在**表格外面**（原来的代码把它塞在 el("table", ...) 的
+      // 子节点里——那不是合法的表格结构，浏览器会把 div 挪到 table 后面，
+      // 看着还行，但 DOM 语义是错的）。
+      keysBox.append(el("div",{style:"margin-top:12px"},
+        el("button",{class:"btn btn-primary", onclick: mint},"+ 签发新钥匙")));
     } catch (e) { keysBox.textContent = ""; keysBox.append(el("h2",{},"已签发的钥匙"), errBox(e)); }
   }
   async function mint() {
@@ -1589,6 +1989,7 @@ async function render() {
   const host = $("#main");
   host.textContent = "";
   if (r.head === "scan")          viewScanForm(host);
+  else if (r.head === "quality")   await viewQuality(host);
   else if (r.head === "site" && r.id) await viewSite(host, r.id, r.tab);
   else if (r.head === "settings") viewSettings(host);
   else await viewDashboard(host);

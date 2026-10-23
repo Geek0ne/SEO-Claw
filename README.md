@@ -5,7 +5,7 @@
 **基于正面证据的站点 SEO 审计工具 —— 宁可漏报，不报假问题**
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-737%20✓-2EA44F?logo=pytest&logoColor=white)](#-开发与测试)
+[![Tests](https://img.shields.io/badge/tests-758%20✓-2EA44F?logo=pytest&logoColor=white)](#-开发与测试)
 [![Coverage](https://img.shields.io/badge/coverage-80.0%25-2EA44F)](#-开发与测试)
 [![License](https://img.shields.io/badge/license-MIT-FF9900)](#-license)
 [![Code style](https://img.shields.io/badge/style-audit%20grade-black)](./DESIGN.md)
@@ -90,6 +90,10 @@
 - 📒 `docs/verification-ledger.md` —— 验证台账
 - 🔧 `tools/verify_*.py` —— 回源核对器，可自行复跑
 - 🗂️ `reports/` —— 核对轮次的 JSON 证据
+- 🖥️ **Web 界面「质量与验证」页** —— 上面四样不用翻仓库，页面上直接看：
+  规则目录（逐条展开判据与改法）、**当场运行自检**（真调后端跑一遍规则引擎，
+  逐条列「该触发的触发了、该沉默的沉默了」）、准确率校准（三档口径，最坏情况
+  也摆在明面上）、回源台账（每条规则核了多少、误报多少）
 
 > **⚠️ 诚实边界**：抽样回源只能覆盖报得最多的规则；未逐条核验的部分不宣称具体准确率数字。实验性 `geo` 包（AI 搜索引用性）证据强度弱于 base，默认不加载。
 
@@ -249,7 +253,8 @@ uvicorn seoclaw.main:app --port 8000
 - 📥 **数据接入**：日级排名与 SERP 快照都能在界面里上传（选文件或粘贴原始导出），解析口径与 CLI 共用同一份；导入后当场回读核对
 - ⏱ **定时托管复扫**：概览页开关，执行参数在提交那一刻定格成快照
 - 🔑 **多租户**：API Key（只存哈希）、额度、站点归属验证
-- 🔌 **REST API**：30 个路径、38 个操作（按 OpenAPI 实数）+ **MCP Server**（3 个只读工具）
+- 🔌 **REST API**：35 个路径、43 个操作（按 OpenAPI 实数）+ **MCP Server**（3 个只读工具）
+- 🔍 **质量与验证**：规则目录、黄金样本自检（当场跑一遍规则引擎）、准确率校准报告、回源核对台账
 
 <a id="-爬虫礼仪与性能边界"></a>
 ## 🤝 爬虫礼仪与性能边界
@@ -307,7 +312,7 @@ backend/seoclaw/
 └── 🧰 mcp_server.py    MCP Server（3 个只读工具）
 ```
 
-**约 18,000 行实现代码 · 约 11,400 行测试代码 · 737 个测试（实跑全绿；行数按 `backend/seoclaw` 与 `backend/tests` 下的 `.py` 统计）。**
+**约 19,200 行实现代码 · 约 12,100 行测试代码 · 758 个测试（实跑全绿；行数按 `backend/seoclaw` 与 `backend/tests` 下的 `.py` 统计）。**
 
 ### 🗄️ 数据库
 
@@ -331,7 +336,7 @@ pip install -e ".[api,dev]"
 pytest backend/tests -q
 ```
 
-- ✅ **737 个测试**：本机全绿；未安装可选依赖 `mcp` 时其中 3 条（`test_mcp_server.py`）跳过
+- ✅ **758 个测试**：本机全绿；未安装可选依赖 `mcp` 时其中 3 条（`test_mcp_server.py`）跳过
 - 📊 覆盖率 80.0%（本机 `pytest --cov` 实测，CI 门禁 78%，余量 2.0 个点）。同一份
   代码连跑会在 79.99%–80.03% 之间微漂，漂的是 `db/session.py` 里的 `create_all`
   那一行：测试用例共用一个引擎单例与同一个 sqlite 文件，个别跑法下它会以

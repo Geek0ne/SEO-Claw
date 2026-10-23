@@ -18,7 +18,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .api import router
+from .api import quality_router, router
 from .db.session import create_all, dispose_engine
 from .log import configure
 from .web import router as web_router
@@ -91,6 +91,9 @@ def create_app() -> FastAPI:
     # 不会报错、只会放行 —— 那是最坏的失败方式。
     app.middleware("http")(auth_middleware)
     app.include_router(router)
+    # 质量与验证路由（只读元信息）：规则目录 / 黄金样本自检 / 准确率校准 /
+    # 回源台账。挂在同一个 /api/v1 前缀下——界面上所有路径同源。
+    app.include_router(quality_router)
     app.include_router(web_router)
 
     # 页面与静态资源放在包内，随 wheel 一起装走。

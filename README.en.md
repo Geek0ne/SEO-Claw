@@ -84,10 +84,13 @@ Markets are additive (`base` always included): `--market google`, `--market baid
 uvicorn seoclaw.main:app --port 8000
 ```
 
-Browser UI with background scans and progress polling, a 36-operation REST API
+Browser UI with background scans and progress polling, a 43-operation REST API
 (sites, jobs, issues, keywords, daily rank imports, SERP snapshot imports,
 content briefs, rank alerts, usage quota, API
 keys, ownership verification) and an MCP server exposing 3 read-only tools.
+It also exposes a quality-and-verification surface: the live rule catalog,
+a golden-sample self-check that runs the rule engine on demand, the accuracy
+calibration report, and the source-verification ledger.
 
 Before going public, read `DEPLOY.md` and run the guard smoke test:
 
@@ -108,7 +111,7 @@ rather than raise the default to hit a prettier number; the early
 ## Development
 
 ```bash
-pytest backend/tests -q    # 737 tests (3 skipped without optional mcp)
+pytest backend/tests -q    # 758 tests (3 skipped without optional mcp)
 ```
 
 Design rules the codebase enforces (see README.md for details): positive-evidence

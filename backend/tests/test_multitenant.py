@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import sqlite3
 
 import pytest
@@ -37,33 +38,43 @@ def _db_path() -> str:
     return str(get_engine().url.database)
 
 
-def _seed_keys(rows: list[tuple[str, str]]) -> None:
-    """直接往库里塞钥匙。
+def _seed_keys(client, rows: list[tuple[str, str]]) -> None:
+    """**通过应用自己的 API** 建钥匙。
 
-    ⚠️ 刻意走 sqlite3 而不是 ORM：ORM 的引擎绑在 pytest 的 event loop 上，
-    在这里另起 loop 驱动会撞 "attached to a different loop"。锁库这件事
-    用只读/直写的方式最省事，也最不容易写错。
+    ⚠️ **为什么不用裸 sqlite3 直写**（第一版是那么写的）：
+    裸连接与应用引擎的 aiosqlite 连接是**两个连接**，在同一个库文件上
+    争写锁。而 TestClient 的 lifespan 跑在**另一个线程**的 event loop 里
+    （starlette 用 anyio 的 BlockingPortal），于是「应用侧持着锁」与
+    「测试侧要写」是**真并发**——撞上就报
+    ``sqlite3.OperationalError: database is locked``。
+
+    ⚠️ 症状极具迷惑性：**单跑这个模块全绿，全量跑随机红**（同一份代码
+    连跑 8 轮，有 2 轮报 2 个 error）。PLAN.md 技术债里记的就是这件事，
+    此前一直误判成「多模块共用一个库」，绕了一大圈。
+
+    ⚠️ **别用 busy_timeout / retry 糊**：实测给两侧都加 timeout=5 之后，
+    失败轮次耗时从 45s 涨到 114s（真的在等锁等到超时），而问题一个没少。
+    PLAN.md 原先就警告过「别用 retry 掩盖」。
+
+    ✅ **正解是消除第二个连接**：改用 ``POST /api/v1/keys``——
+    走应用自己的会话与连接，全程**只有一个连接**在写这个库，
+    锁竞争从根上不存在。
+    顺带的好处：这条路**真的走了一遍生产用的签发流程**
+    （含 owner 归属、哈希落库），比直写 INSERT 更接近真实行为——
+    原先那种「手工 INSERT 出来的钥匙」其实绕过了生产代码路径。
     """
-    from seoclaw.api.auth import new_key
-
-    con = sqlite3.connect(_db_path())
-    con.execute(
-        "CREATE TABLE IF NOT EXISTS api_keys ("
-        "id INTEGER PRIMARY KEY, owner TEXT, name TEXT, key_prefix TEXT,"
-        " key_hash TEXT, created_at TIMESTAMP, last_used_at TIMESTAMP,"
-        " revoked_at TIMESTAMP)"
-    )
     for owner, name in rows:
-        raw, prefix, h = new_key()
-        con.execute(
-            "INSERT INTO api_keys (owner,name,key_prefix,key_hash,created_at)"
-            " VALUES (?,?,?,?,datetime('now'))",
-            (owner, name, prefix, h),
+        # ⚠️ 用管理令牌 + x-owner 头指定归属：auth.py 里管理令牌支持
+        # 「以任意 owner 身份操作」，这正是多租户测试要的。
+        r = client.post(
+            "/api/v1/keys",
+            params={"name": name},
+            headers={"X-API-Key": ADMIN, "x-owner": owner},
         )
+        assert r.status_code == 201, f"签发钥匙失败：{r.status_code} {r.text[:200]}"
+        raw = r.json()["key"]
         _PLAIN[owner] = raw
-        _HASHES.append(h)
-    con.commit()
-    con.close()
+        _HASHES.append(hashlib.sha256(raw.encode()).hexdigest())
 
 
 _PLAIN: dict[str, str] = {}
@@ -77,9 +88,38 @@ def tenant_client(monkeypatch):
     monkeypatch.setenv("SEO_CLAW_AUTH", "on")
     monkeypatch.setenv("SEO_CLAW_ADMIN_TOKEN", ADMIN)
     with TestClient(app, raise_server_exceptions=False) as c:
-        # 引擎/表在 lifespan 里建好了，这里直接塞钥匙
-        _seed_keys([("tenant-a", "a"), ("tenant-b", "b")])
+        # ⚠️ 顺序要紧：**先建钥匙，再清站点**——清理要走 DELETE 端点，
+        # 而那需要对应租户的钥匙（否则 404）。
+        # ⚠️ 建钥匙走应用自己的 API（见 _seed_keys 的注释）：全程只有
+        # 一个连接在写这个库，锁竞争从根上不存在。
+        _seed_keys(c, [("tenant-a", "a"), ("tenant-b", "b")])
+        # ⚠️ 站点数据要在**每个用例前**清干净。
+        #
+        # 原因：引擎是全局单例，库文件也是同一个——上一个用例建的站点
+        # 还在表里，于是下一个用例建同名域名就撞 409
+        # （"同域不重复建站"是产品要求的行为，测试里要自己保证前置干净）。
+        # 症状是「用例之间互相影响」，而报错点（409）离原因（上个用例
+        # 留下的数据）很远——所以这里显式清。
+        _clear_sites(c)
         yield c
+
+
+def _clear_sites(client) -> None:
+    """清空站点表（每个用例开始前）。
+
+    ⚠️ **走应用自己的 API**（``DELETE /sites/{id}``）而不是直接执行 SQL：
+    直接 SQL 需要在应用的 event loop 里跑（``client.portal.call``），
+    那个 loop 正在处理请求——交错之下会出现「刚清完又写进去」这类
+    说不清的时序问题。走 API 则完全串行，且用的是产品自己的删除逻辑
+    （带级联与归属校验）。
+
+    ⚠️ 归属校验怎么办：删除要用对应租户的头，否则 404。
+    这里逐个租户试——建站时用的就是这些租户。
+    """
+    for owner in ("tenant-a", "tenant-b"):
+        headers = _h(owner)
+        for site in client.get("/api/v1/sites", headers=headers).json():
+            client.delete(f"/api/v1/sites/{site['id']}", headers=headers)
 
 
 def _h(owner: str) -> dict[str, str]:
@@ -137,7 +177,10 @@ def test_plaintext_key_never_stored(tenant_client):
     r = tenant_client.post("/api/v1/keys?name=leak", headers={"X-API-Key": ADMIN})
     plaintext = r.json()["key"]
 
-    con = sqlite3.connect(_db_path())
+    # ⚠️ 用**只读模式**打开（``mode=ro``）：这样连文件锁都不碰。
+    # 这两处是**读**——不写就不会与应用侧争写锁，但只读模式更保险，
+    # 而且它还顺带证明了「读不干扰写」这件事本身。
+    con = sqlite3.connect(f"file:{_db_path()}?mode=ro", uri=True, timeout=5)
     rows = con.execute("SELECT key_hash, key_prefix FROM api_keys").fetchall()
     con.close()
 
@@ -194,7 +237,8 @@ def test_created_site_belongs_to_caller(tenant_client):
     s = tenant_client.post("/api/v1/sites", headers=_h("tenant-a"),
                            json={"domain": "owned.example"}).json()
     assert s["id"]
-    con = sqlite3.connect(_db_path())
+    # ⚠️ 只读模式打开（``mode=ro``）——不碰文件锁，理由见上一处。
+    con = sqlite3.connect(f"file:{_db_path()}?mode=ro", uri=True, timeout=5)
     owner = con.execute("SELECT owner FROM sites WHERE id=?", (s["id"],)).fetchone()[0]
     con.close()
     assert owner == "tenant-a", f"归属写错了：{owner}"
