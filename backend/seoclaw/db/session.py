@@ -94,7 +94,16 @@ def create_engine_from_url(
     """
     target = url or get_database_url()
     kwargs: dict = {"echo": echo, "future": True}
-    if target.startswith("sqlite"):
+    # ⚠️ StaticPool 只该给内存库：它让全进程共享唯一一条连接，任何会话
+    # close() 时的池 reset 都会把别人未提交的事务一并回滚（2026-10-25
+    # 容器实测：worker 长事务插完 crawl_jobs/pages 未提交，轮询会话一关，
+    # issues 插入即 FOREIGN KEY constraint failed，整场扫描丢失）。
+    # 文件库必须用默认连接池。判定口径：显式 :memory: / mode=memory，
+    # 或去掉尾斜杠后就是裸 scheme（"sqlite:" / "sqlite+aiosqlite:"）。
+    if target.startswith("sqlite") and (
+        "memory" in target
+        or target.rstrip("/").endswith(("sqlite:", "sqlite+aiosqlite:"))
+    ):
         # 内存 SQLite 每次连接都是一个全新库，跨连接看不到对方的表。
         # 强制 StaticPool + 共享 cache，保证同一引擎内多连接看到同一份数据。
         from sqlalchemy.pool import StaticPool
