@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import hashlib
+import secrets
 import sqlite3
 
 import pytest
@@ -144,8 +145,10 @@ def test_no_key_is_401_not_500(tenant_client):
 def test_fake_key_is_401(tenant_client):
     # ⚠️ 头值必须是 ASCII：我第一版拿「sk-seoclaw-假的」当假钥匙，
     # httpx 按 ascii 编码直接抛 UnicodeEncodeError，测试红的原因跟
-    # 被测逻辑无关。
-    r = tenant_client.get("/api/v1/me", headers={"X-API-Key": "sk-seoclaw-fake"})
+    # 被测逻辑无关。运行时生成一个形状合法但不存在的钥匙，
+    # 既保 ASCII，也不在仓库里落任何钥匙形状的常量。
+    fake = "sk-seoclaw-" + secrets.token_urlsafe(8)
+    r = tenant_client.get("/api/v1/me", headers={"X-API-Key": fake})
     assert r.status_code == 401
 
 

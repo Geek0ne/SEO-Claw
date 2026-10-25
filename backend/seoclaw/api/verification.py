@@ -96,11 +96,35 @@ _META_RE_ALT = re.compile(
 
 
 def check_meta(domain: str, token: str, *, timeout: float = 12.0) -> CheckResult:
-    """抓首页找 meta 标签。⚠️ 同上，抓不到不等于不存在。"""
+    """抓首页找 meta 标签。⚠️ 同上，抓不到不等于不存在。
+
+    ⚠️ 2026-10-25 修复：domain 来自用户建站输入，抓取前必须过
+    ``web.guard``（与 quick-scan 同一道闸）——否则提交
+    ``169.254.169.254`` 这类目标就成了 SSRF：借验证接口打云元数据 /
+    内网。解析失败按模块口径归 ``unknown``（查不到 ≠ 不存在）；
+    命中保留网段 / 黑名单归 ``no``（明确拒绝，不是查不到）。
+    重定向后的跳转目标不再复检，属 guard.py 已声明的残余风险，
+    真正的护栏是网络层。
+    """
+    from ..web.guard import BlockedTarget, check_denied, resolve_and_check
+
     url = f"https://{domain}/"
     try:
-        r = httpx.get(url, timeout=timeout, follow_redirects=True,
-                      headers={"User-Agent": "SEO-Claw-Verification/1.0"})
+        check_denied(domain)
+        resolve_and_check(url)
+    except BlockedTarget as exc:
+        reason = str(exc)
+        if reason.startswith("域名解析失败"):
+            return CheckResult("unknown", f"{reason}。请手动确认首页是否含该标签。")
+        return CheckResult(
+            "no", f"目标被安全策略拒绝（{reason}）。归属验证不能指向内网或保留地址。"
+        )
+    try:
+        # 与 crawler.py 同款 Client 用法：抓取行为本身走连接池。
+        # 目标合法性已由上方 guard 校验（协议 / 黑名单 / 解析 IP）。
+        with httpx.Client(timeout=timeout, follow_redirects=True,
+                          headers={"User-Agent": "SEO-Claw-Verification/1.0"}) as client:
+            r = client.get(url)
     except Exception as exc:  # noqa: BLE001
         return CheckResult("unknown", f"访问 {url} 失败：{type(exc).__name__}。请手动确认首页是否含该标签。")
 

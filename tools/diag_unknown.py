@@ -15,6 +15,7 @@ import re
 import subprocess
 import sys
 from collections import Counter, defaultdict
+from pathlib import Path
 
 UA = "Mozilla/5.0 (compatible; SEOAgentAudit/1.0; +https://example.com/bot)"
 _cache: dict[str, str | None] = {}
@@ -91,12 +92,16 @@ def main() -> None:
     for (b, c), n in cross.most_common(20):
         print(f"  {n:4}  [{c}] {b}")
 
-    json.dump(
-        [{"code": c, "site": s, "state": st, "note": n, "bucket": bucket(c, n)}
-         for c, s, st, n, _e in unknown],
-        open("/tmp/unknown_breakdown.json", "w"), ensure_ascii=False, indent=1,
+    out = Path("/tmp") / "unknown_breakdown.json"
+    out.write_text(
+        json.dumps(
+            [{"code": c, "site": s, "state": st, "note": n, "bucket": bucket(c, n)}
+             for c, s, st, n, _e in unknown],
+            ensure_ascii=False, indent=1,
+        ),
+        encoding="utf-8",
     )
-    print("\n明细已写 /tmp/unknown_breakdown.json")
+    print(f"\n明细已写 {out}")
 
 
 if __name__ == "__main__":

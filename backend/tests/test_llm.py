@@ -10,6 +10,8 @@ MockTransport」，但**在那之前没有任何一个测试真的走过它** �
 
 from __future__ import annotations
 
+import secrets
+
 import httpx
 import pytest
 
@@ -21,7 +23,10 @@ def _client(handler) -> httpx.Client:
 
 
 def _cfg() -> LLMConfig:
-    return LLMConfig(api_key="test-key", base_url="https://llm.invalid/v1", model="m")
+    # 假钥匙运行时生成：请求发往 llm.invalid 的 MockTransport，
+    # key 值本身不参与任何断言——只是让 Authorization 头非空。
+    return LLMConfig(api_key="test-" + secrets.token_urlsafe(8),
+                     base_url="https://llm.invalid/v1", model="m")
 
 
 def test_chat_returns_text():
@@ -43,9 +48,10 @@ def test_chat_sends_expected_request_shape():
         seen["auth"] = req.headers.get("authorization")
         return httpx.Response(200, json={"choices": [{"message": {"content": "x"}}]})
 
-    chat("hi", config=_cfg(), client=_client(handler))
+    cfg = _cfg()
+    chat("hi", config=cfg, client=_client(handler))
     assert seen["url"].endswith("/chat/completions"), seen["url"]
-    assert seen["auth"] == "Bearer test-key"
+    assert seen["auth"] == f"Bearer {cfg.api_key}"
     assert seen["body"]["model"] == "m"
     assert seen["body"]["max_tokens"] > 0
     assert "temperature" in seen["body"]
