@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "seo-claw"
 version = "0.2.0"
-description = "SEO-Claw：宁可漏报，也不报假问题的 SEO 体检工具——抓站、43 条规则审计、出能直接照着改的整改工单"
+description = "SEO-Claw：开源 SEO 体检工具——抓站 → 43 条规则审计 → 能直接照着改的整改工单。每条结论都附可回溯的证据，拿不出证据就保持沉默。"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
