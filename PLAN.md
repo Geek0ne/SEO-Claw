@@ -192,6 +192,18 @@ class Rule(ABC):
 
 ## 7. 当前状态
 
+- [x] **Web 界面改版三轮（2026-10-25）：v2 深色 → v3 亮色商务 → v3.1 大气版**。
+  第一轮 v2「Claw Noir」（深色）当日被要求改亮色大气商务风（v3「Daylight」：
+  纸白 + 点阵网格 + 白卡双层软阴影 + 珊瑚品牌色 + 彩色线性图标方标
+  `decorateIcons()` + SEV 数字着色）；随后产品负责人指出「三个菜单像小作坊」，
+  v3.1 升级为**产品级信息架构**：顶栏主导航（4 项 + 系统状态灯 + API 钥匙
+  入口，sticky 毛玻璃）、左栏收窄为站点工作区、仪表盘改为**指挥中心**
+  （聚合指标 4 枚 + 产品能力矩阵 6 格 + 站点卡片网格，内容宽度 1160px）。
+  三轮共同的方法：**换样式层 + 少量装饰性 JS，结构与接口零改动**——
+  `verify_ui.py` / `verify_quality_ui.py` 钉住的选择器全部保留（顺带补齐了
+  verify 钉过但实际缺失的 `#btnKey`）。验证：容器实跑逐页截图过目；质量页
+  「运行自检」真跑 64 用例 39/39 规则全绿。设计系统见 DESIGN.md。
+
 - [x] **质量与验证搬上 Web 界面（2026-10-23）**。项目里最有说服力的资产是
   **验证记录**——39 条规则、黄金样本回归、107 站实跑准确率、18 条规则的回源核对
   台账。此前这些**全都躺在 `docs/` 与 `backend/tests/` 里，Web 界面一条都没暴露**：
@@ -532,3 +544,300 @@ class Rule(ABC):
     显式的连接池重建），那是**结构性改动**、牵涉应用生命周期——**不该在别的
     活儿里顺手做**。本轮把问题定位到这一层并如实记下。
     ⚠️ 也**别用 retry 糊**：那等于把「连接池残缺」藏得更深。
+
+---
+
+## 10. 2026-10-25 全库复查发现（克隆复检，全部未修，按类归档）
+
+> 方法：对爬虫/规则引擎、API/Web/任务层、数据层、部署工程四块做全文细读，
+> 高严重度条目已逐条回源核对代码原文（引出行号均为当前 main `04d22d5`）。
+> 本节只记**新发现**，与 §9 已知技术债不重复。标 ⚠️ 的是存疑或取舍空间大的。
+
+### A. 正确性 bug（建议下一轮直接修，均有实测证据）
+
+0. **🔴【2026-10-25 容器实测复现 + 修法已验证】文件型 SQLite 也被套上
+   StaticPool，默认 Docker 部署下 Web 扫描 100% 失败**
+   —— `session.py:97-105` 的条件是 `target.startswith("sqlite")`：注释只
+   为**内存库**justify StaticPool（跨连接共享同一份内存数据），但条件把
+   **文件库也匹配进去了** → 整个进程所有会话共享唯一一条 DBAPI 连接。
+   时序（容器实测）：worker 会话的长事务里 `create_crawl_job`/`upsert_page`
+   已 flush 未提交 → 爬取进行中，**轮询 `GET /jobs/{id}` 的会话一关闭，
+   连接池 reset 就把这条共享连接 ROLLBACK**（StaticPool 没有「归还」概念，
+   reset 直接打在正被别人用的连接上）→ worker 随后的 `INSERT INTO issues`
+   引用的 crawl_jobs/pages 行已蒸发 → `FOREIGN KEY constraint failed` →
+   整场扫描随事务回滚全部丢失，scan_tasks 里只剩一条 failed。最小复现
+   脚本已验证（独立会话 SELECT 后正常关闭，再插 issues 即炸）。758 个
+   测试全绿抓不到它：测试全用内存库（StaticPool 恰好是对的），且
+   TestClient 的时序里没有「爬取窗口内插入轮询会话」。**为什么之前没人
+  撞上**：本机跑 Web 时同样会炸（文件库默认路径 `./seoclaw.db`），但
+   README 的冒烟路径是 CLI `seoclaw scan`（不开 Web 不轮询）；guard_smoke
+   只打同步闸门不跑完整扫描——**「测试绿 ≠ 部署能跑」的又一实锤**。
+   修法（已在 WSL 容器实测通过）：StaticPool 只给内存 URL
+   （`//:memory:`、`mode=memory`、空路径），文件库走默认池；修后同一
+   quick-scan 全链路 done（health 55.0 / 4 条问题 / 落库完整）。⚠️ 修完
+   还应连带处理 §9 的「巨型事务」问题（文件库多连接后，长事务持写锁
+   与并发写的 `database is locked` 风险才真正暴露，建议一并开 WAL +
+   busy_timeout 并分段提交）。
+1. **增量模式的 checkpoint 落盘偏移错位，第二轮起快照永远写不进 pages.jsonl**
+   —— `crawler.py:749` `_load_checkpoint` 无条件 `self._pages_persisted = len(pages)`
+   （旧页数 N），而 `crawler.py:390-398` 增量模式**不预填旧页**、本轮 `pages`
+   从 0 开始；`_save_checkpoint` 的 `pending = pages[self._pages_persisted:]`
+   （`crawler.py:840`）在本轮页数 ≤N 时恒为空切片。后果：变更页的新
+   etag/last_modified 永不落盘，后续轮次只能整页重传——**增量静默失效**，
+   且文件里新旧条目混杂。`test_incremental.py:180` 只数条件请求、不查落盘，
+   所以全绿。修法：增量模式开跑时 `_pages_persisted = 0` 并重写（truncate）
+   pages.jsonl——本轮是完整快照，不是续传。
+2. **CLI `scan --db` 落库路径同时复现两个已修过的历史 bug**
+   —— `persist.py:137` 用 `save_issues`，而 `repository.py:1633` 自己警告
+   「只用于首次落库，重复扫描请走 sync_issues_for_scan——每扫一次多一整套
+   重复行」（API 路径已改，`scan_service.py:240`；CLI 没改）；且
+   `persist.py:152-156` 的 `finish_job` 不传 health_score/score_breakdown
+   （`cli.py:290` 已算出但丢弃）→ 复现 2026-10-04 修过的「分数恒 null」
+   bug（`b56d1fb`）——CLI 扫的站在 Web 界面上一律渲染成「一页都没抓到」。
+   修法：`persist_scan` 改调 `sync_issues_for_scan`（scoped_urls 参照
+   `scan_service.py:254` 排除 304 页）+ 透传两个分数参数。一次改动消掉两条。
+3. **MCP `seo_audit_url` 从不 commit，扫描结果随会话关闭回滚**
+   —— `mcp_server.py:96-109` `async with session` 内 `run_scan` 后直接
+   return，无 commit；`tasks.py:117-119` 的注释明说「run_scan 自己不提交，
+   这里必须自己 commit」。返回给模型的报告是对的（更具迷惑性），但
+   site/job/pages/issues 全部蒸发，`seo_list_sites` 看不到刚扫的站。
+4. **inbound_links 以原始 href 为 key，规则侧按 p.url 查表，系统性低估入链**
+   —— `engine.py:210-212` `inbound[link.href] += 1`（key 是 urljoin 出的
+   原始绝对 URL，含 www/协议/utm 变体），规则侧用 `ctx.inbound_links.get(p.url, 0)`
+   查询。www 与裸域混用、链接带 utm 时入链被算到**永远查不到的 key** 上 →
+   非 0 入链被读成 0 → `orphan.page`（HIGH）与 soft404 的
+   `likely_true_soft404` 误报——正是本项目最不能接受的错误类型。修法：
+   两侧统一用 `normalize_url()` 作 key。
+5. **ctx.coverage 把失败页算进分子，覆盖率口径与 CLI 矛盾**
+   —— `engine.py:223` `crawled=len(pages)` 把 429/403/timeout 页也计为
+   「已覆盖」，而 `cli.py:234` 只数 `status_code == 200 and not p.error`
+   （注释自己写着「算进分子就成了『抓到了』」）。100 页发现、60 页失败时
+   coverage=100%，站点级规则照常开口——恰是「覆盖率不足必须沉默」铁律的
+   反面。site_facts 里现成有 `pages_ok`，build_context 不读。修法：分子改用
+   成功页数。
+6. **队列路径下失败的扫描在 crawl_jobs 不留记录，「必须落 failed」的注释意图落空**
+   —— `scan_service.py:309-311` 异常分支 `finish_job(FAILED)` 挂在**未提交的**
+   session 上；tasks 路径里 run_scan 抛异常后该 session 直接退出回滚，job 行
+   连 RUNNING 都没提交过（失败痕迹只剩 scan_tasks.error）。API 同步路径因
+   `deps.py:22` 的 `finally: commit` 反而能落 FAILED——**同一失败两种历史**。
+   修法：run_scan 的 FAILED 分支用独立事务即时提交。
+7. **SERP 导入把所有词一律 `is_tracked=True`，口径与列定义相反**
+   —— `serpdata.py:505-508` 新建关键词一律 `is_tracked=True`；而
+   `models.py:602` 定义「False 的词 = 内容缺口」、`persist.py:181-185` 为此
+   做了保守的 title-token 判定。导入的竞品词全被当「已在竞争」，缺口分析失真。
+   修法：新建默认 `is_tracked=False`。
+8. **`rank_history.recent` 用 `days * 1000` 魔数截断，超 1000 URL 的站静默丢行**
+   —— `repository.py:1362` `.limit(days * 1000)` 按「天×1000 行」而非按日期
+   过滤；30 天窗口 1200 URL 的站最旧数据无提示丢弃，**跌幅告警的输入不完整
+   且无日志**，违反「数据诚实」底线。`ix_rank_site_date` 索引现成，改
+   `WHERE date >= :cutoff` 即可。顺带：`rankdata.py:220-229` `ingest_rows`
+   把解析出的 keyword 字段整个丢掉（`rank_history.keyword_id` 列与
+   `ix_rank_site_keyword_date` 索引全闲置），且 upsert_day 每行 2 次往返、
+   万行导入 2 万查询。
+9. **前端「状态」筛选器静默失效；「扫描历史」健康分列恒为 "—"**
+   —— `index.html:999-1002` 发送 `status` 查询参数，但 `routes.py:324-340`
+   的 list_issues 签名只有 severity/code/limit/offset，FastAPI 静默丢弃
+   （仓储层其实支持，`repository.py:945`）；用户选「已修复」仍看到全部——
+   对靠状态闭环的产品是功能性误导。`JobOut` 无 `health_score` 字段
+   （`schemas.py:43-51`），前端 `index.html:1128` 永远走 null 分支。
+10. **`max_html_bytes` 在完整下载之后才检查，形同虚设**
+    —— `crawler.py:627+656` 非流式 `client.get` 整个响应体先进内存，然后才
+    `len(resp.content) > max_html_bytes`。内链指向的 500MB PDF 会先被完整
+    下载驻留。修法：`client.stream` + 分块累计、超限即断。同类：`crawler.py:574`
+    HEAD 被拒后 GET 回退会把整张 og:image 拉进内存只为读状态码。
+
+### B. 安全（单机 127.0.0.1 形态风险可控；公网/SaaS 化前的硬门槛）
+
+11. **SSRF 守卫只接在 web quick-scan 一条路上，API 扫描链路完全无守卫**
+    —— `routes.py:195-231` POST /scan 从 `body.url` 直接进 `run_scan`，全文件
+    无 `resolve_and_check`/`check_denied`；`PUT /schedule` 的 url 同样不校验
+    （`routes.py:275`，定时复扫会带着任意 URL 长期去扫）；`SiteCreate.domain`
+    无格式校验（`schemas.py:15`，可填 `169.254.169.254`）。最糟的一条：
+    `verification.py:102-103` 站点归属验证 `check_meta` 用
+    `follow_redirects=True` 且**提交时零校验**——外站 302 到
+    `http://169.254.169.254/` 会照跟。修法：守卫收口到 `run_scan` 入口一处，
+    httpx 侧挂重定向逐跳复检。
+12. **`GET /api/v1/web/jobs/{id}` 无归属校验，SaaS 模式跨租户读报告**
+    —— `web/__init__.py:181-207` 只查 ScanTaskRepository，不校验
+    owner/站点归属，`report=row.result` 含域名与问题清单；任一持 key 租户可
+    枚举 job_id。同批：quick-scan 建站 owner 落默认 `"local"`
+    （`web/__init__.py:163`，对比 `routes.py:116` 特意写了 owner），租户自己
+    看不到自己提交的站，且该路径不过 `quota.enforce`。
+13. **处方包 CSV 导出无公式注入防护** —— `fixpack.py:631-632` before/after
+    直接来自被抓站点可控内容（title/h1/meta/alt），首字符 `= + - @` 或 TAB
+    时 Excel 打开即执行公式（CSV injection/DDE 经典路径）。修法：渲染前对
+    危险首字符加 `'` 前缀，几行 sanitize。
+14. **渲染 UA 用占位域名，违反自己立的规矩** —— `render.py:232`
+    `+https://example.com/bot`，而 `crawler.py:36-43` 的注释明确批判过占位
+    域名并把 `DEFAULT_UA` 改成真实联系方式。渲染流量恰是最敏感的那部分。
+    修法：复用 `crawler.DEFAULT_UA`。
+15. ⚠️ **无前置代理的直连部署下 XFF 最右值可伪造、限流可绕过**
+    —— `guard.py:228-232` 取 `parts[-1]`；默认自部署形态没有可信反代时整个
+    XFF 都是攻击者构造的。修法：加「前面有可信代理」开关，默认用
+    `request.client.host`。
+16. **guard 的 DNS 解析跑在事件循环上且 timeout 参数是死的**
+    —— `guard.py:94` 签名收 `timeout` 从不使用；`web/__init__.py:131` 在
+    `async def` 里直接调同步 `socket.getaddrinfo`——一个慢解析可卡住整个
+    服务（恰是项目注释反复强调要避免的故障模式）。修法：
+    `loop.getaddrinfo` 或 `to_thread` + `wait_for`。
+
+### C. 部署配置（死配置 / 被架空——不影响本机跑，上 Render 前必须修）
+
+17. **render.yaml 部署用不上它自己开的 PostgreSQL，数据必丢**
+    —— `Dockerfile:32` 把 `SEO_CLAW_DATABASE_URL=sqlite+aiosqlite:////srv/data/...`
+    烤进镜像，而 `session.py:51-56` 的优先级里它排在 `DATABASE_URL` 之前；
+    `render.yaml:36-39` 只注入后者。Render 容器里 SQLite 永远赢 → 写临时
+    文件系统，免费实例每周重启即全量丢数据，`render.yaml:9-10` 自己反复
+    警告的「必须用 PG」恰好没生效。docker-compose 没踩坑是因为
+    `docker-compose.yml:18` 显式重设了同名变量。修法：render.yaml 改注入
+    `SEO_CLAW_DATABASE_URL`，或 Dockerfile 不烤 URL。
+18. **`SEO_CLAW_RPS` 是死配置** —— `docker-compose.yml:21` 与 `render.yaml:43-44`
+    都在设，`backend/seoclaw` 全库无一处读它（实际限速是
+    `scan_service.py:191` / `crawler.py:52` 的硬编码默认值）。render 想压到
+    2 rps 的意图被静默忽略；compose 设 3 恰好撞上默认值所以看不出来。
+    修法：要么接进配置，要么从两份部署文件删掉。
+19. **render.yaml 公网服务默认零鉴权** —— `SEO_CLAW_AUTH` 默认 `"off"`
+    （`auth.py:42-43`，docstring 明说前提是单机自部署），envVars 没设
+    token/鉴权开关——拿到 URL 的任何人都能驱使扫描器对外发请求。
+20. **依赖三份清单并行，已事实漂移** —— `backend/requirements.txt:26` 写裸
+    `sqlalchemy==2.1.1`（根 `requirements.txt:10` 写 `SQLAlchemy[asyncio]`
+    并用事故注释强调缺 greenlet 会 ImportError）；`backend/requirements.txt`
+    全文无 uvicorn（照它装=有 fastapi 没 uvicorn 命令）；CI 装 extras、镜像
+    装钉版 requirements——**CI 绿不等于镜像里的版本组合被测过**。建议收敛
+    单一来源（pyproject），requirements 由它生成。
+21. **仓库无 `.gitattributes`，Windows 检出的 `run.sh` / `guard_smoke.sh` 是
+    CRLF** —— WSL 里直接 `./tools/guard_smoke.sh` 报 `$'\r'`。修法：加
+    `.gitattributes`（`*.sh text eol=lf`）+ 重规范化。
+22. **Dockerfile 无 pip/apt 换源参数位** —— `Dockerfile:9-11,18-19` 直连
+    deb.debian.org 与 pypi.org，全文件无 ARG；国内构建慢/抽风时只能改
+    Dockerfile 本身。建议 `ARG PIP_INDEX_URL` / apt 源参数化。
+23. **compose 无资源限制、无 init** —— CMD 的 uvicorn 当 PID 1
+    （`Dockerfile:41`），`docker-compose.yml` 全文无 mem_limit/init；
+    `render.yaml:24-25` 自己警告过 OOM。
+
+### D. 性能与资源（不改变行为，纯省）
+
+24. **每页 HTML 被 lxml 重复解析 2~3 遍** —— `extract.py:246` 一遍、
+    `_derive` 里 `extract.py:718` 混合内容检测又一遍、trafilatura 失败兜底
+    第三遍（615）；`_looks_client_render_failure` 与 `_full_visible_text` 是
+    完全相同的两步正则各跑一遍（183/595）。大站扫描纯翻倍 CPU。修法：doc
+    传入 `_derive`，可见文本算一次共用。
+25. **BFS 用 `frontier.pop(0)`，O(n²)** —— `crawler.py:420`，frontier 可到
+    十万级条目，每次 pop(0) 全量 memmove。一行换 `collections.deque`。
+26. **sitemap urlset 去重对 list 做成员检查，O(n²)** —— `sitemap.py:251`
+    `if loc not in result.urls`，MAX_URLS=20000 上限内最坏约 2×10⁸ 次比较。
+    伴随 set 即可。
+27. **自适应降速只降不升，且被外部目标连带** —— `crawler.py:148` 的
+    `per_domain_rps / divisor` 是全库唯一写点，无任何恢复代码（docstring
+    声称「后续再逐步恢复」）；`_probe_targets`（579-580）探测外站 CDN 失败
+    会把**主站**速率一起降档。少数几个 403 即可把整轮钉死在 0.05 rps 下限
+    （20s/请求）。同病：`Crawl-delay` 是死功能（`crawl_delay()` 全库零调用，
+    `crawler.py:186`），且 `_parse_crawl_delay`（229-232）取 `min`（最快档）
+    与注释「保守值」相反——礼貌意义上的保守应是 `max`。
+28. **整场扫描压在一个巨型事务里** —— `scan_service.py:206-292` 在
+    `create_crawl_job`（flush 即拿 SQLite RESERVED 写锁）后跨分钟级
+    `to_thread` 持有同一 session；`session.py:9-12` 自己的设计注释写着「把
+    一次扫描切成上百个事务」。期间任何写（quick-scan 入队、issue 状态更新、
+    `auth.py:109` 每请求的 last_used_at 更新）都会 database is locked；
+    MAX_CONCURRENT=2 的两个扫描在 SQLite 上必然互杀。修法：分段提交 +
+    SQLite 开 WAL + busy_timeout。⚠️ 与 §9 lifespan 技术债同源（SQLite 锁
+    语义），修时一并考虑。
+29. **`sync_for_scan` 每轮全量加载该站全部 Issue ORM 对象并逐条 flush**
+    —— `repository.py:829-837` 无投影无 limit（同文件 971 行自认「大站问题
+    行可达十万级」），循环内逐条 `create` 各自 flush。修法：投影只取
+    `(fingerprint, url, id, status)`，新行攒批。同批小项：
+    `group_by_fingerprint` 每组一条 sample_urls 查询（994-1003，limit 50
+    封顶，量级可控）。
+30. **`_probe_targets` / robots / sitemap 请求绕过代理池与限速器**
+    —— `crawler.py:205` RobotsCache 与 `sitemap.py:76` SitemapFinder 各自
+    `httpx.Client(...)` 直连：配置代理池时这两个请求暴露真实 IP，与「换 IP
+    重试」设计矛盾；SitemapFinder 子文件循环最多 200 次请求完全不限速，
+    违背自己第一位的「单域 3 rps」。修法：把 Crawler 的 client/limiter
+    传给二者复用（顺带消掉 robots.txt 每轮被抓两遍）。
+
+### E. 数据模型与接口一致性（潜伏雷 / 死字段）
+
+31. **三个「承诺回填」的字段从未被写入** —— `models.py:89`
+    `LinkRef.target_status`（注释「抓取阶段回填」，全库唯一出现处是声明）；
+    `Page.fetched_at` 从不赋值，`persist.py:77` 用 `datetime.now()` 兜底——
+    落库的是**入库时间冒充抓取时间**；`Issue.impact` 列全链路无写入方
+    （`api/summary.py:43` 恒空串）。要么实现要么删列。
+32. **`occurrences`「每次扫描重算」的承诺未兑现** —— `models.py:558` 注释
+    如此，唯一 writer `refresh_occurrences`（`repository.py:1047`）无生产
+    调用；读侧 `routes.py:162/353`、`summary.py:41` 用 `or 1` 掩盖——
+    「批量修复价值」排序依据实际恒为 1。修法：sync_for_scan 收尾按指纹
+    GROUP BY 回填一条 UPDATE。
+33. **`sync_for_scan` 刷新已认领行时不更新 title/description/fix_hint**
+    —— `repository.py:888-891` 只写 job_id/page_id/severity/last_seen_at，
+    规则文案升级后旧行永远展示旧标题。
+34. **0008 迁移用 `sa.JSON()`，模型是 JSONB variant** ——
+    `0008_site_scan_schedule.py:46` vs `models.py:57`；PG 上迁移建 JSON、
+    create_all 建 JSONB，违反 0001:22-24「迁移必须和应用模型产出同样的库
+    结构」的自定规矩（SQLite 测试暴露不了，`alembic check` 在 PG 上会报漂移）。
+35. **AI 总结的输入喂了错语义的字段** —— `routes.py:664-670`
+    `_Shim.pages_discovered = page.total`，而 `page` 是 **issues** 分页——把
+    问题总数当「发现页数」写进 LLM prompt，数字前提被污染（pages_crawled
+    的 `or page.total` 兜底同病）。修法：从 pages 计数或 job 行取。
+36. ⚠️ **若干低频小项**：`quota.py:49` 月末 23:59:59–24:00 的计量事件落在
+    窗口外；`routes.py:109-113` 并发建同名站 IntegrityError→500 而非 409；
+    `routes.py:803,949-957` 结构化导入的 errors 未过 `_bounded`（最多 5000
+    条逐行返回，raw 路径都过了）；`persist.py:129` 用 `finish(RUNNING)` 登记
+    开跑会提前写 finished_at（已有专门的 `start()`）；`cli.py:417` 0 页成功
+    仍退出码 0，脚本化无法区分全军覆没；`expand.py:195-204` PMI 把「本页
+    seed 命中数」当概率用（量纲错误）且 O(页数²×候选)；`keywords/cluster.py:157`
+    `embed_fn` docstring 说「传入即语义聚类」、实现是 raise NotImplementedError；
+    `index.html:713-739` 体检轮询循环无导航取消、多次提交叠加孤儿循环；
+    `index.html:1951-1964`「开始体检」走同步 /scan 分钟级阻塞（后端队列早就有，
+    前端没接）；`tasks.py:40,165-166` MAX_CONCURRENT=2 但 worker 串行 await，
+    单进程内恒 1 并发；`sitemap.py:48-54` 不支持 sitemap.xml.gz（Google 官方
+    支持，.gz 子树静默丢失）；`util.py:90-93` 二级后缀表只有 7 项（缺
+    com.au/com.hk/co.kr 等），`example.com.au` 与 `other.com.au` 判为同站
+    → 跨站抓取；`scoring.py:37-52` performance 是雷达图死轴（viewport/mobile
+    全落 content）、`scoring.py:137-141` site/page 两个 ratio 分支数学等价
+    （`max(1, len(urls))` 恒空操作，注释宣称的区别不存在）；`render.py:174-205`
+    close() 不清 `_shared_browser/_shared_playwright` 类属性，后续实例复用
+    已关浏览器的死句柄（⚠️ sync Playwright 跨线程复用问题存疑，表现可能是
+    `_render` 吞异常后渲染静默全失效）；`alerts.py:81-91` 跌幅只看首尾两点
+    （⚠️ 可能是有意取舍，至少该在 evidence 里标注口径）；`repository.py:1534`
+    ContentBrief 查重不带 site_id（当前无生产调用，潜伏跨站覆盖）；
+    `.gitignore:84-85` 想忽略的 `tools/run_fp_*.sh` 等已被跟踪（规则失效）；
+    `Dockerfile:19` `pip install fastapi uvicorn` 与钉版 requirements 重复、
+    `Dockerfile:21` COPY 的 pyproject.toml 从不使用；`tools/guard_smoke.sh:141`
+    KEEP 提示里的容器名过期（实际叫 seoclaw_guard_smoke）。
+
+### F. 复查中确认**不用改**的（防止下一轮误报）
+
+- `--market action="append", default=["base"]` 使 `--market google` 实际为
+  `['base', 'google']`——这是 README 明文写的叠加语义（「始终包含 base」），
+  不是 bug；残余小疵仅 `cli.py:164` 的 `or [Market.BASE]` 兜底成为死代码。
+- Dockerfile 非 root、curl 健康检查、依赖层缓存顺序、`/srv/data` 卷与 DB
+  路径四方一致、alembic `script_location=%(here)s` 位置无关、无任何
+  git+URL 依赖、全部依赖有 manylinux wheel（python:3.12-slim 无 gcc 可装）。
+- 迁移链 0001→0008 线性完整无分叉，均带 downgrade（0004 的 no-op 有数据
+  不可逆的文档说明）。
+- llm.py 无 API key 泄漏路径（Authorization 不进日志/异常文本）。
+- 优先修复建议：**A0（默认 Docker 部署下 Web 扫描全灭，修法已实测）**、
+  A1/A2（增量失效 + CLI 落库回归，两个都是「已修过的 bug 在另一条路径上
+  复活」）、A4/A5（直接影响误报率与覆盖率铁律）、B11/B13（公网化前必须
+  修）、C17/C18（Render 部署的静默丢数据与死配置）。
+
+### G. 本地运行记录（2026-10-25，WSL2 Debian 13 + Docker，供复现）
+
+- 环境：WSL2 Debian trixie（systemd 开启），`get.docker.com --mirror Aliyun`
+  装 docker-ce 29.7.2 + compose v5.5.0；宿主 TUN 代理下 `python:3.12-slim`
+  直拉 24s，无需 registry-mirrors。
+- 代码放 WSL 原生文件系统（`~/SEO-Claw`）构建——`/mnt/d` 跨 9p + 中文
+  路径构建慢；仓库无 `.gitattributes`，Windows 检出的 `.sh` 是 CRLF，
+  WSL 里直接跑会报 `$'\r'`（见 C21）。
+- `docker compose up -d --build` → 容器 healthy → `/api/v1/health` 200 →
+  Windows 侧 `http://127.0.0.1:8000` 200（WSL localhost 转发可用）。
+- ⚠️ **TUN fake-IP 与 SSRF 守卫互斥**：代理把所有域名解析到
+  198.18.0.0/15（A 记录）/ 2001:2::/48（AAAA），守卫按「保留网段 =
+  DNS rebinding 特征」正确拒绝——**这是守卫在干活，不是 bug**。要扫
+  外网域名需在代理端给目标域配 fake-ip-filter（或直连规则）；演示时
+  用 DoH 拿真实 IP 写容器 /etc/hosts 绕过（`docker exec -u root`——
+  容器按设计非 root 运行，普通 exec 写不了）。
+- ⚠️ **WSL VM 空闲关机**：无会话时约 1 分钟 VM 退出，容器随 VM 停、
+  下次唤醒自动拉起（restart: unless-stopped，数据在卷里不丢）。日常用
+  保持一个 WSL 终端开着，或在 `%UserProfile%\.wslconfig` 调
+  `vmIdleTimeout`。
