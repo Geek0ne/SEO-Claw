@@ -336,7 +336,8 @@ pip install -e ".[api,dev]"
 pytest backend/tests -q
 ```
 
-- ✅ **758 个测试**：本机全绿；未安装可选依赖 `mcp` 时其中 3 条（`test_mcp_server.py`）跳过
+- ✅ **758 个测试**：本机全绿；未安装可选依赖 `mcp` 时
+  `test_mcp_server.py` 整模块跳过（pytest 计 1 条 skip，内含 3 条用例）
 - 📊 覆盖率 80.0%（本机 `pytest --cov` 实测，CI 门禁 78%，余量 2.0 个点）。同一份
   代码连跑会在 79.99%–80.03% 之间微漂，漂的是 `db/session.py` 里的 `create_all`
   那一行：测试用例共用一个引擎单例与同一个 sqlite 文件，个别跑法下它会以
